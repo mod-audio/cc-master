@@ -8,7 +8,8 @@
 #define CC_HEADER_SIZE          6
 #define CC_DATA_TIMEOUT         10
 
-//  DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)
+// fields names and sizes in bytes
+// DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)
 
 enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA};
 
@@ -96,9 +97,9 @@ static void* cc_parser(void *arg)
                     cc->state = WAITING_DATA;
                     cc->dev_address = buffer[0];
                     cc->command = buffer[1];
-                    cc->data_size = buffer[2];
+                    cc->data_size = buffer[3];
                     cc->data_size <<= 8;
-                    cc->data_size |= buffer[3];
+                    cc->data_size |= buffer[2];
                     cc->data_crc = buffer[4];
 
                     if (cc->data_size == 0)
@@ -217,5 +218,24 @@ void cc_set_recv_callback(cc_t *cc, void (*callback)(void *arg))
     if (cc)
     {
         cc->recv_callback = callback;
+    }
+}
+
+void cc_send(cc_t *cc)
+{
+    const uint8_t sync_byte = CC_SYNC_BYTE;
+    uint8_t buffer[CC_HEADER_SIZE];
+
+    if (cc)
+    {
+        buffer[0] = cc->dev_address;
+        buffer[1] = cc->command;
+        buffer[2] = (cc->data_size >> 0) & 0xFF;
+        buffer[3] = (cc->data_size >> 8) & 0xFF;
+        buffer[4] = crc8(cc->data, cc->data_size);
+        buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
+        sp_nonblocking_write(cc->sp, &sync_byte, 1);
+        sp_nonblocking_write(cc->sp, buffer, CC_HEADER_SIZE);
+        sp_nonblocking_write(cc->sp, cc->data, cc->data_size);
     }
 }

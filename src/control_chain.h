@@ -24,5 +24,6 @@ cc_t* cc_init(const char *port_name, int baudrate);
 void cc_finish(cc_t *cc);
 
 void cc_set_recv_callback(cc_t *cc, void (*callback)(void *arg));
+void cc_send(cc_t *cc);
 
 #endif

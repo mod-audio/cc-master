@@ -8,7 +8,14 @@
 void cc_callback(void *arg)
 {
     cc_t *cc = (cc_t *) arg;
-    printf("device address: %i, command %i\n", cc->dev_address, cc->command);
+    printf("device address: %i, command: %i\n", cc->dev_address, cc->command);
+    for (int i = 0; i < cc->data_size; i++)
+    {
+        printf("%02X ", cc->data[i]);
+    }
+    if (cc->data_size) printf("\n");
+
+    cc_send(cc);
 }
 
 int main(void)
@@ -27,7 +34,11 @@ int main(void)
 
     while (1);
 
+    // no data
     // s.write(b'\xA7\x01\x01\x00\x00\x00\x80')
+
+    // 4 bytes data
+    // s.write(b'\xA7\x01\x01\x04\x00\x48\x4F\xAA\xBB\xCC\xDD')
 
     return 0;
 }
