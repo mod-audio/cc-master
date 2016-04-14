@@ -12,6 +12,7 @@ typedef struct control_chain_t
     int state;
     void (*recv_callback)(void *arg);
     pthread_t recv_thread;
+    volatile int running;
 
     uint8_t dev_address;
     uint8_t command;

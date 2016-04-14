@@ -68,7 +68,9 @@ static void* cc_parser(void *arg)
     uint8_t buffer[CC_HEADER_SIZE];
     enum sp_return ret;
 
-    while (1)
+    cc->running = 1;
+
+    while (cc->running)
     {
         // waiting sync byte
         if (cc->state == WAITING_SYNCING)
@@ -140,7 +142,9 @@ static void* cc_parser(void *arg)
 
 cc_t* cc_init(const char *port_name, int baudrate)
 {
+
     cc_t *cc = (cc_t *) malloc(sizeof (cc_t));
+
     if (cc == NULL)
         return NULL;
 
@@ -198,6 +202,12 @@ void cc_finish(cc_t *cc)
 {
     if (cc)
     {
+        if (cc->recv_thread)
+        {
+            cc->running = 0;
+            pthread_join(cc->recv_thread, NULL);
+        }
+
         if (cc->sp)
         {
             sp_close(cc->sp);
@@ -206,8 +216,6 @@ void cc_finish(cc_t *cc)
 
         if (cc->data)
             free(cc->data);
-
-        pthread_join(cc->recv_thread, NULL);
 
         free(cc);
     }
