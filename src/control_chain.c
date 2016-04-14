@@ -63,23 +63,29 @@ uint8_t crc8(uint8_t *data, size_t len)
 
 static void* cc_parser(void *arg)
 {
-    cc_t *cc = (cc_t *) arg;
+    cc_handle_t *handle = (cc_handle_t *) arg;
 
     uint8_t buffer[CC_HEADER_SIZE];
     enum sp_return ret;
 
-    cc->running = 1;
+    // create a message object
+    cc_msg_t msg;
+    msg.data = (uint8_t *) malloc(CC_SERIAL_BUFFER_SIZE);
+    if (msg.data == NULL)
+        return NULL;
 
-    while (cc->running)
+    handle->running = 1;
+
+    while (handle->running)
     {
         // waiting sync byte
-        if (cc->state == WAITING_SYNCING)
+        if (handle->state == WAITING_SYNCING)
         {
-            ret = sp_blocking_read(cc->sp, buffer, 1, 0);
+            ret = sp_blocking_read(handle->sp, buffer, 1, 0);
             if (ret > 0)
             {
                 if (buffer[0] == CC_SYNC_BYTE)
-                    cc->state = WAITING_HEADER;
+                    handle->state = WAITING_HEADER;
             }
 
             // take the shortcut
@@ -87,97 +93,95 @@ static void* cc_parser(void *arg)
         }
 
         // waiting header
-        else if(cc->state == WAITING_HEADER)
+        else if(handle->state == WAITING_HEADER)
         {
-            ret = sp_blocking_read(cc->sp, buffer, CC_HEADER_SIZE, 0);
+            ret = sp_blocking_read(handle->sp, buffer, CC_HEADER_SIZE, 0);
             if (ret == CC_HEADER_SIZE)
             {
                 // verify header checksum
                 uint8_t crc = buffer[CC_HEADER_SIZE-1];
                 if (crc8(buffer, CC_HEADER_SIZE-1) == crc)
                 {
-                    cc->state = WAITING_DATA;
-                    cc->dev_address = buffer[0];
-                    cc->command = buffer[1];
-                    cc->data_size = buffer[3];
-                    cc->data_size <<= 8;
-                    cc->data_size |= buffer[2];
-                    cc->data_crc = buffer[4];
+                    handle->state = WAITING_DATA;
+                    msg.dev_address = buffer[0];
+                    msg.command = buffer[1];
+                    msg.data_size = buffer[3];
+                    msg.data_size <<= 8;
+                    msg.data_size |= buffer[2];
+                    handle->data_crc = buffer[4];
 
-                    if (cc->data_size == 0)
-                        cc->data_crc = 0;
+                    if (msg.data_size == 0)
+                        handle->data_crc = 0;
                 }
                 else
                 {
-                    cc->state = WAITING_SYNCING;
+                    handle->state = WAITING_SYNCING;
                 }
             }
             else
             {
-                cc->state = WAITING_SYNCING;
+                handle->state = WAITING_SYNCING;
             }
         }
 
         // waiting data
-        else if (cc->state == WAITING_DATA)
+        else if (handle->state == WAITING_DATA)
         {
-            ret = sp_blocking_read(cc->sp, cc->data, cc->data_size, CC_DATA_TIMEOUT);
-            if (ret == cc->data_size)
+            ret = sp_blocking_read(handle->sp, msg.data, msg.data_size, CC_DATA_TIMEOUT);
+            if (ret == msg.data_size)
             {
                 // verify data checksum
-                if (crc8(cc->data, cc->data_size) == cc->data_crc)
+                if (crc8(msg.data, msg.data_size) == handle->data_crc)
                 {
-                    if (cc->recv_callback)
-                        cc->recv_callback(cc);
+                    if (handle->recv_callback)
+                    {
+                        cc_holder_t holder;
+                        holder.handle = handle;
+                        holder.msg = &msg;
+                        handle->recv_callback(&holder);
+                    }
                 }
             }
 
             // always go back to initial state regardless it got data or not
-            cc->state = WAITING_SYNCING;
+            handle->state = WAITING_SYNCING;
         }
     }
+
+    free(msg.data);
 
     return NULL;
 }
 
-cc_t* cc_init(const char *port_name, int baudrate)
+cc_handle_t* cc_init(const char *port_name, int baudrate)
 {
+    cc_handle_t *handle = (cc_handle_t *) malloc(sizeof (cc_handle_t));
 
-    cc_t *cc = (cc_t *) malloc(sizeof (cc_t));
-
-    if (cc == NULL)
+    if ( handle == NULL)
         return NULL;
 
-    // init object with null data
-    memset(cc, 0, sizeof (cc_t));
+    // init handle with null data
+    memset(handle, 0, sizeof (cc_handle_t));
 
     // get serial port
     enum sp_return ret;
-    ret = sp_get_port_by_name(port_name, &(cc->sp));
+    ret = sp_get_port_by_name(port_name, &handle->sp);
     if (ret != SP_OK)
     {
-        cc_finish(cc);
+        cc_finish(handle);
         return NULL;
     }
 
     // open serial port
-    ret = sp_open(cc->sp, SP_MODE_READ_WRITE);
+    ret = sp_open(handle->sp, SP_MODE_READ_WRITE);
     if (ret != SP_OK)
     {
-        cc_finish(cc);
+        cc_finish(handle);
         return NULL;
     }
 
     // configure serial port
-    sp_set_baudrate(cc->sp, baudrate);
-
-    // create data buffer
-    cc->data = (uint8_t *) malloc(CC_SERIAL_BUFFER_SIZE);
-    if (cc->data == NULL)
-    {
-        cc_finish(cc);
-        return NULL;
-    }
+    sp_set_baudrate(handle->sp, baudrate);
 
     // set thread attributes
     pthread_attr_t attributes;
@@ -187,63 +191,60 @@ cc_t* cc_init(const char *port_name, int baudrate)
     //pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
 
     // create thread
-    int ret_val = pthread_create(&cc->recv_thread, &attributes, cc_parser, (void*) cc);
+    int ret_val = pthread_create(&handle->recv_thread, &attributes, cc_parser, (void*) handle);
     pthread_attr_destroy(&attributes);
 
     if (ret_val == 0)
-        return cc;
+        return handle;
 
-    cc_finish(cc);
+    cc_finish(handle);
 
     return NULL;
 }
 
-void cc_finish(cc_t *cc)
+void cc_finish(cc_handle_t *handle)
 {
-    if (cc)
+    if (handle)
     {
-        if (cc->recv_thread)
+        if (handle->recv_thread)
         {
-            cc->running = 0;
-            pthread_join(cc->recv_thread, NULL);
+            handle->running = 0;
+            pthread_join(handle->recv_thread, NULL);
         }
 
-        if (cc->sp)
+        if (handle->sp)
         {
-            sp_close(cc->sp);
-            sp_free_port(cc->sp);
+            sp_close(handle->sp);
+            sp_free_port(handle->sp);
         }
 
-        if (cc->data)
-            free(cc->data);
-
-        free(cc);
+        free(handle);
     }
 }
 
-void cc_set_recv_callback(cc_t *cc, void (*callback)(void *arg))
+void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg))
 {
-    if (cc)
+    if (handle)
     {
-        cc->recv_callback = callback;
+        handle->recv_callback = callback;
     }
 }
 
-void cc_send(cc_t *cc)
+void cc_send(cc_handle_t *handle, cc_msg_t *msg)
 {
     const uint8_t sync_byte = CC_SYNC_BYTE;
     uint8_t buffer[CC_HEADER_SIZE];
 
-    if (cc)
+    if (handle)
     {
-        buffer[0] = cc->dev_address;
-        buffer[1] = cc->command;
-        buffer[2] = (cc->data_size >> 0) & 0xFF;
-        buffer[3] = (cc->data_size >> 8) & 0xFF;
-        buffer[4] = crc8(cc->data, cc->data_size);
+        buffer[0] = msg->dev_address;
+        buffer[1] = msg->command;
+        buffer[2] = (msg->data_size >> 0) & 0xFF;
+        buffer[3] = (msg->data_size >> 8) & 0xFF;
+        buffer[4] = crc8(msg->data, msg->data_size);
         buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
-        sp_nonblocking_write(cc->sp, &sync_byte, 1);
-        sp_nonblocking_write(cc->sp, buffer, CC_HEADER_SIZE);
-        sp_nonblocking_write(cc->sp, cc->data, cc->data_size);
+        sp_nonblocking_write(handle->sp, &sync_byte, 1);
+        sp_nonblocking_write(handle->sp, buffer, CC_HEADER_SIZE);
+        sp_nonblocking_write(handle->sp, msg->data, msg->data_size);
     }
 }

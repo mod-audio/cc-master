@@ -6,25 +6,34 @@
 #include <pthread.h>
 #include <libserialport.h>
 
-typedef struct control_chain_t
+typedef struct cc_handle_t
 {
-    struct sp_port *sp;
     int state;
+    struct sp_port *sp;
+    uint8_t data_crc;
     void (*recv_callback)(void *arg);
     pthread_t recv_thread;
     volatile int running;
+} cc_handle_t;
 
+typedef struct cc_msg_t
+{
     uint8_t dev_address;
     uint8_t command;
     uint16_t data_size;
-    uint8_t data_crc;
     uint8_t *data;
-} cc_t;
+} cc_msg_t;
 
-cc_t* cc_init(const char *port_name, int baudrate);
-void cc_finish(cc_t *cc);
+typedef struct cc_holder_t
+{
+    cc_handle_t *handle;
+    cc_msg_t *msg;
+} cc_holder_t;
 
-void cc_set_recv_callback(cc_t *cc, void (*callback)(void *arg));
-void cc_send(cc_t *cc);
+cc_handle_t* cc_init(const char *port_name, int baudrate);
+void cc_finish(cc_handle_t *handle);
+
+void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
+void cc_send(cc_handle_t *handle, cc_msg_t *msg);
 
 #endif

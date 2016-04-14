@@ -7,38 +7,44 @@
 
 void cc_callback(void *arg)
 {
-    cc_t *cc = (cc_t *) arg;
-    printf("device address: %i, command: %i\n", cc->dev_address, cc->command);
-    for (int i = 0; i < cc->data_size; i++)
-    {
-        printf("%02X ", cc->data[i]);
-    }
-    if (cc->data_size) printf("\n");
+    cc_holder_t *holder = (cc_holder_t *) arg;
+    cc_handle_t *handle = holder->handle;
+    cc_msg_t *msg = holder->msg;
 
-    cc_send(cc);
+    printf("device address: %i, command: %i, data size: %i\n", msg->dev_address, msg->command, msg->data_size);
+    for (int i = 0; i < msg->data_size; i++)
+    {
+        printf("%02X ", msg->data[i]);
+    }
+    if (msg->data_size) printf("\n");
+
+    cc_send(handle, msg);
+    handle->running = 0;
 }
 
 int main(void)
 {
-    cc_t *cc_master;
-
-    cc_master = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
-    if (!cc_master)
+    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
+    if (!handle)
     {
         printf("can't initiate control chain using %s\n", SERIAL_PORT);
         exit(1);
     }
 
-    cc_set_recv_callback(cc_master, cc_callback);
-    printf("we are good\n");
+    cc_set_recv_callback(handle, cc_callback);
+    printf("thread running\n");
 
-    while (1);
+    while (handle->running);
+
+    cc_finish(handle);
 
     // no data
     // s.write(b'\xA7\x01\x01\x00\x00\x00\x80')
 
     // 4 bytes data
     // s.write(b'\xA7\x01\x01\x04\x00\x48\x4F\xAA\xBB\xCC\xDD')
+
+    // valgrind --leak-check=full --show-leak-kinds=all ./control-chain
 
     return 0;
 }
