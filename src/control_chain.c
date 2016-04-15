@@ -6,6 +6,8 @@
 #define CC_SERIAL_BUFFER_SIZE   2048
 #define CC_SYNC_BYTE            0xA7
 #define CC_HEADER_SIZE          6
+#define CC_SYNC_TIMEOUT         100
+#define CC_HEADER_TIMEOUT       10
 #define CC_DATA_TIMEOUT         10
 
 // fields names and sizes in bytes
@@ -81,7 +83,7 @@ static void* cc_parser(void *arg)
         // waiting sync byte
         if (handle->state == WAITING_SYNCING)
         {
-            ret = sp_blocking_read(handle->sp, buffer, 1, 0);
+            ret = sp_blocking_read(handle->sp, buffer, 1, CC_SYNC_TIMEOUT);
             if (ret > 0)
             {
                 if (buffer[0] == CC_SYNC_BYTE)
@@ -95,7 +97,7 @@ static void* cc_parser(void *arg)
         // waiting header
         else if(handle->state == WAITING_HEADER)
         {
-            ret = sp_blocking_read(handle->sp, buffer, CC_HEADER_SIZE, 0);
+            ret = sp_blocking_read(handle->sp, buffer, CC_HEADER_SIZE, CC_HEADER_TIMEOUT);
             if (ret == CC_HEADER_SIZE)
             {
                 // verify header checksum
@@ -243,8 +245,12 @@ void cc_send(cc_handle_t *handle, cc_msg_t *msg)
         buffer[3] = (msg->data_size >> 8) & 0xFF;
         buffer[4] = crc8(msg->data, msg->data_size);
         buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
+
+        while (handle->sending);
+        handle->sending = 1;
         sp_nonblocking_write(handle->sp, &sync_byte, 1);
         sp_nonblocking_write(handle->sp, buffer, CC_HEADER_SIZE);
         sp_nonblocking_write(handle->sp, msg->data, msg->data_size);
+        handle->sending = 0;
     }
 }
