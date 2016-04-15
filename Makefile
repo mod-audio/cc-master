@@ -3,15 +3,18 @@ CC ?= gcc
 
 # source directory and output name
 SRC_DIR = src
-OUTPUT = control-chain
+OUTPUT = control-chain.so
+
+# flags for debugging
+ifeq ($(DEBUG), 1)
+CFLAGS += -O0 -g -DDEBUG
+else
+CFLAGS += -O3
+endif
 
 # flags
-ifeq ($(DEBUG), 1)
-CFLAGS += -O0 -Wall -Wextra -g -DDEBUG
-else
-CFLAGS += -O3 -Wall -Wextra
-endif
-LDFLAGS +=
+CFLAGS += -Wall -Wextra -fPIC
+LDFLAGS += -shared
 
 # libraries
 LIBS = -lserialport -lpthread
