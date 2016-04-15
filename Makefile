@@ -6,7 +6,11 @@ SRC_DIR = src
 OUTPUT = control-chain
 
 # flags
+ifeq ($(DEBUG), 1)
+CFLAGS += -O0 -Wall -Wextra -g -DDEBUG
+else
 CFLAGS += -O3 -Wall -Wextra
+endif
 LDFLAGS +=
 
 # libraries
