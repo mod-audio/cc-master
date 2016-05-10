@@ -3,18 +3,8 @@
 #define CONTROL_CHAIN_H
 
 #include <stdint.h>
-#include <pthread.h>
-#include <libserialport.h>
 
-typedef struct cc_handle_t
-{
-    int state;
-    struct sp_port *sp;
-    uint8_t data_crc;
-    void (*recv_callback)(void *arg);
-    pthread_t recv_thread;
-    volatile int running, sending;
-} cc_handle_t;
+typedef struct cc_handle_t cc_handle_t;
 
 typedef struct cc_msg_t
 {

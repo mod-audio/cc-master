@@ -1,6 +1,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <libserialport.h>
 #include "control_chain.h"
 
 #define CC_SERIAL_BUFFER_SIZE   2048
@@ -9,6 +11,15 @@
 #define CC_SYNC_TIMEOUT         100
 #define CC_HEADER_TIMEOUT       10
 #define CC_DATA_TIMEOUT         10
+
+struct cc_handle_t {
+    int state;
+    struct sp_port *sp;
+    uint8_t data_crc;
+    void (*recv_callback)(void *arg);
+    pthread_t recv_thread;
+    volatile int running, sending;
+};
 
 // fields names and sizes in bytes
 // DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)

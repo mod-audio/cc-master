@@ -29,7 +29,7 @@ int main(void)
     cc_set_recv_callback(handle, cc_callback);
     printf("thread running\n");
 
-    while (handle->running);
+    //while (handle->running);
 
     cc_finish(handle);
 
