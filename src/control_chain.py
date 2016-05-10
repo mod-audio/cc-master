@@ -11,12 +11,6 @@ class ControlChainMsg(Structure):
         ("data", POINTER(c_uint8)),
     ]
 
-class ControlChainHolder(Structure):
-    _fields_ = [
-        ("handler", c_void_p),
-        ("msg", POINTER(ControlChainMsg)),
-    ]
-
 lib = cdll.LoadLibrary("../control-chain.so")
 
 # cc_handle_t* cc_init(const char *port_name, int baudrate);
@@ -28,7 +22,7 @@ lib.cc_finish.argtypes = [c_void_p]
 lib.cc_finish.restype = None
 
 # void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
-CBFUNC = CFUNCTYPE(None, POINTER(ControlChainHolder))
+CBFUNC = CFUNCTYPE(None, POINTER(ControlChainMsg))
 lib.cc_set_recv_callback.argtypes = [c_void_p, CBFUNC]
 lib.cc_set_recv_callback.restype = None
 
@@ -58,12 +52,12 @@ class ControlChain(object):
 
     def _parser(self, arg):
         print('callback')
-        print(arg.contents.msg.contents.dev_address)
-        print(arg.contents.msg.contents.command)
-        print(arg.contents.msg.contents.data_size)
-        print(arg.contents.msg.contents.data)
-        print(arg.contents.msg.contents.data[0])
-        print(arg.contents.msg.contents.data[1])
+        print(arg.contents.dev_address)
+        print(arg.contents.command)
+        print(arg.contents.data_size)
+        print(arg.contents.data)
+        print(arg.contents.data[0])
+        print(arg.contents.data[1])
 
 ### test
 

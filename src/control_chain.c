@@ -137,10 +137,7 @@ static void* cc_parser(void *arg)
                 {
                     if (handle->recv_callback)
                     {
-                        cc_holder_t holder;
-                        holder.handle = handle;
-                        holder.msg = &msg;
-                        handle->recv_callback(&holder);
+                        handle->recv_callback(&msg);
                     }
                 }
             }

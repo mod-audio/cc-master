@@ -7,9 +7,7 @@
 
 void cc_callback(void *arg)
 {
-    cc_holder_t *holder = (cc_holder_t *) arg;
-    cc_handle_t *handle = holder->handle;
-    cc_msg_t *msg = holder->msg;
+    cc_msg_t *msg = arg;
 
     printf("device address: %i, command: %i, data size: %i\n", msg->dev_address, msg->command, msg->data_size);
     for (int i = 0; i < msg->data_size; i++)
@@ -17,9 +15,6 @@ void cc_callback(void *arg)
         printf("%02X ", msg->data[i]);
     }
     if (msg->data_size) printf("\n");
-
-    cc_send(handle, msg);
-    handle->running = 0;
 }
 
 int main(void)
