@@ -8,7 +8,7 @@ class ControlChainMsg(Structure):
         ("dev_address", c_ubyte),
         ("command", c_ubyte),
         ("data_size", c_ushort),
-        ("data", c_void_p),
+        ("data", POINTER(c_uint8)),
     ]
 
 class ControlChainHolder(Structure):
@@ -40,24 +40,31 @@ class ControlChain(object):
     def __init__(self, serial_port, baudrate):
         self.obj = lib.cc_init(serial_port.encode('utf-8'), baudrate)
 
+        if self.obj == None:
+            raise NameError('Cannot create ControlChain object, check serial port')
+
+        self.recv_callback = CBFUNC(self._parser)
+        lib.cc_set_recv_callback(self.obj, self.recv_callback)
+
     def __del__(self):
         lib.cc_finish(self.obj)
 
-    def set_recv_callback(self, callback):
-        self.recv_callback = CBFUNC(callback)
-        lib.cc_set_recv_callback(self.obj, self.recv_callback)
-
     def send(self, msg):
-        lib.cc_send(self.obj, msg)
+        a = ARRAY(c_uint8, msg[2])
+        d = a(*msg[3])
+        msg[3] = d
+        x = ControlChainMsg(*msg)
+        lib.cc_send(self.obj, pointer(x))
 
+    def _parser(self, arg):
+        print('callback')
+        print(arg.contents.msg.contents.dev_address)
+        print(arg.contents.msg.contents.command)
+        print(arg.contents.msg.contents.data_size)
+        print(arg.contents.msg.contents.data)
+        print(arg.contents.msg.contents.data[0])
+        print(arg.contents.msg.contents.data[1])
 
 ### test
 
-def cb(arg):
-    print('callback')
-    print(arg.contents.msg.contents.dev_address)
-    print(arg.contents.msg.contents.command)
-    print(arg.contents.msg.contents.data_size)
-
 cc = ControlChain('/dev/ttyACM0', 115200)
-cc.set_recv_callback(cb)
