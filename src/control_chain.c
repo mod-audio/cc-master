@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <errno.h>
 #include <libserialport.h>
 #include "control_chain.h"
 
 #define CC_SERIAL_BUFFER_SIZE   2048
 #define CC_SYNC_BYTE            0xA7
 #define CC_HEADER_SIZE          6
-#define CC_SYNC_TIMEOUT         100
+#define CC_SYNC_TIMEOUT         500
 #define CC_HEADER_TIMEOUT       10
 #define CC_DATA_TIMEOUT         10
 
@@ -18,7 +19,7 @@ struct cc_handle_t {
     uint8_t data_crc;
     void (*recv_callback)(void *arg);
     pthread_t recv_thread;
-    volatile int running, sending;
+    pthread_mutex_t running, sending;
 };
 
 // fields names and sizes in bytes
@@ -74,7 +75,7 @@ uint8_t crc8(uint8_t *data, size_t len)
     return crc ^ 0xff;
 }
 
-static void* cc_parser(void *arg)
+static void* parser(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
 
@@ -87,9 +88,7 @@ static void* cc_parser(void *arg)
     if (msg.data == NULL)
         return NULL;
 
-    handle->running = 1;
-
-    while (handle->running)
+    while (pthread_mutex_trylock(&handle->running) == EBUSY)
     {
         // waiting sync byte
         if (handle->state == WAITING_SYNCING)
@@ -173,6 +172,8 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // init handle with null data
     memset(handle, 0, sizeof (cc_handle_t));
 
+    //////// serial setup
+
     // get serial port
     enum sp_return ret;
     ret = sp_get_port_by_name(port_name, &handle->sp);
@@ -193,6 +194,13 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // configure serial port
     sp_set_baudrate(handle->sp, baudrate);
 
+    //////// thread setup
+
+    // create mutexes
+    pthread_mutex_init(&handle->sending, NULL);
+    pthread_mutex_init(&handle->running, NULL);
+    pthread_mutex_lock(&handle->running);
+
     // set thread attributes
     pthread_attr_t attributes;
     pthread_attr_init(&attributes);
@@ -201,7 +209,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     //pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
 
     // create thread
-    int ret_val = pthread_create(&handle->recv_thread, &attributes, cc_parser, (void*) handle);
+    int ret_val = pthread_create(&handle->recv_thread, &attributes, parser, (void*) handle);
     pthread_attr_destroy(&attributes);
 
     if (ret_val == 0)
@@ -218,7 +226,7 @@ void cc_finish(cc_handle_t *handle)
     {
         if (handle->recv_thread)
         {
-            handle->running = 0;
+            pthread_mutex_unlock(&handle->running);
             pthread_join(handle->recv_thread, NULL);
         }
 
@@ -254,11 +262,10 @@ void cc_send(cc_handle_t *handle, cc_msg_t *msg)
         buffer[4] = crc8(msg->data, msg->data_size);
         buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
 
-        while (handle->sending);
-        handle->sending = 1;
+        while (pthread_mutex_trylock(&handle->sending) == EBUSY);
         sp_nonblocking_write(handle->sp, &sync_byte, 1);
         sp_nonblocking_write(handle->sp, buffer, CC_HEADER_SIZE);
         sp_nonblocking_write(handle->sp, msg->data, msg->data_size);
-        handle->sending = 0;
+        pthread_mutex_unlock(&handle->sending);
     }
 }
