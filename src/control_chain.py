@@ -41,7 +41,10 @@ class ControlChain(object):
         lib.cc_set_recv_callback(self.obj, self.recv_callback)
 
     def __del__(self):
-        lib.cc_finish(self.obj)
+        try:
+            lib.cc_finish(self.obj)
+        except NameError:
+            pass
 
     def send(self, msg):
         a = ARRAY(c_uint8, msg[2])
