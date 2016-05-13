@@ -11,7 +11,7 @@ class ControlChainMsg(Structure):
         ("data", POINTER(c_uint8)),
     ]
 
-lib = cdll.LoadLibrary("../control-chain.so")
+lib = cdll.LoadLibrary("../libcontrolchain.so")
 
 # cc_handle_t* cc_init(const char *port_name, int baudrate);
 lib.cc_init.argtypes = [c_char_p, c_int]
