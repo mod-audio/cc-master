@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "control_chain.h"
 
 #define SERIAL_PORT         "/dev/ttyACM0"
 #define SERIAL_BAUDRATE     115200
+
+volatile int msg_ok;
 
 void cc_callback(void *arg)
 {
@@ -15,6 +18,7 @@ void cc_callback(void *arg)
         printf("%02X ", msg->data[i]);
     }
     if (msg->data_size) printf("\n");
+    msg_ok = 1;
 }
 
 int main(void)
@@ -29,7 +33,8 @@ int main(void)
     cc_set_recv_callback(handle, cc_callback);
     printf("thread running\n");
 
-    //while (handle->running);
+    sleep(5);
+    //while (!msg_ok);
 
     cc_finish(handle);
 
