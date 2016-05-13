@@ -3,22 +3,25 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <unistd.h>
 #include <libserialport.h>
 #include "control_chain.h"
 
 #define CC_SERIAL_BUFFER_SIZE   2048
 #define CC_SYNC_BYTE            0xA7
-#define CC_HEADER_SIZE          6
-#define CC_SYNC_TIMEOUT         500
-#define CC_HEADER_TIMEOUT       10
-#define CC_DATA_TIMEOUT         10
+#define CC_HEADER_SIZE          6       // in bytes
+#define CC_SYNC_TIMEOUT         500     // in ms
+#define CC_HEADER_TIMEOUT       10      // in ms
+#define CC_DATA_TIMEOUT         10      // in ms
+
+#define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 
 struct cc_handle_t {
     int state;
     struct sp_port *sp;
     uint8_t data_crc;
     void (*recv_callback)(void *arg);
-    pthread_t recv_thread;
+    pthread_t parser_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
 };
 
@@ -75,6 +78,21 @@ uint8_t crc8(uint8_t *data, size_t len)
     return crc ^ 0xff;
 }
 
+static int running(cc_handle_t *handle)
+{
+    switch (pthread_mutex_trylock(&handle->running))
+    {
+        case 0:
+            pthread_mutex_unlock(&handle->running);
+            return 0;
+
+        case EBUSY:
+            return 1;
+    }
+
+    return 0;
+}
+
 static void* parser(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
@@ -88,7 +106,7 @@ static void* parser(void *arg)
     if (msg.data == NULL)
         return NULL;
 
-    while (pthread_mutex_trylock(&handle->running) == EBUSY)
+    while (running(handle))
     {
         // waiting sync byte
         if (handle->state == WAITING_SYNCING)
@@ -162,6 +180,28 @@ static void* parser(void *arg)
     return NULL;
 }
 
+static void* chain_sync(void *arg)
+{
+    cc_handle_t *handle = (cc_handle_t *) arg;
+
+    cc_msg_t chain_sync_msg;
+    chain_sync_msg.dev_address = 0;
+    chain_sync_msg.command = CC_CMD_CHAIN_SYNC;
+    chain_sync_msg.data_size = 0;
+    chain_sync_msg.data = 0;
+
+    while (running(handle))
+    {
+        // take your time
+        usleep(CC_CHAIN_SYNC_INTERVAL);
+
+        // send chain_sync message
+        cc_send(handle, &chain_sync_msg);
+    }
+
+    return NULL;
+}
+
 cc_handle_t* cc_init(const char *port_name, int baudrate)
 {
     cc_handle_t *handle = (cc_handle_t *) malloc(sizeof (cc_handle_t));
@@ -194,12 +234,12 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // configure serial port
     sp_set_baudrate(handle->sp, baudrate);
 
-    //////// thread setup
-
     // create mutexes
     pthread_mutex_init(&handle->sending, NULL);
     pthread_mutex_init(&handle->running, NULL);
     pthread_mutex_lock(&handle->running);
+
+    //////// parser thread setup
 
     // set thread attributes
     pthread_attr_t attributes;
@@ -209,26 +249,42 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     //pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
 
     // create thread
-    int ret_val = pthread_create(&handle->recv_thread, &attributes, parser, (void*) handle);
+    int ret_val = pthread_create(&handle->parser_thread, &attributes, parser, (void*) handle);
+
+    if (ret_val != 0)
+    {
+        cc_finish(handle);
+        return NULL;
+    }
+
+    //////// chain sync thread setup
+
+    // use same attributes as before
+
+    // create thread
+    ret_val = pthread_create(&handle->chain_sync_thread, &attributes, chain_sync, (void*) handle);
     pthread_attr_destroy(&attributes);
 
-    if (ret_val == 0)
-        return handle;
+    if (ret_val != 0)
+    {
+        cc_finish(handle);
+        return NULL;
+    }
 
-    cc_finish(handle);
-
-    return NULL;
+    return handle;
 }
 
 void cc_finish(cc_handle_t *handle)
 {
     if (handle)
     {
-        if (handle->recv_thread)
-        {
-            pthread_mutex_unlock(&handle->running);
-            pthread_join(handle->recv_thread, NULL);
-        }
+        pthread_mutex_unlock(&handle->running);
+
+        if (handle->parser_thread)
+            pthread_join(handle->parser_thread, NULL);
+
+        if (handle->chain_sync_thread)
+            pthread_join(handle->chain_sync_thread, NULL);
 
         if (handle->sp)
         {

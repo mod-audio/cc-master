@@ -14,6 +14,8 @@ typedef struct cc_msg_t
     uint8_t *data;
 } cc_msg_t;
 
+enum cc_cmd_t {CC_CMD_CHAIN_SYNC};
+
 cc_handle_t* cc_init(const char *port_name, int baudrate);
 void cc_finish(cc_handle_t *handle);
 
