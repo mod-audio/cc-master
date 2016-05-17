@@ -30,6 +30,9 @@
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 
+// from: http://stackoverflow.com/a/3553321/1283578
+#define MEMBER_SIZE(type, member)   sizeof(((type *)0)->member)
+
 
 /*
 ************************************************************************************************************************
@@ -44,6 +47,12 @@
 ************************************************************************************************************************
 */
 
+// receiver status
+enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA};
+
+// device status
+enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR};
+
 struct cc_handle_t {
     int state;
     struct sp_port *sp;
@@ -51,12 +60,12 @@ struct cc_handle_t {
     void (*recv_callback)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
+    cc_msg_t *msg;
 };
 
-// fields names and sizes in bytes
-// DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)
-
-enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA};
+typedef struct cc_device_t {
+    int status;
+} cc_device_t;
 
 
 /*
@@ -64,6 +73,8 @@ enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA};
 *       INTERNAL GLOBAL VARIABLES
 ************************************************************************************************************************
 */
+
+static cc_device_t g_devices[CC_MAX_DEVICES];
 
 
 /*
@@ -87,6 +98,35 @@ static int running(cc_handle_t *handle)
     return 0;
 }
 
+void handshake_add_dev(cc_handle_t *handle)
+{
+    cc_msg_t *msg = handle->msg;
+
+    // get next free device
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        if (g_devices[i].status == DEV_WAITING_HANDSHAKE)
+        {
+            msg->dev_address = i + 1;
+            g_devices[i].status++;
+            cc_send(handle, msg);
+            break;
+        }
+    }
+}
+
+static void parser(cc_handle_t *handle)
+{
+    cc_msg_t *msg = handle->msg;
+
+    switch (msg->command)
+    {
+        case CC_CMD_HANDSHAKE:
+            handshake_add_dev(handle);
+            break;
+    }
+}
+
 static void* receiver(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
@@ -99,6 +139,8 @@ static void* receiver(void *arg)
     msg.data = (uint8_t *) malloc(CC_SERIAL_BUFFER_SIZE);
     if (msg.data == NULL)
         return NULL;
+
+    handle->msg = &msg;
 
     while (running(handle))
     {
@@ -157,10 +199,7 @@ static void* receiver(void *arg)
                 // verify data checksum
                 if (crc8(msg.data, msg.data_size) == handle->data_crc)
                 {
-                    if (handle->recv_callback)
-                    {
-                        handle->recv_callback(&msg);
-                    }
+                    parser(handle);
                 }
             }
 
