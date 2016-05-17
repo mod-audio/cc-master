@@ -49,7 +49,7 @@ struct cc_handle_t {
     struct sp_port *sp;
     uint8_t data_crc;
     void (*recv_callback)(void *arg);
-    pthread_t parser_thread, chain_sync_thread;
+    pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
 };
 
@@ -87,7 +87,7 @@ static int running(cc_handle_t *handle)
     return 0;
 }
 
-static void* parser(void *arg)
+static void* receiver(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
 
@@ -240,7 +240,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     pthread_mutex_init(&handle->running, NULL);
     pthread_mutex_lock(&handle->running);
 
-    //////// parser thread setup
+    //////// receiver thread setup
 
     // set thread attributes
     pthread_attr_t attributes;
@@ -250,7 +250,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     //pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
 
     // create thread
-    int ret_val = pthread_create(&handle->parser_thread, &attributes, parser, (void*) handle);
+    int ret_val = pthread_create(&handle->receiver_thread, &attributes, receiver, (void*) handle);
 
     if (ret_val != 0)
     {
@@ -281,8 +281,8 @@ void cc_finish(cc_handle_t *handle)
     {
         pthread_mutex_unlock(&handle->running);
 
-        if (handle->parser_thread)
-            pthread_join(handle->parser_thread, NULL);
+        if (handle->receiver_thread)
+            pthread_join(handle->receiver_thread, NULL);
 
         if (handle->chain_sync_thread)
             pthread_join(handle->chain_sync_thread, NULL);
