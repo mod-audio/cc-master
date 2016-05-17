@@ -1,6 +1,6 @@
 
-#ifndef CONTROL_CHAIN_H
-#define CONTROL_CHAIN_H
+#ifndef UTILS_H
+#define UTILS_H
 
 /*
 ************************************************************************************************************************
@@ -31,18 +31,6 @@
 ************************************************************************************************************************
 */
 
-typedef struct cc_handle_t cc_handle_t;
-
-typedef struct cc_msg_t
-{
-    uint8_t dev_address;
-    uint8_t command;
-    uint16_t data_size;
-    uint8_t *data;
-} cc_msg_t;
-
-enum cc_cmd_t {CC_CMD_CHAIN_SYNC};
-
 
 /*
 ************************************************************************************************************************
@@ -50,11 +38,13 @@ enum cc_cmd_t {CC_CMD_CHAIN_SYNC};
 ************************************************************************************************************************
 */
 
-cc_handle_t* cc_init(const char *port_name, int baudrate);
-void cc_finish(cc_handle_t *handle);
-
-void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
-void cc_send(cc_handle_t *handle, cc_msg_t *msg);
+/*
+ http://stackoverflow.com/a/15171925/1283578
+ 8-bit CRC with polynomial x^8+x^6+x^3+x^2+1, 0x14D.
+ Chosen based on Koopman, et al. (0xA6 in his notation = 0x14D >> 1):
+ http://www.ece.cmu.edu/~koopman/roses/dsn04/koopman04_crc_poly_embedded.pdf
+*/
+uint8_t crc8(uint8_t *data, uint32_t len);
 
 
 /*
