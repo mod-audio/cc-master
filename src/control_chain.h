@@ -47,14 +47,6 @@ typedef struct cc_msg_t
     uint8_t *data;
 } cc_msg_t;
 
-typedef struct cc_handshake_t {
-    uint16_t random_id;
-} cc_handshake_mod_t, cc_handshake_dev_t;
-
-typedef struct cc_dev_desc_dev_t {
-    string_t label;
-} cc_dev_desc_dev_t;
-
 
 /*
 ************************************************************************************************************************
