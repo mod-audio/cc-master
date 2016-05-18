@@ -13,6 +13,7 @@
 #include <libserialport.h>
 
 #include "utils.h"
+#include "device.h"
 #include "control_chain.h"
 
 /*
@@ -29,9 +30,6 @@
 #define CC_DATA_TIMEOUT         10      // in ms
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
-
-// from: http://stackoverflow.com/a/3553321/1283578
-#define MEMBER_SIZE(type, member)   sizeof(((type *)0)->member)
 
 
 /*
@@ -50,9 +48,6 @@
 // receiver status
 enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA};
 
-// device status
-enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR};
-
 struct cc_handle_t {
     int state;
     struct sp_port *sp;
@@ -63,18 +58,12 @@ struct cc_handle_t {
     cc_msg_t *msg;
 };
 
-typedef struct cc_device_t {
-    int status;
-} cc_device_t;
-
 
 /*
 ************************************************************************************************************************
 *       INTERNAL GLOBAL VARIABLES
 ************************************************************************************************************************
 */
-
-static cc_device_t g_devices[CC_MAX_DEVICES];
 
 
 /*
@@ -98,31 +87,28 @@ static int running(cc_handle_t *handle)
     return 0;
 }
 
-void handshake_add_dev(cc_handle_t *handle)
-{
-    cc_msg_t *msg = handle->msg;
-
-    // get next free device
-    for (int i = 0; i < CC_MAX_DEVICES; i++)
-    {
-        if (g_devices[i].status == DEV_WAITING_HANDSHAKE)
-        {
-            msg->dev_address = i + 1;
-            g_devices[i].status++;
-            cc_send(handle, msg);
-            break;
-        }
-    }
-}
-
 static void parser(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg;
+    int id;
 
     switch (msg->command)
     {
         case CC_CMD_HANDSHAKE:
-            handshake_add_dev(handle);
+            id = device_handshake();
+            if (id >= 0)
+            {
+                msg->dev_address = id;
+                cc_send(handle, msg);
+            }
+            break;
+
+        case CC_CMD_DEV_DESCRIPTOR:
+            if (device_add(msg) >= 0)
+            {
+                msg->data_size = 0;
+                cc_send(handle, msg);
+            }
             break;
     }
 }

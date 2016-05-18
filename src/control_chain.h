@@ -9,6 +9,7 @@
 */
 
 #include <stdint.h>
+#include "utils.h"
 
 
 /*
@@ -24,8 +25,6 @@
 ************************************************************************************************************************
 */
 
-#define CC_MAX_DEVICES  8
-
 
 /*
 ************************************************************************************************************************
@@ -36,7 +35,7 @@
 // fields names and sizes in bytes
 // DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)
 
-enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE};
+enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR};
 
 typedef struct cc_handle_t cc_handle_t;
 
@@ -48,9 +47,13 @@ typedef struct cc_msg_t
     uint8_t *data;
 } cc_msg_t;
 
-typedef struct cc_handshake_dev_t {
+typedef struct cc_handshake_t {
     uint16_t random_id;
 } cc_handshake_mod_t, cc_handshake_dev_t;
+
+typedef struct cc_dev_desc_dev_t {
+    string_t label;
+} cc_dev_desc_dev_t;
 
 
 /*
