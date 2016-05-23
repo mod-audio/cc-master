@@ -95,7 +95,7 @@ static void parser(cc_handle_t *handle)
     switch (msg->command)
     {
         case CC_CMD_HANDSHAKE:
-            id = device_handshake();
+            id = cc_device_handshake();
             if (id >= 0)
             {
                 msg->dev_address = id;
@@ -104,7 +104,7 @@ static void parser(cc_handle_t *handle)
             break;
 
         case CC_CMD_DEV_DESCRIPTOR:
-            if (device_add(msg) >= 0)
+            if (cc_device_add(msg) >= 0)
             {
                 msg->data_size = 0;
                 cc_send(handle, msg);

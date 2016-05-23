@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "device.h"
+#include "actuator.h"
 
 
 /*
@@ -37,10 +38,6 @@ typedef struct string_t {
     uint8_t size;
     char *text;
 } string_t;
-
-typedef struct cc_actuator_t {
-    uint8_t id;
-} cc_actuator_t;
 
 typedef struct cc_dev_descriptor_t {
     string_t *label;
@@ -103,23 +100,6 @@ void string_destroy(string_t *str)
     }
 }
 
-cc_actuator_t *actuator_create(const uint8_t *data, uint32_t *written)
-{
-    cc_actuator_t *actuator = malloc(sizeof(cc_actuator_t));
-    actuator->id = *data++;
-
-    *written = 1;
-    return actuator;
-}
-
-void actuator_destroy(cc_actuator_t *actuator)
-{
-    if (actuator)
-    {
-        free(actuator);
-    }
-}
-
 
 /*
 ************************************************************************************************************************
@@ -127,7 +107,7 @@ void actuator_destroy(cc_actuator_t *actuator)
 ************************************************************************************************************************
 */
 
-int device_handshake(void)
+int cc_device_handshake(void)
 {
     // get next free device
     for (int i = 0; i < CC_MAX_DEVICES; i++)
@@ -143,7 +123,7 @@ int device_handshake(void)
     return -1;
 }
 
-int device_add(cc_msg_t *msg)
+int cc_device_add(cc_msg_t *msg)
 {
     uint8_t *pdata = msg->data;
     int idx = msg->dev_address - 1;
@@ -170,7 +150,7 @@ int device_add(cc_msg_t *msg)
         // create each actuator
         for (int i = 0; i < desc->actuators_count; i++)
         {
-            desc->actuators[i] = actuator_create(pdata, &n);
+            desc->actuators[i] = cc_actuator_create(pdata, &n);
             pdata += n;
         }
     }
