@@ -1,6 +1,7 @@
 
-#ifndef CONTROL_CHAIN_H
-#define CONTROL_CHAIN_H
+#ifndef ASSIGNMENT_H
+#define ASSIGNMENT_H
+
 
 /*
 ************************************************************************************************************************
@@ -9,8 +10,6 @@
 */
 
 #include <stdint.h>
-#include "utils.h"
-#include "assignment.h"
 
 
 /*
@@ -33,20 +32,10 @@
 ************************************************************************************************************************
 */
 
-// fields names and sizes in bytes
-// DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)
-
-enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT, CC_CMD_UNASSIGNMENT};
-
-typedef struct cc_handle_t cc_handle_t;
-
-typedef struct cc_msg_t
-{
-    uint8_t dev_address;
-    uint8_t command;
-    uint16_t data_size;
-    uint8_t *data;
-} cc_msg_t;
+typedef struct cc_assignment_t {
+    int device_id;
+    int actuator_id;
+} cc_assignment_t;
 
 
 /*
@@ -55,14 +44,8 @@ typedef struct cc_msg_t
 ************************************************************************************************************************
 */
 
-cc_handle_t* cc_init(const char *port_name, int baudrate);
-void cc_finish(cc_handle_t *handle);
-
-void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
-void cc_send(cc_handle_t *handle, const cc_msg_t *msg);
-
-int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
-void cc_unassignment(cc_handle_t *handle, int assignment_id);
+int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *written);
+void cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written);
 
 
 /*

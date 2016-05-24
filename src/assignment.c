@@ -1,81 +1,99 @@
 
-#ifndef CONTROL_CHAIN_H
-#define CONTROL_CHAIN_H
-
 /*
 ************************************************************************************************************************
 *       INCLUDE FILES
 ************************************************************************************************************************
 */
 
-#include <stdint.h>
-#include "utils.h"
 #include "assignment.h"
 
 
 /*
 ************************************************************************************************************************
-*       MACROS
+*       INTERNAL MACROS
+************************************************************************************************************************
+*/
+
+#define CC_MAX_ASSIGNMENTS  1000
+
+
+/*
+************************************************************************************************************************
+*       INTERNAL CONSTANTS
 ************************************************************************************************************************
 */
 
 
 /*
 ************************************************************************************************************************
-*       CONFIGURATION
+*       INTERNAL DATA TYPES
+************************************************************************************************************************
+*/
+
+struct cc_assignment_key_t {
+    int device_id, actuator_id;
+};
+
+
+/*
+************************************************************************************************************************
+*       INTERNAL GLOBAL VARIABLES
+************************************************************************************************************************
+*/
+
+static struct cc_assignment_key_t g_assignments[CC_MAX_ASSIGNMENTS];
+
+
+/*
+************************************************************************************************************************
+*       INTERNAL FUNCTIONS
 ************************************************************************************************************************
 */
 
 
 /*
 ************************************************************************************************************************
-*       DATA TYPES
+*       GLOBAL FUNCTIONS
 ************************************************************************************************************************
 */
 
-// fields names and sizes in bytes
-// DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA_CHECKSUM (1), HEADER_CHECKSUM (1), DATA (N)
-
-enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT, CC_CMD_UNASSIGNMENT};
-
-typedef struct cc_handle_t cc_handle_t;
-
-typedef struct cc_msg_t
+int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *written)
 {
-    uint8_t dev_address;
-    uint8_t command;
-    uint16_t data_size;
-    uint8_t *data;
-} cc_msg_t;
+    *written = 0;
 
+    // get next free assignment
+    int assignment_id = -1;
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (g_assignments[i].device_id == 0)
+        {
+            g_assignments[i].device_id = assignment->device_id;
+            g_assignments[i].actuator_id = assignment->actuator_id;
+            assignment_id = i;
+            break;
+        }
+    }
 
-/*
-************************************************************************************************************************
-*       FUNCTION PROTOTYPES
-************************************************************************************************************************
-*/
+    // no free assignment available
+    if (assignment_id < 0)
+        return -1;
 
-cc_handle_t* cc_init(const char *port_name, int baudrate);
-void cc_finish(cc_handle_t *handle);
+    int i = 0;
+    buffer[i++] = assignment->actuator_id;
 
-void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
-void cc_send(cc_handle_t *handle, const cc_msg_t *msg);
+    *written = i;
 
-int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
-void cc_unassignment(cc_handle_t *handle, int assignment_id);
+    return assignment_id;
+}
 
+void cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written)
+{
+    // make this assignment id available again
+    g_assignments[assignment_id].device_id = 0;
 
-/*
-************************************************************************************************************************
-*   CONFIGURATION ERRORS
-************************************************************************************************************************
-*/
-
-
-/*
-************************************************************************************************************************
-*   END HEADER
-************************************************************************************************************************
-*/
-
-#endif
+    if (buffer)
+    {
+        buffer[0] = g_assignments[assignment_id].actuator_id;
+        *written = 1;
+    }
+}

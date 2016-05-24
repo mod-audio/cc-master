@@ -31,7 +31,7 @@
 #define CC_DATA_TIMEOUT         10      // in ms
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
-#define CC_DEV_DESC_TIMEOUT     10      // in ms
+#define CC_RESPONSE_TIMEOUT     10      // in ms
 
 
 /*
@@ -75,6 +75,22 @@ struct cc_handle_t {
 ************************************************************************************************************************
 */
 
+static int send_and_wait(cc_handle_t *handle, const cc_msg_t *msg)
+{
+    cc_send(handle, msg);
+
+    // set timeout
+    struct timespec timeout;
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    int ns = timeout.tv_nsec + (CC_RESPONSE_TIMEOUT * 1000000);
+    timeout.tv_sec += (1000000000 / ns);
+    timeout.tv_nsec += (1000000000 % ns);
+
+    // only one request must be done per time
+    // because all devices share the same serial line
+    return sem_timedwait(&handle->waiting_response, &timeout);
+}
+
 static int running(cc_handle_t *handle)
 {
     switch (pthread_mutex_trylock(&handle->running))
@@ -109,6 +125,11 @@ static void parser(cc_handle_t *handle)
         case CC_CMD_DEV_DESCRIPTOR:
             sem_post(&handle->waiting_response);
             cc_device_add(msg);
+            break;
+
+        case CC_CMD_ASSIGNMENT:
+        case CC_CMD_UNASSIGNMENT:
+            sem_post(&handle->waiting_response);
             break;
     }
 }
@@ -229,21 +250,9 @@ static void* chain_sync(void *arg)
             dev_desc_msg.dev_address = dev_id;
 
             // request device descriptor
-            cc_send(handle, &dev_desc_msg);
-
-            // set timeout
-            struct timespec timeout;
-            clock_gettime(CLOCK_REALTIME, &timeout);
-            int ns = timeout.tv_nsec + (CC_DEV_DESC_TIMEOUT * 1000000);
-            timeout.tv_sec += (1000000000 / ns);
-            timeout.tv_nsec += (1000000000 % ns);
-
-            // only one descriptor must be requested per time
-            // because all devices share the same serial line
-            if (sem_timedwait(&handle->waiting_response, &timeout))
+            if (send_and_wait(handle, &dev_desc_msg))
             {
-                if (errno == ETIMEDOUT)
-                    cc_device_remove(dev_id);
+                cc_device_remove(dev_id);
             }
         }
 
@@ -387,4 +396,41 @@ void cc_send(cc_handle_t *handle, const cc_msg_t *msg)
         sp_nonblocking_write(handle->sp, msg->data, msg->data_size);
         pthread_mutex_unlock(&handle->sending);
     }
+}
+
+int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
+{
+    uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
+
+    cc_msg_t msg;
+    msg.dev_address = assignment->device_id;
+    msg.command = CC_CMD_ASSIGNMENT;
+    msg.data = buffer;
+
+    int id = cc_assignment_add(assignment, msg.data, &msg.data_size);
+    if (id >= 0)
+    {
+        if (send_and_wait(handle, &msg))
+        {
+            cc_assignment_remove(id, NULL, NULL);
+            return -1;
+        }
+
+        return id;
+    }
+
+    return -1;
+}
+
+void cc_unassignment(cc_handle_t *handle, int assignment_id)
+{
+    uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
+
+    cc_msg_t msg;
+    msg.dev_address = assignment_id;
+    msg.command = CC_CMD_UNASSIGNMENT;
+    msg.data = buffer;
+
+    cc_assignment_remove(assignment_id, msg.data, &msg.data_size);
+    send_and_wait(handle, &msg);
 }
