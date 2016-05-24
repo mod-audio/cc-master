@@ -157,3 +157,25 @@ int cc_device_add(cc_msg_t *msg)
 
     return -1;
 }
+
+void cc_device_remove(int device_id)
+{
+    g_devices[device_id].status = DEV_WAITING_HANDSHAKE;
+}
+
+int* cc_device_missing_descriptors(void)
+{
+    static int missing_descriptors[CC_MAX_DEVICES+1];
+
+    int j = 0;
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        if (g_devices[i].status == DEV_WAITING_DESCRIPTOR)
+        {
+            missing_descriptors[j++] = g_devices[i].id;
+        }
+    }
+
+    missing_descriptors[j] = 0;
+    return missing_descriptors;
+}

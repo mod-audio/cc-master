@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <unistd.h>
+#include <semaphore.h>
 #include <libserialport.h>
 
 #include "utils.h"
@@ -30,6 +31,7 @@
 #define CC_DATA_TIMEOUT         10      // in ms
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
+#define CC_DEV_DESC_TIMEOUT     10      // in ms
 
 
 /*
@@ -55,6 +57,7 @@ struct cc_handle_t {
     void (*recv_callback)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
+    sem_t waiting_response;
     cc_msg_t *msg;
 };
 
@@ -104,11 +107,7 @@ static void parser(cc_handle_t *handle)
             break;
 
         case CC_CMD_DEV_DESCRIPTOR:
-            if (cc_device_add(msg) >= 0)
-            {
-                msg->data_size = 0;
-                cc_send(handle, msg);
-            }
+            cc_device_add(msg);
             break;
     }
 }
@@ -203,18 +202,52 @@ static void* chain_sync(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
 
-    cc_msg_t chain_sync_msg;
-    chain_sync_msg.dev_address = 0;
-    chain_sync_msg.command = CC_CMD_CHAIN_SYNC;
-    chain_sync_msg.data_size = 0;
-    chain_sync_msg.data = 0;
+    const cc_msg_t chain_sync_msg = {
+        .dev_address = 0,
+        .command = CC_CMD_CHAIN_SYNC,
+        .data_size = 0,
+        .data = 0
+    };
+
+    cc_msg_t dev_desc_msg = {
+        .command = CC_CMD_DEV_DESCRIPTOR,
+        .data_size = 0,
+        .data = 0
+    };
 
     while (running(handle))
     {
-        // take your time
+        // period between sync messages
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
-        // send chain_sync message
+        // request all missing device descriptors
+        int *missing_desc = cc_device_missing_descriptors();
+        while(*missing_desc)
+        {
+            int dev_id = *missing_desc++;
+            dev_desc_msg.dev_address = dev_id;
+
+            // request device descriptor
+            cc_send(handle, &dev_desc_msg);
+
+            // set timeout
+            struct timespec timeout;
+            clock_gettime(CLOCK_REALTIME, &timeout);
+            int ns = timeout.tv_nsec + (CC_DEV_DESC_TIMEOUT * 1000000);
+            timeout.tv_sec += (1000000000 / ns);
+            timeout.tv_nsec += (1000000000 % ns);
+
+            // only one descriptor must be requested per time
+            // because all devices share the same serial line
+            if (sem_timedwait(&handle->waiting_response, &timeout))
+            {
+                if (errno == ETIMEDOUT)
+                    cc_device_remove(dev_id);
+            }
+        }
+
+        // each control chain frame starts with a sync message
+        // devices must only send 'data update' messages after receive a sync message
         cc_send(handle, &chain_sync_msg);
     }
 
@@ -264,6 +297,9 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     pthread_mutex_init(&handle->sending, NULL);
     pthread_mutex_init(&handle->running, NULL);
     pthread_mutex_lock(&handle->running);
+
+    // semaphores
+    sem_init(&handle->waiting_response, 0, 0);
 
     //////// receiver thread setup
 
@@ -330,7 +366,7 @@ void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg))
     }
 }
 
-void cc_send(cc_handle_t *handle, cc_msg_t *msg)
+void cc_send(cc_handle_t *handle, const cc_msg_t *msg)
 {
     const uint8_t sync_byte = CC_SYNC_BYTE;
     uint8_t buffer[CC_HEADER_SIZE];
@@ -344,7 +380,7 @@ void cc_send(cc_handle_t *handle, cc_msg_t *msg)
         buffer[4] = crc8(msg->data, msg->data_size);
         buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
 
-        while (pthread_mutex_trylock(&handle->sending) == EBUSY);
+        pthread_mutex_lock(&handle->sending);
         sp_nonblocking_write(handle->sp, &sync_byte, 1);
         sp_nonblocking_write(handle->sp, buffer, CC_HEADER_SIZE);
         sp_nonblocking_write(handle->sp, msg->data, msg->data_size);

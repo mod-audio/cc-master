@@ -43,6 +43,8 @@
 
 int cc_device_handshake(void);
 int cc_device_add(cc_msg_t *msg);
+void cc_device_remove(int device_id);
+int* cc_device_missing_descriptors(void);
 
 
 /*
