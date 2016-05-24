@@ -153,6 +153,8 @@ int cc_device_add(cc_msg_t *msg)
             desc->actuators[i] = cc_actuator_create(pdata, &n);
             pdata += n;
         }
+
+        return g_devices[idx].id;
     }
 
     return -1;
