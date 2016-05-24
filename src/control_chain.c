@@ -107,6 +107,7 @@ static void parser(cc_handle_t *handle)
             break;
 
         case CC_CMD_DEV_DESCRIPTOR:
+            sem_post(&handle->waiting_response);
             cc_device_add(msg);
             break;
     }
