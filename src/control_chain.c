@@ -55,7 +55,6 @@ struct cc_handle_t {
     struct sp_port *sp;
     uint8_t data_crc;
     void (*data_update_cb)(void *arg);
-    void (*recv_callback)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
     sem_t waiting_response;
@@ -389,14 +388,6 @@ void cc_finish(cc_handle_t *handle)
         }
 
         free(handle);
-    }
-}
-
-void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg))
-{
-    if (handle)
-    {
-        handle->recv_callback = callback;
     }
 }
 

@@ -71,7 +71,6 @@ typedef struct cc_data_update_t
 cc_handle_t* cc_init(const char *port_name, int baudrate);
 void cc_finish(cc_handle_t *handle);
 
-void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
 void cc_send(cc_handle_t *handle, const cc_msg_t *msg);
 
 int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
