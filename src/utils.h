@@ -31,6 +31,11 @@
 ************************************************************************************************************************
 */
 
+typedef struct string_t {
+    uint8_t size;
+    char *text;
+} string_t;
+
 
 /*
 ************************************************************************************************************************
@@ -45,6 +50,9 @@
  http://www.ece.cmu.edu/~koopman/roses/dsn04/koopman04_crc_poly_embedded.pdf
 */
 uint8_t crc8(uint8_t *data, uint32_t len);
+
+string_t *string_create(const uint8_t *data, uint32_t *written);
+void string_destroy(string_t *str);
 
 
 /*

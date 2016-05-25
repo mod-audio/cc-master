@@ -5,6 +5,8 @@
 ************************************************************************************************************************
 */
 
+#include <stdlib.h>
+#include <string.h>
 #include "utils.h"
 
 
@@ -89,4 +91,38 @@ uint8_t crc8(uint8_t *data, uint32_t len)
     } while (data < end);
 
     return crc ^ 0xff;
+}
+
+string_t *string_create(const uint8_t *data, uint32_t *written)
+{
+    string_t *str = malloc(sizeof(string_t));
+    *written = 0;
+
+    if (str)
+    {
+        str->size = *data++;
+        str->text = malloc(str->size);
+        if (str->text)
+        {
+            memcpy(str->text, data, str->size);
+            *written = str->size;
+        }
+        else
+        {
+            free(str);
+        }
+    }
+
+    return str;
+}
+
+void string_destroy(string_t *str)
+{
+    if (str)
+    {
+        if (str->text)
+            free(str->text);
+
+        free(str);
+    }
 }

@@ -9,7 +9,8 @@
 ************************************************************************************************************************
 */
 
-#include "control_chain.h"
+#include "actuator.h"
+#include "utils.h"
 
 
 /*
@@ -34,6 +35,13 @@
 ************************************************************************************************************************
 */
 
+typedef struct cc_dev_descriptor_t {
+    uint8_t id;
+    string_t *label;
+    uint8_t actuators_count;
+    cc_actuator_t **actuators;
+} cc_dev_descriptor_t;
+
 
 /*
 ************************************************************************************************************************
@@ -42,7 +50,7 @@
 */
 
 int cc_device_handshake(void);
-int cc_device_add(cc_msg_t *msg);
+cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data);
 void cc_device_remove(int device_id);
 int* cc_device_missing_descriptors(void);
 

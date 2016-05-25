@@ -143,7 +143,7 @@ static void parser(cc_handle_t *handle)
 
         case CC_CMD_DEV_DESCRIPTOR:
             sem_post(&handle->waiting_response);
-            cc_device_add(msg);
+            cc_device_add(msg->dev_address, msg->data);
             break;
 
         case CC_CMD_ASSIGNMENT:
