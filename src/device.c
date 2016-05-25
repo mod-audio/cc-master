@@ -32,6 +32,10 @@ enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR, DEV_WAITING_ASSIGNMENT};
 ************************************************************************************************************************
 */
 
+typedef struct cc_actuator_t {
+    uint8_t id;
+} cc_actuator_t;
+
 typedef struct cc_device_t {
     int id, status;
     cc_dev_descriptor_t *descriptor;
@@ -52,6 +56,23 @@ static cc_device_t g_devices[CC_MAX_DEVICES];
 *       INTERNAL FUNCTIONS
 ************************************************************************************************************************
 */
+
+cc_actuator_t *cc_actuator_create(const uint8_t *data, uint32_t *written)
+{
+    cc_actuator_t *actuator = malloc(sizeof(cc_actuator_t));
+    actuator->id = *data++;
+
+    *written = 1;
+    return actuator;
+}
+
+void cc_actuator_destroy(cc_actuator_t *actuator)
+{
+    if (actuator)
+    {
+        free(actuator);
+    }
+}
 
 
 /*
