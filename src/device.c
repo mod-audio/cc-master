@@ -32,14 +32,10 @@ enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR, DEV_WAITING_ASSIGNMENT};
 ************************************************************************************************************************
 */
 
-typedef struct cc_actuator_t {
-    uint8_t id;
-} cc_actuator_t;
-
-typedef struct cc_device_t {
+typedef struct device_t {
     int id, status;
     cc_dev_descriptor_t *descriptor;
-} cc_device_t;
+} device_t;
 
 
 /*
@@ -48,7 +44,7 @@ typedef struct cc_device_t {
 ************************************************************************************************************************
 */
 
-static cc_device_t g_devices[CC_MAX_DEVICES];
+static device_t g_devices[CC_MAX_DEVICES];
 
 
 /*
@@ -100,7 +96,7 @@ int cc_device_handshake(void)
 cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data)
 {
     int idx = device_id - 1;
-    cc_device_t *dev = &g_devices[idx];
+    device_t *dev = &g_devices[idx];
 
     if (dev->status == DEV_WAITING_DESCRIPTOR)
     {

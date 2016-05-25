@@ -30,7 +30,7 @@
 ************************************************************************************************************************
 */
 
-struct cc_assignment_key_t {
+struct assignment_key_t {
     int device_id, actuator_id;
 };
 
@@ -41,7 +41,7 @@ struct cc_assignment_key_t {
 ************************************************************************************************************************
 */
 
-static struct cc_assignment_key_t g_assignments[CC_MAX_ASSIGNMENTS];
+static struct assignment_key_t g_assignments[CC_MAX_ASSIGNMENTS];
 
 
 /*
