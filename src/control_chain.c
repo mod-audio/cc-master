@@ -54,6 +54,7 @@ struct cc_handle_t {
     int state;
     struct sp_port *sp;
     uint8_t data_crc;
+    void (*data_update_cb)(void *arg);
     void (*recv_callback)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
@@ -106,6 +107,25 @@ static int running(cc_handle_t *handle)
     return 0;
 }
 
+static void parse_data_update(cc_handle_t *handle)
+{
+    cc_msg_t *msg = handle->msg;
+    cc_data_t data[256];
+    cc_data_update_t update;
+
+    update.count = msg->data[0];
+    update.updates_list = data;
+
+    for (int i = 0, j = 1; i < update.count; i++)
+    {
+        data[i].assignment_id = msg->data[j++];
+        memcpy(&data[i].value, &msg->data[j], sizeof (float));
+        j += sizeof (float);
+    }
+
+    handle->data_update_cb(&update);
+}
+
 static void parser(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg;
@@ -130,6 +150,10 @@ static void parser(cc_handle_t *handle)
         case CC_CMD_ASSIGNMENT:
         case CC_CMD_UNASSIGNMENT:
             sem_post(&handle->waiting_response);
+            break;
+
+        case CC_CMD_DATA_UPDATE:
+            parse_data_update(handle);
             break;
     }
 }
@@ -433,4 +457,9 @@ void cc_unassignment(cc_handle_t *handle, int assignment_id)
 
     cc_assignment_remove(assignment_id, msg.data, &msg.data_size);
     send_and_wait(handle, &msg);
+}
+
+void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
+{
+    handle->data_update_cb = callback;
 }
