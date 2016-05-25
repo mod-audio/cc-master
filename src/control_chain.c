@@ -55,6 +55,7 @@ struct cc_handle_t {
     struct sp_port *sp;
     uint8_t data_crc;
     void (*data_update_cb)(void *arg);
+    void (*dev_desc_cb)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
     sem_t waiting_response;
@@ -128,32 +129,31 @@ static void parse_data_update(cc_handle_t *handle)
 static void parser(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg;
-    int id;
 
-    switch (msg->command)
+    if (msg->command == CC_CMD_HANDSHAKE)
     {
-        case CC_CMD_HANDSHAKE:
-            id = cc_device_handshake();
-            if (id >= 0)
-            {
-                msg->dev_address = id;
-                cc_send(handle, msg);
-            }
-            break;
-
-        case CC_CMD_DEV_DESCRIPTOR:
-            sem_post(&handle->waiting_response);
-            cc_device_add(msg->dev_address, msg->data);
-            break;
-
-        case CC_CMD_ASSIGNMENT:
-        case CC_CMD_UNASSIGNMENT:
-            sem_post(&handle->waiting_response);
-            break;
-
-        case CC_CMD_DATA_UPDATE:
-            parse_data_update(handle);
-            break;
+        int id = cc_device_handshake();
+        if (id >= 0)
+        {
+            msg->dev_address = id;
+            cc_send(handle, msg);
+        }
+    }
+    else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
+    {
+        sem_post(&handle->waiting_response);
+        cc_dev_descriptor_t *desc = cc_device_add(msg->dev_address, msg->data);
+        if (handle->dev_desc_cb)
+            handle->dev_desc_cb(desc);
+    }
+    else if (msg->command == CC_CMD_ASSIGNMENT ||
+             msg->command == CC_CMD_UNASSIGNMENT)
+    {
+        sem_post(&handle->waiting_response);
+    }
+    else if (msg->command == CC_CMD_DATA_UPDATE)
+    {
+        parse_data_update(handle);
     }
 }
 
@@ -453,4 +453,9 @@ void cc_unassignment(cc_handle_t *handle, int assignment_id)
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
 {
     handle->data_update_cb = callback;
+}
+
+void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg))
+{
+    handle->dev_desc_cb = callback;
 }
