@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include "utils.h"
+#include "device.h"
 #include "assignment.h"
 
 
