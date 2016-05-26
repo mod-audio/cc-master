@@ -101,15 +101,16 @@ string_t *string_create(const uint8_t *data, uint32_t *written)
     if (str)
     {
         str->size = *data++;
-        str->text = malloc(str->size);
+        str->text = malloc(str->size + 1);
         if (str->text)
         {
-            memcpy(str->text, data, str->size);
+            strcpy(str->text, data);
             *written = str->size;
         }
         else
         {
             free(str);
+            str = NULL;
         }
     }
 
