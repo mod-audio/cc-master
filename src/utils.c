@@ -104,7 +104,8 @@ string_t *string_create(const uint8_t *data, uint32_t *written)
         str->text = malloc(str->size + 1);
         if (str->text)
         {
-            strcpy(str->text, (char *) data);
+            memcpy(str->text, (char *) data, str->size);
+            str->text[str->size] = 0;
             *written = str->size;
         }
         else
