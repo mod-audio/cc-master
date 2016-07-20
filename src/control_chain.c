@@ -83,9 +83,14 @@ static int send_and_wait(cc_handle_t *handle, const cc_msg_t *msg)
     // set timeout
     struct timespec timeout;
     clock_gettime(CLOCK_REALTIME, &timeout);
-    int ns = timeout.tv_nsec + (CC_RESPONSE_TIMEOUT * 1000000);
-    timeout.tv_sec += (1000000000 / ns);
-    timeout.tv_nsec += (1000000000 % ns);
+    timeout.tv_sec += ((CC_RESPONSE_TIMEOUT * 1000000) / 1000000000);
+    timeout.tv_nsec += ((CC_RESPONSE_TIMEOUT * 1000000) % 1000000000);
+
+    if (timeout.tv_nsec >= 1000000000)
+    {
+        timeout.tv_sec += 1;
+        timeout.tv_nsec -= 1000000000;
+    }
 
     // only one request must be done per time
     // because all devices share the same serial line
