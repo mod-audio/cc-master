@@ -36,10 +36,6 @@ int main(void)
     int ass_id = cc_assignment(handle, &ass);
     cc_unassignment(handle, ass_id);
 
-    // this function is not required to be called by user
-    // it's here to test memory leak
-    cc_device_remove(dev_id);
-
     cc_finish(handle);
 
     return 0;

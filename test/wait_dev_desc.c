@@ -31,10 +31,6 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-    // this function is not required to be called by user
-    // it's here to test memory leak
-    cc_device_remove(dev_id);
-
     cc_finish(handle);
 
     return 0;
