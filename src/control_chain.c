@@ -128,7 +128,8 @@ static void parse_data_update(cc_handle_t *handle)
         j += sizeof (float);
     }
 
-    handle->data_update_cb(&update);
+    if (handle->data_update_cb)
+        handle->data_update_cb(&update);
 }
 
 static void parser(cc_handle_t *handle)
