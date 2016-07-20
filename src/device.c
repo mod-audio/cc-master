@@ -134,7 +134,30 @@ cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data)
 void cc_device_remove(int device_id)
 {
     int idx = device_id - 1;
-    g_devices[idx].status = DEV_WAITING_HANDSHAKE;
+
+    if (g_devices[idx].id > 0)
+    {
+        cc_dev_descriptor_t *desc = g_devices[idx].descriptor;
+        if (desc)
+        {
+            if (desc->label)
+                string_destroy(desc->label);
+
+            if (desc->actuators)
+            {
+                for (int i = 0; i < desc->actuators_count; i++)
+                {
+                    cc_actuator_destroy(desc->actuators[i]);
+                }
+                free(desc->actuators);
+            }
+
+            free(desc);
+        }
+
+        g_devices[idx].id = 0;
+        g_devices[idx].status = 0;
+    }
 }
 
 int* cc_device_missing_descriptors(void)
