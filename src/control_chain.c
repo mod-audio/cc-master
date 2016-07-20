@@ -143,7 +143,7 @@ static void parser(cc_handle_t *handle)
     {
         sem_post(&handle->waiting_response);
         cc_dev_descriptor_t *desc = cc_device_add(msg->dev_address, msg->data);
-        if (handle->dev_desc_cb)
+        if (desc && handle->dev_desc_cb)
             handle->dev_desc_cb(desc);
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
