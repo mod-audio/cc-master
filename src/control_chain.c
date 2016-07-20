@@ -76,9 +76,31 @@ struct cc_handle_t {
 ************************************************************************************************************************
 */
 
+static void send(cc_handle_t *handle, const cc_msg_t *msg)
+{
+    const uint8_t sync_byte = CC_SYNC_BYTE;
+    uint8_t buffer[CC_HEADER_SIZE];
+
+    if (handle)
+    {
+        buffer[0] = msg->dev_address;
+        buffer[1] = msg->command;
+        buffer[2] = (msg->data_size >> 0) & 0xFF;
+        buffer[3] = (msg->data_size >> 8) & 0xFF;
+        buffer[4] = crc8(msg->data, msg->data_size);
+        buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
+
+        pthread_mutex_lock(&handle->sending);
+        sp_nonblocking_write(handle->sp, &sync_byte, 1);
+        sp_nonblocking_write(handle->sp, buffer, CC_HEADER_SIZE);
+        sp_nonblocking_write(handle->sp, msg->data, msg->data_size);
+        pthread_mutex_unlock(&handle->sending);
+    }
+}
+
 static int send_and_wait(cc_handle_t *handle, const cc_msg_t *msg)
 {
-    cc_send(handle, msg);
+    send(handle, msg);
 
     // set timeout
     struct timespec timeout;
@@ -142,7 +164,7 @@ static void parser(cc_handle_t *handle)
         if (id >= 0)
         {
             msg->dev_address = id;
-            cc_send(handle, msg);
+            send(handle, msg);
         }
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
@@ -291,7 +313,7 @@ static void* chain_sync(void *arg)
 
         // each control chain frame starts with a sync message
         // devices must only send 'data update' messages after receive a sync message
-        cc_send(handle, &chain_sync_msg);
+        send(handle, &chain_sync_msg);
     }
 
     return NULL;
@@ -400,28 +422,6 @@ void cc_finish(cc_handle_t *handle)
         }
 
         free(handle);
-    }
-}
-
-void cc_send(cc_handle_t *handle, const cc_msg_t *msg)
-{
-    const uint8_t sync_byte = CC_SYNC_BYTE;
-    uint8_t buffer[CC_HEADER_SIZE];
-
-    if (handle)
-    {
-        buffer[0] = msg->dev_address;
-        buffer[1] = msg->command;
-        buffer[2] = (msg->data_size >> 0) & 0xFF;
-        buffer[3] = (msg->data_size >> 8) & 0xFF;
-        buffer[4] = crc8(msg->data, msg->data_size);
-        buffer[5] = crc8(buffer, CC_HEADER_SIZE-1);
-
-        pthread_mutex_lock(&handle->sending);
-        sp_nonblocking_write(handle->sp, &sync_byte, 1);
-        sp_nonblocking_write(handle->sp, buffer, CC_HEADER_SIZE);
-        sp_nonblocking_write(handle->sp, msg->data, msg->data_size);
-        pthread_mutex_unlock(&handle->sending);
     }
 }
 
