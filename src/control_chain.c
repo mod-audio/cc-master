@@ -207,7 +207,11 @@ static void* receiver(void *arg)
                     handle->data_crc = buffer[4];
 
                     if (msg.data_size == 0)
+                    {
                         handle->data_crc = 0;
+                        parser(handle);
+                        handle->state = WAITING_SYNCING;
+                    }
                 }
                 else
                 {
@@ -233,7 +237,7 @@ static void* receiver(void *arg)
                 }
             }
 
-            // always go back to initial state regardless it got data or not
+            // always go back to initial state regardless if got data or not
             handle->state = WAITING_SYNCING;
         }
     }
