@@ -383,6 +383,8 @@ void cc_finish(cc_handle_t *handle)
 {
     if (handle)
     {
+        cc_device_remove_all();
+
         pthread_mutex_unlock(&handle->running);
 
         if (handle->receiver_thread)

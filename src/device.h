@@ -55,6 +55,7 @@ typedef struct cc_dev_descriptor_t {
 int cc_device_handshake(void);
 cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data);
 void cc_device_remove(int device_id);
+void cc_device_remove_all(void);
 int* cc_device_missing_descriptors(void);
 
 

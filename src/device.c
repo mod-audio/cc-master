@@ -160,6 +160,14 @@ void cc_device_remove(int device_id)
     }
 }
 
+void cc_device_remove_all(void)
+{
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        cc_device_remove(g_devices[i].id);
+    }
+}
+
 int* cc_device_missing_descriptors(void)
 {
     static int missing_descriptors[CC_MAX_DEVICES+1];
