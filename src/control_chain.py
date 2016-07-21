@@ -3,12 +3,41 @@
 
 from ctypes import *
 
-class ControlChainMsg(Structure):
+class String(Structure):
     _fields_ = [
-        ("dev_address", c_ubyte),
-        ("command", c_ubyte),
-        ("data_size", c_ushort),
-        ("data", POINTER(c_uint8)),
+        ("size", c_ubyte),
+        ("text", c_char_p),
+    ]
+
+class Data(Structure):
+    _fields_ = [
+        ("assigment_id", c_ubyte),
+        ("value", c_float),
+    ]
+
+class DataUpdate(Structure):
+    _fields_ = [
+        ("count", c_ubyte),
+        ("updates_list", POINTER(Data)),
+    ]
+
+class Actuator(Structure):
+    _fields_ = [
+        ("id", c_ubyte),
+    ]
+
+class DevDescriptor(Structure):
+    _fields_ = [
+        ("id", c_ubyte),
+        ("label", POINTER(String)),
+        ("actuators_count", c_ubyte),
+        ("actuators", POINTER(POINTER(Actuator))),
+    ]
+
+class Assignment(Structure):
+    _fields_ = [
+        ("device_id", c_ubyte),
+        ("actuator_id", c_ubyte),
     ]
 
 lib = cdll.LoadLibrary("../libcontrolchain.so")
@@ -21,14 +50,23 @@ lib.cc_init.restype = c_void_p
 lib.cc_finish.argtypes = [c_void_p]
 lib.cc_finish.restype = None
 
-# void cc_set_recv_callback(cc_handle_t *handle, void (*callback)(void *arg));
-CBFUNC = CFUNCTYPE(None, POINTER(ControlChainMsg))
-lib.cc_set_recv_callback.argtypes = [c_void_p, CBFUNC]
-lib.cc_set_recv_callback.restype = None
+#int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
+lib.cc_assignment.argtypes = [c_void_p, POINTER(Assignment)]
+lib.cc_assignment.restype = int
 
-# void cc_send(cc_handle_t *handle, cc_msg_t *msg);
-lib.cc_send.argtypes = [c_void_p, POINTER(ControlChainMsg)]
-lib.cc_send.restype = None
+#void cc_unassignment(cc_handle_t *handle, int assignment_id);
+lib.cc_unassignment.argtypes = [c_void_p, c_ubyte]
+lib.cc_unassignment.restype = None
+
+#void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
+DATA_CB = CFUNCTYPE(None, POINTER(DataUpdate))
+lib.cc_data_update_cb.argtypes = [c_void_p, DATA_CB]
+lib.cc_data_update_cb.restype = None
+
+#void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg));
+DEVDESC_CB = CFUNCTYPE(None, POINTER(DevDescriptor))
+lib.cc_dev_descriptor_cb.argtypes = [c_void_p, DEVDESC_CB]
+lib.cc_dev_descriptor_cb.restype = None
 
 class ControlChain(object):
     def __init__(self, serial_port, baudrate):
@@ -37,8 +75,11 @@ class ControlChain(object):
         if self.obj == None:
             raise NameError('Cannot create ControlChain object, check serial port')
 
-        self.recv_callback = CBFUNC(self._parser)
-        lib.cc_set_recv_callback(self.obj, self.recv_callback)
+        # define device descriptor callback
+        self._dev_desc_cb = DEVDESC_CB(self._dev_desc)
+
+        # define data update callback
+        self._data_update_cb = DATA_CB(self._data_update)
 
     def __del__(self):
         try:
@@ -46,22 +87,59 @@ class ControlChain(object):
         except NameError:
             pass
 
-    def send(self, msg):
-        a = ARRAY(c_uint8, msg[2])
-        d = a(*msg[3])
-        msg[3] = d
-        x = ControlChainMsg(*msg)
-        lib.cc_send(self.obj, pointer(x))
+    def _dev_desc(self, arg):
+        dev_descriptor = {}
+        dev_descriptor['id'] = arg.contents.id
+        dev_descriptor['label'] = arg.contents.label.contents.text.decode('utf-8')
 
-    def _parser(self, arg):
-        print('callback')
-        print(arg.contents.dev_address)
-        print(arg.contents.command)
-        print(arg.contents.data_size)
-        print(arg.contents.data)
-        print(arg.contents.data[0])
-        print(arg.contents.data[1])
+        actuators = []
+        for i in range(arg.contents.actuators_count):
+            actuator = {}
+            actuator['id'] = arg.contents.actuators[i].contents.id
+            actuators.append(actuator)
+
+        dev_descriptor['actuators'] = actuators
+        self.user_dev_desc_cb(dev_descriptor)
+
+    def _data_update(self, arg):
+        updates = []
+        for i in range(arg.contents.count):
+            update = {}
+            update['assigment_id'] = arg.contents.updates_list[i].assigment_id
+            update['value'] = arg.contents.updates_list[i].value
+            updates.append(update)
+
+        self.user_data_update_cb(updates)
+
+    def device_descriptor_cb(self, callback):
+        lib.cc_dev_descriptor_cb(self.obj, self._dev_desc_cb)
+        self.user_dev_desc_cb = callback
+
+    def data_update_cb(self, callback):
+        lib.cc_data_update_cb(self.obj, self._data_update_cb)
+        self.user_data_update_cb = callback
+
+    def assignment(self, assignment):
+        assignment = Assignment(*assignment)
+        return lib.cc_assignment(self.obj, assignment)
+
+    def unassignment(self, assignment_id):
+        lib.cc_unassignment(self.obj, assignment_id)
 
 ### test
+if __name__ == "__main__":
+    def new_device(dev_desc):
+        print(dev_desc)
 
-cc = ControlChain('/dev/ttyACM0', 115200)
+    def data_update(updates):
+        print(updates)
+
+    cc = ControlChain('/dev/ttyACM0', 115200)
+    cc.device_descriptor_cb(new_device)
+    cc.data_update_cb(data_update)
+
+    import time
+    time.sleep(3)
+
+    cc.assignment((1,3))
+    time.sleep(3)
