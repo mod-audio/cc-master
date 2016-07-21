@@ -106,7 +106,7 @@ string_t *string_create(const uint8_t *data, uint32_t *written)
         {
             memcpy(str->text, (char *) data, str->size);
             str->text[str->size] = 0;
-            *written = str->size;
+            *written = str->size + 1;
         }
         else
         {
