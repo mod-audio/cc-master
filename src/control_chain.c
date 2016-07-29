@@ -50,6 +50,13 @@
 // receiver status
 enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA};
 
+typedef struct cc_msg_t {
+    uint8_t dev_address;
+    uint8_t command;
+    uint16_t data_size;
+    uint8_t *data;
+} cc_msg_t;
+
 struct cc_handle_t {
     int state;
     struct sp_port *sp;
