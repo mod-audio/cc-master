@@ -76,9 +76,10 @@ static uint8_t crc8_table[] = {
 ************************************************************************************************************************
 */
 
-uint8_t crc8(uint8_t *data, uint32_t len)
+uint8_t crc8(const uint8_t *data, uint32_t len)
 {
-    uint8_t *end, crc = 0x00;
+    const uint8_t *end;
+    uint8_t crc = 0x00;
 
     if (len == 0)
         return crc;

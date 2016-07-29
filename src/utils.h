@@ -49,7 +49,7 @@ typedef struct string_t {
  Chosen based on Koopman, et al. (0xA6 in his notation = 0x14D >> 1):
  http://www.ece.cmu.edu/~koopman/roses/dsn04/koopman04_crc_poly_embedded.pdf
 */
-uint8_t crc8(uint8_t *data, uint32_t len);
+uint8_t crc8(const uint8_t *data, uint32_t len);
 
 string_t *string_create(const uint8_t *data, uint32_t *written);
 void string_destroy(string_t *str);
