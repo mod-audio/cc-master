@@ -86,14 +86,22 @@ int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *wr
     return assignment_id;
 }
 
-void cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written)
+int cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written)
 {
-    // make this assignment id available again
-    g_assignments[assignment_id].device_id = 0;
+    if (assignment_id < 0 || assignment_id > CC_MAX_ASSIGNMENTS)
+        return -1;
+
+    struct assignment_key_t *assignment = &g_assignments[assignment_id];
 
     if (buffer)
     {
-        buffer[0] = g_assignments[assignment_id].actuator_id;
+        buffer[0] = assignment->actuator_id;
         *written = 1;
     }
+
+    // make this assignment id available again
+    int device_id = assignment->device_id;
+    assignment->device_id = 0;
+
+    return device_id;
 }

@@ -45,7 +45,7 @@ typedef struct cc_assignment_t {
 */
 
 int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *written);
-void cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written);
+int cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written);
 
 
 /*

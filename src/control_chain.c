@@ -443,15 +443,17 @@ void cc_finish(cc_handle_t *handle)
 int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 {
     uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
+    uint16_t size;
 
-    cc_msg_t msg;
-    msg.dev_address = assignment->device_id;
-    msg.command = CC_CMD_ASSIGNMENT;
-    msg.data = buffer;
-
-    int id = cc_assignment_add(assignment, msg.data, &msg.data_size);
+    int id = cc_assignment_add(assignment, buffer, &size);
     if (id >= 0)
     {
+        cc_msg_t msg;
+        msg.dev_address = assignment->device_id;
+        msg.command = CC_CMD_ASSIGNMENT;
+        msg.data = buffer;
+        msg.data_size = size;
+
         if (send_and_wait(handle, &msg))
         {
             cc_assignment_remove(id, NULL, NULL);
@@ -464,16 +466,19 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     return -1;
 }
 
-void cc_unassignment(cc_handle_t *handle, int assignment_id) // FIXME
+void cc_unassignment(cc_handle_t *handle, int assignment_id)
 {
     uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
+    uint16_t size;
+
+    int device_id = cc_assignment_remove(assignment_id, buffer, &size);
 
     cc_msg_t msg;
-    msg.dev_address = assignment_id;
+    msg.dev_address = device_id;
     msg.command = CC_CMD_UNASSIGNMENT;
     msg.data = buffer;
+    msg.data_size = size;
 
-    cc_assignment_remove(assignment_id, msg.data, &msg.data_size);
     send_and_wait(handle, &msg);
 }
 
