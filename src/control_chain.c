@@ -54,7 +54,7 @@ typedef struct cc_msg_t {
     uint8_t dev_address;
     uint8_t command;
     uint16_t data_size;
-    uint8_t *data;
+    uint8_t *header, *data;
 } cc_msg_t;
 
 struct cc_handle_t {
@@ -195,17 +195,10 @@ static void parser(cc_handle_t *handle)
 static void* receiver(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
+    cc_msg_t *msg = handle->msg;
 
     uint8_t buffer[CC_HEADER_SIZE];
     enum sp_return ret;
-
-    // create a message object
-    cc_msg_t msg;
-    msg.data = (uint8_t *) malloc(CC_SERIAL_BUFFER_SIZE);
-    if (msg.data == NULL)
-        return NULL;
-
-    handle->msg = &msg;
 
     while (running(handle))
     {
@@ -234,14 +227,14 @@ static void* receiver(void *arg)
                 if (crc8(buffer, CC_HEADER_SIZE-1) == crc)
                 {
                     handle->state = WAITING_DATA;
-                    msg.dev_address = buffer[0];
-                    msg.command = buffer[1];
-                    msg.data_size = buffer[3];
-                    msg.data_size <<= 8;
-                    msg.data_size |= buffer[2];
+                    msg->dev_address = buffer[0];
+                    msg->command = buffer[1];
+                    msg->data_size = buffer[3];
+                    msg->data_size <<= 8;
+                    msg->data_size |= buffer[2];
                     handle->data_crc = buffer[4];
 
-                    if (msg.data_size == 0)
+                    if (msg->data_size == 0)
                     {
                         handle->data_crc = 0;
                         parser(handle);
@@ -262,11 +255,11 @@ static void* receiver(void *arg)
         // waiting data
         else if (handle->state == WAITING_DATA)
         {
-            ret = sp_blocking_read(handle->sp, msg.data, msg.data_size, CC_DATA_TIMEOUT);
-            if (ret == msg.data_size)
+            ret = sp_blocking_read(handle->sp, msg->data, msg->data_size, CC_DATA_TIMEOUT);
+            if (ret == msg->data_size)
             {
                 // verify data checksum
-                if (crc8(msg.data, msg.data_size) == handle->data_crc)
+                if (crc8(msg->data, msg->data_size) == handle->data_crc)
                 {
                     parser(handle);
                 }
@@ -276,8 +269,6 @@ static void* receiver(void *arg)
             handle->state = WAITING_SYNCING;
         }
     }
-
-    free(msg.data);
 
     return NULL;
 }
@@ -337,11 +328,16 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
 {
     cc_handle_t *handle = (cc_handle_t *) malloc(sizeof (cc_handle_t));
 
-    if ( handle == NULL)
+    if (handle == NULL)
         return NULL;
 
     // init handle with null data
     memset(handle, 0, sizeof (cc_handle_t));
+
+    // create a message object for receiver
+    handle->msg = (cc_msg_t *) malloc(sizeof (cc_msg_t));
+    handle->msg->header = (uint8_t *) malloc(CC_SERIAL_BUFFER_SIZE);
+    handle->msg->data = &handle->msg->header[CC_HEADER_SIZE];
 
     //////// serial setup
 
@@ -428,6 +424,8 @@ void cc_finish(cc_handle_t *handle)
             sp_free_port(handle->sp);
         }
 
+        free(handle->msg->header);
+        free(handle->msg);
         free(handle);
     }
 }
