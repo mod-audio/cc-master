@@ -35,9 +35,10 @@ static uint8_t crc8_table[] = {
     0x57, 0x69, 0x2b, 0x15
 };
 
-uint8_t crc8(uint8_t *data, uint32_t len)
+uint8_t crc8(const uint8_t *data, uint32_t len)
 {
-    uint8_t *end, crc = 0x00;
+    const uint8_t *end;
+    uint8_t crc = 0x00;
 
     if (len == 0)
         return crc;
@@ -51,6 +52,7 @@ uint8_t crc8(uint8_t *data, uint32_t len)
 
     return crc ^ 0xff;
 }
+
 
 void setup()
 {
@@ -71,40 +73,33 @@ void loop()
 
 void send_msg(uint8_t command, uint8_t *data, uint16_t data_size)
 {
-    uint8_t i = 0, header[8];
-
-    // sync
-    header[i++] = SYNC_BYTE;
+    uint8_t i = 0, buffer[32];
 
     // dev address
-    header[i++] = THIS_DEV_ADDRESS;
+    buffer[i++] = THIS_DEV_ADDRESS;
 
     // command
-    header[i++] = command;
+    buffer[i++] = command;
 
     // data size
-    header[i++] = (data_size >> 0) & 0xFF;
-    header[i++] = (data_size >> 8) & 0xFF;
+    buffer[i++] = (data_size >> 0) & 0xFF;
+    buffer[i++] = (data_size >> 8) & 0xFF;
 
-    // data crc
     if (data_size > 0)
     {
-        header[i++] = crc8(data, data_size);
-    }
-    else
-    {
-        header[i++] = 0;
+        uint8_t j = 0;
+        for (j = 0; j < data_size; j++)
+        {
+            buffer[i++] = data[j];
+        }
     }
 
-    // header crc
-    header[i++] = crc8(&header[1], 5);
-    Serial.write(header, i);
+    buffer[i] = crc8(buffer, i);
+    i++;
 
-    // data
-    if (data_size > 0)
-    {
-        Serial.write(data, data_size);
-    }
+    uint8_t sync = SYNC_BYTE;
+    Serial.write(&sync, 1);
+    Serial.write(buffer, i);
 }
 
 void send_handshake()
@@ -157,6 +152,7 @@ void parser(int command)
     }
     else if (command == CC_CMD_HANDSHAKE)
     {
+//        digitalWrite(13, HIGH);
         need_handshake = 0;
     }
     else if (command == CC_CMD_DEV_DESCRIPTOR)
@@ -182,7 +178,7 @@ void parser(int command)
 void serialEvent()
 {
     static uint8_t data[32];
-    static uint8_t state, command, data_crc, aux;
+    static uint8_t state, command, aux;
     static uint16_t data_size, recv_data;
 
     while (Serial.available() > 0)
@@ -232,43 +228,35 @@ void serialEvent()
                 state++;
                 break;
 
-            // data checksum
+            // data
             case 5:
-                data_crc = byte;
-                state++;
-                break;
-
-            // header checksum
-            case 6:
-                recv_data = 0;
-                if (crc8(&data[1], 5) == byte)
+                if (data_size == 0)
                 {
-                    if (data_size == 0)
+                    if (crc8(&data[1], 4) == byte)
                     {
                         parser(command);
-                        state = 0;
                     }
-                    else
-                        state++;
+
+                    state = 0;
+                    recv_data = 0;
                 }
                 else
                 {
-                    state = 0;
+                    recv_data++;
+                    if (recv_data == data_size)
+                        state++;
                 }
                 break;
 
-            // data
-            case 7:
-                data[recv_data++] = byte;
-                if (recv_data == data_size)
+            // crc
+            case 6:
+                if (crc8(&data[1], data_size + 4) == byte)
                 {
-                    if (crc8(&data[7], data_size) == data_crc)
-                    {
-                        parser(command);
-                        state = 0;
-                        recv_data = 0;
-                    }
+                    parser(command);
                 }
+
+                state = 0;
+                recv_data = 0;
                 break;
         }
     }
