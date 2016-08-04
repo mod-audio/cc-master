@@ -110,8 +110,8 @@ cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data)
 
         uint32_t n;
 
-        // create label
-        desc->label = string_create(data, &n);
+        // create label from buffer
+        desc->label = string_deserialize(data, &n);
         data += n;
 
         // create actuators list

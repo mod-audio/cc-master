@@ -94,7 +94,37 @@ uint8_t crc8(const uint8_t *data, uint32_t len)
     return crc ^ 0xff;
 }
 
-string_t *string_create(const uint8_t *data, uint32_t *written)
+string_t *string_create(const char *str)
+{
+    string_t *obj = malloc(sizeof(string_t));
+
+    if (obj)
+    {
+        obj->size = strlen(str);
+        obj->text = malloc(obj->size + 1);
+        if (obj->text)
+        {
+            strcpy(obj->text, str);
+        }
+        else
+        {
+            free(obj);
+            obj = NULL;
+        }
+    }
+
+    return obj;
+}
+
+uint8_t string_serialize(const string_t *str, uint8_t *buffer)
+{
+    buffer[0] = str->size;
+    memcpy(&buffer[1], str->text, str->size);
+
+    return (str->size + 1);
+}
+
+string_t *string_deserialize(const uint8_t *data, uint32_t *written)
 {
     string_t *str = malloc(sizeof(string_t));
     *written = 0;
