@@ -79,6 +79,7 @@ int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *wr
         return -1;
 
     int i = 0;
+    buffer[i++] = assignment_id;
     buffer[i++] = assignment->actuator_id;
 
     *written = i;
