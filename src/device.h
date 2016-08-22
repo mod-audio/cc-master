@@ -1,4 +1,3 @@
-
 #ifndef CC_DEVICE_H
 #define CC_DEVICE_H
 

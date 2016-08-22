@@ -1,5 +1,5 @@
-#ifndef CC_ASSIGNMENT_H
-#define CC_ASSIGNMENT_H
+#ifndef MSG_H
+#define MSG_H
 
 
 /*
@@ -31,12 +31,19 @@
 ************************************************************************************************************************
 */
 
-typedef struct cc_assignment_t {
-    int device_id;
-    int actuator_id;
-    float value, min, max, def;
-    uint32_t mode;
-} cc_assignment_t;
+// commands definition
+enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT, CC_CMD_DATA_UPDATE,
+               CC_CMD_UNASSIGNMENT};
+
+// fields names and sizes in bytes
+// DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA (N), CHECKSUM (1)
+
+typedef struct cc_msg_t {
+    uint8_t dev_address;
+    uint8_t command;
+    uint16_t data_size;
+    uint8_t *header, *data;
+} cc_msg_t;
 
 
 /*
@@ -44,9 +51,6 @@ typedef struct cc_assignment_t {
 *       FUNCTION PROTOTYPES
 ************************************************************************************************************************
 */
-
-int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *written);
-int cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written);
 
 
 /*

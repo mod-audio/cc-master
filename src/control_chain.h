@@ -1,4 +1,3 @@
-
 #ifndef CONTROL_CHAIN_H
 #define CONTROL_CHAIN_H
 
