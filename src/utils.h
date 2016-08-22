@@ -56,6 +56,8 @@ uint8_t string_serialize(const string_t *str, uint8_t *buffer);
 string_t *string_deserialize(const uint8_t *data, uint32_t *written);
 void string_destroy(string_t *str);
 
+int float_to_bytes(const float value, uint8_t *array);
+
 
 /*
 ************************************************************************************************************************

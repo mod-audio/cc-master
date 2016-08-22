@@ -35,6 +35,8 @@
 typedef struct cc_assignment_t {
     int device_id;
     int actuator_id;
+    float value, min, max, def;
+    uint32_t mode;
 } cc_assignment_t;
 
 

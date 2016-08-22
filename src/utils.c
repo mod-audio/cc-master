@@ -55,6 +55,11 @@ static uint8_t crc8_table[] = {
 ************************************************************************************************************************
 */
 
+union floby_t {
+    float value;
+    uint8_t bytes[4];
+};
+
 
 /*
 ************************************************************************************************************************
@@ -158,4 +163,13 @@ void string_destroy(string_t *str)
 
         free(str);
     }
+}
+
+int float_to_bytes(const float value, uint8_t *array)
+{
+    union floby_t aux;
+    aux.value = value;
+    memcpy(array, aux.bytes, sizeof (float));
+
+    return (sizeof(float));
 }

@@ -6,6 +6,9 @@
 */
 
 #include "assignment.h"
+#include "utils.h"
+
+#include <string.h>
 
 
 /*
@@ -81,6 +84,12 @@ int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *wr
     int i = 0;
     buffer[i++] = assignment_id;
     buffer[i++] = assignment->actuator_id;
+    i += float_to_bytes(assignment->value, &buffer[i]);
+    i += float_to_bytes(assignment->min, &buffer[i]);
+    i += float_to_bytes(assignment->max, &buffer[i]);
+    i += float_to_bytes(assignment->def, &buffer[i]);
+    memcpy(&buffer[i], &assignment->mode, sizeof (uint32_t));
+    i += sizeof (uint32_t);
 
     *written = i;
 
