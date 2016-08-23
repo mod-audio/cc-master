@@ -3,7 +3,7 @@ CC ?= gcc
 
 # source directory and output name
 SRC_DIR = src
-OUTPUT = libcontrolchain.so
+OUTPUT = libcontrol_chain.so
 
 # flags for debugging
 ifeq ($(DEBUG), 1)

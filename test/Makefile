@@ -12,12 +12,13 @@ CFLAGS += -O3
 endif
 
 # flags
+LIB_NAME=$(shell basename ../*.so)
 CFLAGS += -Wall -Wextra
 LDFLAGS += -L.. -Wl,-rpath=..
 
 # includes and libraries
 INCS = -I../src
-LIBS = -lcontrolchain
+LIBS = -l:$(LIB_NAME)
 
 # source, object and output
 SRC = $(wildcard $(SRC_DIR)/*.c)
