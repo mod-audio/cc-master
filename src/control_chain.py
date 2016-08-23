@@ -38,9 +38,14 @@ class Assignment(Structure):
     _fields_ = [
         ("device_id", c_ubyte),
         ("actuator_id", c_ubyte),
+        ("value", c_float),
+        ("min", c_float),
+        ("max", c_float),
+        ("def", c_float),
+        ("mode", c_uint32),
     ]
 
-lib = cdll.LoadLibrary("../libcontrolchain.so")
+lib = cdll.LoadLibrary("../libcontrol_chain.so")
 
 # cc_handle_t* cc_init(const char *port_name, int baudrate);
 lib.cc_init.argtypes = [c_char_p, c_int]
@@ -141,5 +146,9 @@ if __name__ == "__main__":
     import time
     time.sleep(3)
 
-    cc.assignment((1,3))
+    assignment_id = cc.assignment((1, 0, 1.0, 0.0, 1.0, 0.0, 1))
+    print('assignment_id', assignment_id)
     time.sleep(3)
+
+    cc.unassignment(assignment_id)
+    time.sleep(1)
