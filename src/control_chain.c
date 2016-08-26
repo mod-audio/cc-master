@@ -27,8 +27,8 @@
 #define CC_SYNC_BYTE            0xA7
 #define CC_HEADER_SIZE          4       // in bytes
 #define CC_SYNC_TIMEOUT         500     // in ms
-#define CC_HEADER_TIMEOUT       10      // in ms
-#define CC_DATA_TIMEOUT         10      // in ms
+#define CC_HEADER_TIMEOUT       1000      // in ms // FIXME: check if timeout is properly working
+#define CC_DATA_TIMEOUT         1000      // in ms // FIXME: check if timeout is properly working
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 #define CC_RESPONSE_TIMEOUT     10      // in ms
@@ -179,6 +179,7 @@ static void parser(cc_handle_t *handle)
 
     if (msg->command == CC_CMD_HANDSHAKE)
     {
+        // TODO: handshake message must return master protocol version
         int id = cc_device_handshake();
         if (id >= 0)
         {
