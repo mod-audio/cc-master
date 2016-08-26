@@ -56,7 +56,7 @@ typedef struct cc_assignment_t {
     int ass_id = cc_assignment(handle, &ass);
     sleep(5);
     cc_unassignment(handle, ass_id);
-
+    sleep(3);
     cc_finish(handle);
 
     return 0;
