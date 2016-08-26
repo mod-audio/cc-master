@@ -105,7 +105,7 @@ int cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written)
 
     if (buffer)
     {
-        buffer[0] = assignment->actuator_id;
+        buffer[0] = assignment_id;
         *written = 1;
     }
 
