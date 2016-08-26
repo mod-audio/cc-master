@@ -5,6 +5,12 @@ CC ?= gcc
 SRC_DIR = src
 OUTPUT = libcontrol_chain.so
 
+# installation paths
+PREFIX = /usr/local
+LIBDIR = $(PREFIX)/lib
+INCDIR = $(PREFIX)/include
+CCDIR = $(INCDIR)/cc
+
 # flags for debugging
 ifeq ($(DEBUG), 1)
 CFLAGS += -O0 -g -DDEBUG
@@ -28,6 +34,11 @@ $(OUTPUT): $(OBJ)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+install:
+	install -d $(DESTDIR)$(CCDIR)
+	install -m 644 src/*.h $(DESTDIR)$(CCDIR)
+	install -m 755 $(OUTPUT) $(DESTDIR)$(LIBDIR)
 
 clean:
 	rm -f $(SRC_DIR)/*.o $(OUTPUT)
