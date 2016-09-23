@@ -1,5 +1,5 @@
-#ifndef MSG_H
-#define MSG_H
+#ifndef CC_MSG_H
+#define CC_MSG_H
 
 
 /*
@@ -17,6 +17,8 @@
 ************************************************************************************************************************
 */
 
+#define CC_MSG_HEADER_SIZE  4
+
 
 /*
 ************************************************************************************************************************
@@ -32,8 +34,8 @@
 */
 
 // commands definition
-enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT, CC_CMD_DATA_UPDATE,
-               CC_CMD_UNASSIGNMENT};
+enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT,
+               CC_CMD_DATA_UPDATE, CC_CMD_UNASSIGNMENT};
 
 // fields names and sizes in bytes
 // DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA (N), CHECKSUM (1)
@@ -51,6 +53,11 @@ typedef struct cc_msg_t {
 *       FUNCTION PROTOTYPES
 ************************************************************************************************************************
 */
+
+cc_msg_t *cc_msg_new(void);
+void cc_msg_delete(cc_msg_t *msg);
+void cc_msg_parser(const cc_msg_t *msg, void *data_struct);
+void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg);
 
 
 /*
