@@ -32,6 +32,8 @@
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 #define CC_RESPONSE_TIMEOUT     10      // in ms
 
+#define CC_HANDSHAKE_NUM_CYCLES 10
+
 
 /*
 ****************************************************************************************************
@@ -49,6 +51,10 @@
 // receiver status
 enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA, WAITING_CRC};
 
+// sync message cycles definition
+enum {CC_SYNC_REGULAR_CYCLE, CC_SYNC_HANDSHAKE_CYCLE};
+
+// control chain handle struct
 struct cc_handle_t {
     int state;
     struct sp_port *sp;
@@ -279,11 +285,14 @@ static void* chain_sync(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
 
-    const cc_msg_t chain_sync_msg = {
+    int cycles_counter = 0;
+
+    uint8_t chain_sync_msg_data;
+    cc_msg_t chain_sync_msg = {
         .dev_address = 0,
         .command = CC_CMD_CHAIN_SYNC,
-        .data_size = 0,
-        .data = 0
+        .data_size = sizeof (chain_sync_msg_data),
+        .data = &chain_sync_msg_data
     };
 
     cc_msg_t dev_desc_msg = {
@@ -309,6 +318,16 @@ static void* chain_sync(void *arg)
             {
                 cc_device_remove(dev_id);
             }
+        }
+
+        cycles_counter++;
+
+        // define the type of the sync message according the number of cycles
+        chain_sync_msg.data[0] = CC_SYNC_REGULAR_CYCLE;
+        if (cycles_counter >= CC_HANDSHAKE_NUM_CYCLES)
+        {
+            chain_sync_msg.data[0] = CC_SYNC_HANDSHAKE_CYCLE;
+            cycles_counter = 0;
         }
 
         // each control chain frame starts with a sync message
