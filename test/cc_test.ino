@@ -104,8 +104,8 @@ void send_msg(uint8_t command, uint8_t *data, uint16_t data_size)
 
 void send_handshake()
 {
-    uint8_t random_number[] = {0xB0, 0xCA};
-    send_msg(CC_CMD_HANDSHAKE, random_number, 2);
+    uint8_t handshake[] = {0x07, 'a', 'r', 'd', 'u', 'i', 'n', 'o', 0xB0, 0xCA, 1, 0, 2, 3, 4};
+    send_msg(CC_CMD_HANDSHAKE, handshake, sizeof (handshake));
 }
 
 void send_dev_desc()
@@ -140,12 +140,12 @@ void send_data_update()
     value += 1.0;
 }
 
-void parser(int command)
+void parser(int command, uint8_t *data)
 {
     if (command == CC_CMD_CHAIN_SYNC)
     {
-        // TODO: wait for handshake frame
-        if (need_handshake)
+        // handshake cycle is when data[0] == 1
+        if (need_handshake && data[0] == 1)
             send_handshake();
         else if (assignment_done)
             send_data_update();
@@ -234,7 +234,7 @@ void serialEvent()
                 {
                     if (crc8(&data[1], 4) == byte)
                     {
-                        parser(command);
+                        parser(command, &data[5]);
                     }
 
                     state = 0;
@@ -252,7 +252,7 @@ void serialEvent()
             case 6:
                 if (crc8(&data[1], data_size + 4) == byte)
                 {
-                    parser(command);
+                    parser(command, &data[5]);
                 }
 
                 state = 0;

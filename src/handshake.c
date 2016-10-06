@@ -5,7 +5,6 @@
 */
 
 #include <stdlib.h>
-#include "msg.h"
 #include "handshake.h"
 
 
@@ -14,8 +13,6 @@
 *       INTERNAL MACROS
 ****************************************************************************************************
 */
-
-#define DATA_BUFFER_SIZE    256
 
 
 /*
@@ -31,12 +28,19 @@
 ****************************************************************************************************
 */
 
+struct handshake_key_t {
+    int frame;
+    uint16_t random_id;
+};
+
 
 /*
 ****************************************************************************************************
 *       INTERNAL GLOBAL VARIABLES
 ****************************************************************************************************
 */
+
+static int g_frames[CC_MAX_FRAMES];
 
 
 /*
@@ -52,69 +56,26 @@
 ****************************************************************************************************
 */
 
-cc_msg_t *cc_msg_new(void)
+cc_handshake_mod_t* cc_handshake_check(cc_handshake_dev_t *received)
 {
-    cc_msg_t *msg = malloc(sizeof(cc_msg_t));
-    msg->header = malloc(DATA_BUFFER_SIZE);
-    msg->data = &msg->header[CC_MSG_HEADER_SIZE];
+    // TODO: check protocol version
+    // TODO: check device firmware version
+    // TODO: calculate channel (based on URI)
 
-    return msg;
-}
+    static cc_handshake_mod_t to_send;
+    to_send.random_id = received->random_id;
+    to_send.status = 0;
+    to_send.channel = 0;
 
-void cc_msg_delete(cc_msg_t *msg)
-{
-    if (msg)
+    for (int i = 0; i < CC_MAX_FRAMES; i++)
     {
-        free(msg->header);
-        free(msg);
+        if (g_frames[i] == 0)
+        {
+            g_frames[i] = 1;
+            to_send.frame = i;
+            return &to_send;
+        }
     }
-}
 
-void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
-{
-    if (msg->command == CC_CMD_HANDSHAKE)
-    {
-        uint32_t i;
-        cc_handshake_dev_t *handshake = data_struct;
-
-        // URI
-        handshake->uri = string_deserialize(msg->data, &i);
-
-        // random id
-        handshake->random_id = *((uint16_t *) &msg->data[i]);
-        i += 2;
-
-        // device protocol version
-        handshake->protocol.major = msg->data[i++];
-        handshake->protocol.minor = msg->data[i++];
-        handshake->protocol.micro = 0;
-
-        // device firmware version
-        handshake->firmware.major = msg->data[i++];
-        handshake->firmware.minor = msg->data[i++];
-        handshake->firmware.micro = msg->data[i++];
-    }
-}
-
-void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
-{
-    msg->command = command;
-
-    if (command == CC_CMD_HANDSHAKE)
-    {
-        const cc_handshake_mod_t *handshake = data_struct;
-        uint8_t *pdata = msg->data;
-
-        // random id
-        uint16_t *random_id = (uint16_t *) pdata;
-        *random_id = handshake->random_id;
-        pdata += 2;
-
-        // status, frame, channel
-        *pdata++ = handshake->status;
-        *pdata++ = handshake->frame;
-        *pdata++ = handshake->channel;
-
-        msg->data_size = (pdata - msg->data);
-    }
+    return 0;
 }

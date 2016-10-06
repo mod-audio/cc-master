@@ -12,10 +12,16 @@
 #include <semaphore.h>
 #include <libserialport.h>
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 #include "utils.h"
 #include "msg.h"
+#include "handshake.h"
 #include "device.h"
 #include "control_chain.h"
+
 
 /*
 ****************************************************************************************************
@@ -115,6 +121,18 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
         sp_nonblocking_write(handle->sp, &sync_byte, 1);
         sp_nonblocking_write(handle->sp, buffer, i);
         pthread_mutex_unlock(&handle->sending);
+
+#ifdef DEBUG
+        if (msg->command == CC_CMD_CHAIN_SYNC)
+            return;
+
+        printf("SEND: device: %i, command: %i\n", msg->dev_address, msg->command);
+        printf("      data size: %i, data:", msg->data_size);
+        for (int i = 0; i < msg->data_size; i++)
+            printf(" %02X", msg->data[i]);
+
+        printf("\n---\n");
+#endif
     }
 }
 
@@ -178,14 +196,25 @@ static void parser(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg_rx;
 
+#ifdef DEBUG
+        printf("RECV: device: %i, command: %i\n", msg->dev_address, msg->command);
+        printf("      data size: %i, data:", msg->data_size);
+        for (int i = 0; i < msg->data_size; i++)
+            printf(" %02X", msg->data[i]);
+
+        printf("\n---\n");
+#endif
+
     if (msg->command == CC_CMD_HANDSHAKE)
     {
-        // TODO: handshake message must return master protocol version
-        int id = cc_device_handshake();
-        if (id >= 0)
+        cc_handshake_dev_t handshake;
+        cc_msg_parser(msg, &handshake);
+        cc_handshake_mod_t *response = cc_handshake_check(&handshake);
+
+        if (response)
         {
-            msg->dev_address = id;
-            send(handle, msg);
+            cc_msg_builder(msg->command, response, handle->msg_tx);
+            send(handle, handle->msg_tx);
         }
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
