@@ -37,6 +37,7 @@ $(OUTPUT): $(OBJ)
 
 install:
 	install -d $(DESTDIR)$(CCDIR)
+	install -d $(DESTDIR)$(LIBDIR)
 	install -m 644 src/*.h $(DESTDIR)$(CCDIR)
 	install -m 755 $(OUTPUT) $(DESTDIR)$(LIBDIR)
 
