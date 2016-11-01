@@ -220,6 +220,9 @@ static void parser(cc_handle_t *handle)
             // build and send response message
             cc_msg_builder(msg->command, response, handle->msg_tx);
             send(handle, handle->msg_tx);
+
+            //destroy handshake structure
+            cc_handshake_destroy(handshake);
         }
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
@@ -468,7 +471,12 @@ void cc_finish(cc_handle_t *handle)
 {
     if (handle)
     {
-        //cc_device_remove_all();
+        // destroy all devices
+        device_t **devices_list = cc_device_list(CC_DEVICE_LIST_ALL);
+        for (int i = 0; devices_list[i]; i++)
+        {
+            cc_device_destroy(devices_list[i]->id);
+        }
 
         pthread_mutex_unlock(&handle->running);
 

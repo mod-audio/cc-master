@@ -86,6 +86,23 @@ void cc_device_destroy(int device_id)
     // TODO: deallocate descriptor
     device_t* device = device_get(device_id);
     device->id = -1;
+
+    // return if device hasn't descriptor
+    if (!device->descriptor)
+        return;
+
+    cc_dev_descriptor_t *descriptor = device->descriptor;
+    string_destroy(descriptor->label);
+
+    if (descriptor->actuators)
+    {
+        for (int i = 0; i < descriptor->actuators_count; i++)
+            free(descriptor->actuators[i]);
+
+        free(descriptor->actuators);
+    }
+
+    free(device->descriptor);
     device->descriptor = 0;
 }
 

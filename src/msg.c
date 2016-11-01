@@ -55,8 +55,8 @@
 
 cc_msg_t *cc_msg_new(void)
 {
-    cc_msg_t *msg = malloc(sizeof(cc_msg_t));
-    msg->header = malloc(DATA_BUFFER_SIZE);
+    cc_msg_t *msg = calloc(1, sizeof(cc_msg_t));
+    msg->header = calloc(1, DATA_BUFFER_SIZE);
     msg->data = &msg->header[CC_MSG_HEADER_SIZE];
 
     return msg;

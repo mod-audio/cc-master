@@ -53,6 +53,7 @@ typedef struct cc_handshake_mod_t {
 */
 
 cc_handshake_mod_t* cc_handshake_check(cc_handshake_dev_t *received);
+void cc_handshake_destroy(cc_handshake_dev_t *handshake);
 
 
 /*
