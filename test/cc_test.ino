@@ -1,11 +1,10 @@
 
 #define SYNC_BYTE           0xA7
-#define THIS_DEV_ADDRESS    0x01
 #define BROADCAST_ADDRESS   0x00
 
 int led = 0;
 
-int assignment_done, need_handshake = 1;
+int assignment_done, need_handshake = 1, device_id = 0;
 
 enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT, CC_CMD_DATA_UPDATE,
                CC_CMD_UNASSIGNMENT};
@@ -76,7 +75,7 @@ void send_msg(uint8_t command, uint8_t *data, uint16_t data_size)
     uint8_t i = 0, buffer[32];
 
     // dev address
-    buffer[i++] = THIS_DEV_ADDRESS;
+    buffer[i++] = device_id;
 
     // command
     buffer[i++] = command;
@@ -153,6 +152,7 @@ void parser(int command, uint8_t *data)
     else if (command == CC_CMD_HANDSHAKE)
     {
 //        digitalWrite(13, HIGH);
+        device_id = data[3]; // set device address
         need_handshake = 0;
     }
     else if (command == CC_CMD_DEV_DESCRIPTOR)
@@ -200,8 +200,7 @@ void serialEvent()
 
             // address
             case 1:
-                if (byte == THIS_DEV_ADDRESS ||
-                    byte == BROADCAST_ADDRESS)
+                if (byte == device_id)
                 {
                     state++;
                 }

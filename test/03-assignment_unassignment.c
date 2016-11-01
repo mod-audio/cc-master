@@ -8,13 +8,11 @@
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
-int dev_id;
 
 void dev_desc(void *arg)
 {
     cc_dev_descriptor_t *desc = arg;
-    printf("device id = %i, name = %s plugged in\n", desc->id, desc->label->text);
-    dev_id = desc->id;
+    printf("name = %s, n actuators = %i\n", desc->label->text, desc->actuators_count);
     no_device = 0;
 }
 
