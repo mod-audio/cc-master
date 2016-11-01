@@ -72,7 +72,7 @@ cc_handshake_mod_t* cc_handshake_check(cc_handshake_dev_t *received)
         if (g_frames[i] == 0)
         {
             g_frames[i] = 1;
-            to_send.frame = i;
+            to_send.address = i + 1;
             return &to_send;
         }
     }

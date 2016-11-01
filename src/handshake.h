@@ -42,7 +42,7 @@ typedef struct cc_handshake_dev_t {
 
 typedef struct cc_handshake_mod_t {
     uint16_t random_id;
-    int status, frame, channel;
+    int status, address, channel;
 } cc_handshake_mod_t;
 
 
