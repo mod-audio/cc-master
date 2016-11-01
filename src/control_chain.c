@@ -424,6 +424,11 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // configure serial port
     sp_set_baudrate(handle->sp, baudrate);
 
+    // if it's an Arduino connected sleeps some seconds for initialization
+    char *manufacturer = sp_get_port_usb_manufacturer(handle->sp);
+    if (strstr(manufacturer, "Arduino"))
+        sleep(3);
+
     // create mutexes
     pthread_mutex_init(&handle->sending, NULL);
     pthread_mutex_init(&handle->running, NULL);
