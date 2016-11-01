@@ -33,16 +33,25 @@
 ****************************************************************************************************
 */
 
+// enumeration to filter list of devices
+// REGISTERED means that the device already received the device descriptor
+// UNREGISTERED means that the device still waiting for the device descriptor
+enum {CC_DEVICE_LIST_ALL, CC_DEVICE_LIST_REGISTERED, CC_DEVICE_LIST_UNREGISTERED};
+
 typedef struct cc_actuator_t {
-    uint8_t id;
+    int id;
 } cc_actuator_t;
 
 typedef struct cc_dev_descriptor_t {
-    uint8_t id;
     string_t *label;
-    uint8_t actuators_count;
+    int actuators_count;
     cc_actuator_t **actuators;
 } cc_dev_descriptor_t;
+
+typedef struct device_t {
+    int id;
+    cc_dev_descriptor_t *descriptor;
+} device_t;
 
 
 /*
@@ -51,11 +60,17 @@ typedef struct cc_dev_descriptor_t {
 ****************************************************************************************************
 */
 
-int cc_device_handshake(void);
-cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data);
-void cc_device_remove(int device_id);
-void cc_device_remove_all(void);
-int* cc_device_missing_descriptors(void);
+// create a device using device_id
+void cc_device_create(int device_id);
+
+// destroy the device
+void cc_device_destroy(int device_id);
+
+// set the device descriptor
+void cc_device_descriptor(int device_id, cc_dev_descriptor_t *descriptor);
+
+// return a NULL terminated devices list according the requested filter
+device_t** cc_device_list(int filter);
 
 
 /*

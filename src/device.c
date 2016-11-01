@@ -32,11 +32,6 @@ enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR, DEV_WAITING_ASSIGNMENT};
 ****************************************************************************************************
 */
 
-typedef struct device_t {
-    int id, status;
-    cc_dev_descriptor_t *descriptor;
-} device_t;
-
 
 /*
 ****************************************************************************************************
@@ -45,6 +40,7 @@ typedef struct device_t {
 */
 
 static device_t g_devices[CC_MAX_DEVICES];
+static int g_devices_initialized;
 
 
 /*
@@ -53,21 +49,15 @@ static device_t g_devices[CC_MAX_DEVICES];
 ****************************************************************************************************
 */
 
-cc_actuator_t *cc_actuator_create(const uint8_t *data, uint32_t *written)
+static device_t* device_get(int device_id)
 {
-    cc_actuator_t *actuator = malloc(sizeof(cc_actuator_t));
-    actuator->id = *data++;
-
-    *written = 1;
-    return actuator;
-}
-
-void cc_actuator_destroy(cc_actuator_t *actuator)
-{
-    if (actuator)
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
     {
-        free(actuator);
+        if (g_devices[i].id == device_id)
+            return &g_devices[i];
     }
+
+    return 0;
 }
 
 
@@ -77,110 +67,55 @@ void cc_actuator_destroy(cc_actuator_t *actuator)
 ****************************************************************************************************
 */
 
-int cc_device_handshake(void)
+void cc_device_create(int device_id)
 {
-    // get next free device
-    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    if (!g_devices_initialized)
     {
-        if (g_devices[i].status == DEV_WAITING_HANDSHAKE)
-        {
-            g_devices[i].id = i + 1;
-            g_devices[i].status++;
-            return g_devices[i].id;
-        }
+        for (int i = 0; i < CC_MAX_DEVICES; i++)
+            g_devices[i].id = -1;
+
+        g_devices_initialized = 1;
     }
 
-    return -1;
+    static int count;
+    g_devices[count++].id = device_id;
 }
 
-cc_dev_descriptor_t* cc_device_add(uint8_t device_id, const uint8_t *data)
+void cc_device_destroy(int device_id)
 {
-    int idx = device_id - 1;
-    device_t *dev = &g_devices[idx];
-
-    if (dev->status == DEV_WAITING_DESCRIPTOR)
-    {
-        dev->status++;
-
-        // create descriptor
-        cc_dev_descriptor_t *desc = malloc(sizeof(cc_dev_descriptor_t));
-        dev->descriptor = desc;
-
-        desc->id = device_id;
-
-        uint32_t n;
-
-        // create label from buffer
-        desc->label = string_deserialize(data, &n);
-        data += n;
-
-        // create actuators list
-        desc->actuators_count = *data++;
-        desc->actuators = malloc(sizeof(cc_actuator_t *) * desc->actuators_count);
-
-        // create each actuator
-        for (int i = 0; i < desc->actuators_count; i++)
-        {
-            desc->actuators[i] = cc_actuator_create(data, &n);
-            data += n;
-        }
-
-        return desc;
-    }
-
-    return NULL;
+    // TODO: deallocate descriptor
+    device_t* device = device_get(device_id);
+    device->id = -1;
+    device->descriptor = 0;
 }
 
-void cc_device_remove(int device_id)
+void cc_device_descriptor(int device_id, cc_dev_descriptor_t *descriptor)
 {
-    int idx = device_id - 1;
+    device_t* device = device_get(device_id);
+    device->descriptor = descriptor;
+}
 
-    if (g_devices[idx].id > 0)
+device_t** cc_device_list(int filter)
+{
+    int count = 0;
+    static device_t *devices_list[CC_MAX_DEVICES+1];
+
+    if (g_devices_initialized)
     {
-        cc_dev_descriptor_t *desc = g_devices[idx].descriptor;
-        if (desc)
+        for (int i = 0; i < CC_MAX_DEVICES; i++)
         {
-            if (desc->label)
-                string_destroy(desc->label);
+            if (g_devices[i].id < 0)
+                continue;
 
-            if (desc->actuators)
+            if (filter == CC_DEVICE_LIST_ALL ||
+               (filter == CC_DEVICE_LIST_REGISTERED && g_devices[i].descriptor) ||
+               (filter == CC_DEVICE_LIST_UNREGISTERED && !g_devices[i].descriptor))
             {
-                for (int i = 0; i < desc->actuators_count; i++)
-                {
-                    cc_actuator_destroy(desc->actuators[i]);
-                }
-                free(desc->actuators);
+                devices_list[count++] = &g_devices[i];
             }
-
-            free(desc);
-        }
-
-        g_devices[idx].id = 0;
-        g_devices[idx].status = 0;
-    }
-}
-
-void cc_device_remove_all(void)
-{
-    for (int i = 0; i < CC_MAX_DEVICES; i++)
-    {
-        cc_device_remove(g_devices[i].id);
-    }
-}
-
-int* cc_device_missing_descriptors(void)
-{
-    static int missing_descriptors[CC_MAX_DEVICES+1];
-
-    int j = 0;
-    for (int i = 0; i < CC_MAX_DEVICES; i++)
-    {
-        if (g_devices[i].status == DEV_WAITING_DESCRIPTOR)
-        {
-            missing_descriptors[j++] = g_devices[i].id;
         }
     }
 
-    missing_descriptors[j] = 0;
-    return missing_descriptors;
+    devices_list[count] = 0;
+    return devices_list;
 }

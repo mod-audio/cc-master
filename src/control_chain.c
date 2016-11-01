@@ -65,7 +65,7 @@ struct cc_handle_t {
     int state;
     struct sp_port *sp;
     void (*data_update_cb)(void *arg);
-    void (*dev_desc_cb)(void *arg);
+    void (*dev_descriptor_cb)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
     sem_t waiting_response;
@@ -207,12 +207,17 @@ static void parser(cc_handle_t *handle)
 
     if (msg->command == CC_CMD_HANDSHAKE)
     {
-        cc_handshake_dev_t handshake;
-        cc_msg_parser(msg, &handshake);
-        cc_handshake_mod_t *response = cc_handshake_check(&handshake);
+        cc_handshake_dev_t *handshake = cc_msg_parser(msg);
+        cc_handshake_mod_t *response = cc_handshake_check(handshake);
 
         if (response)
         {
+            //TODO: check response status
+
+            // create a new device using the passing the required address
+            cc_device_create(response->address);
+
+            // build and send response message
             cc_msg_builder(msg->command, response, handle->msg_tx);
             send(handle, handle->msg_tx);
         }
@@ -220,9 +225,16 @@ static void parser(cc_handle_t *handle)
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
     {
         sem_post(&handle->waiting_response);
-        cc_dev_descriptor_t *desc = cc_device_add(msg->dev_address, msg->data);
-        if (desc && handle->dev_desc_cb)
-            handle->dev_desc_cb(desc);
+
+        // parse device descriptor message to struct
+        cc_dev_descriptor_t *descriptor = cc_msg_parser(msg);
+
+        // set device descriptor
+        cc_device_descriptor(msg->dev_address, descriptor);
+
+        // proceed to callback if any
+        if (handle->dev_descriptor_cb)
+            handle->dev_descriptor_cb(descriptor);
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
              msg->command == CC_CMD_UNASSIGNMENT)
@@ -335,17 +347,16 @@ static void* chain_sync(void *arg)
         // period between sync messages
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
-        // request all missing device descriptors
-        int *missing_desc = cc_device_missing_descriptors();
-        while(*missing_desc)
+        // list devices without device descriptor
+        device_t **devices_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
+        for (int i = 0; devices_list[i]; i++)
         {
-            int dev_id = *missing_desc++;
-            dev_desc_msg.dev_address = dev_id;
+            dev_desc_msg.dev_address = devices_list[i]->id;
 
             // request device descriptor
             if (send_and_wait(handle, &dev_desc_msg))
             {
-                cc_device_remove(dev_id);
+                cc_device_destroy(devices_list[i]->id);
             }
         }
 
@@ -457,7 +468,7 @@ void cc_finish(cc_handle_t *handle)
 {
     if (handle)
     {
-        cc_device_remove_all();
+        //cc_device_remove_all();
 
         pthread_mutex_unlock(&handle->running);
 
@@ -528,5 +539,8 @@ void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
 
 void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg))
 {
-    handle->dev_desc_cb = callback;
+    handle->dev_descriptor_cb = callback;
 }
+
+
+// TODO: timeout to receive device descriptor (release frame of handshake)
