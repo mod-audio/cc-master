@@ -9,6 +9,7 @@
 */
 
 #include "utils.h"
+#include "lili.h"
 
 
 /*
@@ -51,6 +52,7 @@ typedef struct cc_dev_descriptor_t {
 typedef struct device_t {
     int id;
     cc_dev_descriptor_t *descriptor;
+    lili_t *assignments;
 } device_t;
 
 
@@ -71,6 +73,9 @@ void cc_device_descriptor(int device_id, cc_dev_descriptor_t *descriptor);
 
 // return a NULL terminated devices list according the requested filter
 device_t** cc_device_list(int filter);
+
+// return the device pointer or NULL if id is invalid
+device_t* cc_device_get(int device_id);
 
 
 /*

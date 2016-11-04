@@ -1,4 +1,3 @@
-
 /*
 ****************************************************************************************************
 *       INCLUDE FILES
@@ -49,17 +48,6 @@ static int g_devices_initialized;
 ****************************************************************************************************
 */
 
-static device_t* device_get(int device_id)
-{
-    for (int i = 0; i < CC_MAX_DEVICES; i++)
-    {
-        if (g_devices[i].id == device_id)
-            return &g_devices[i];
-    }
-
-    return 0;
-}
-
 
 /*
 ****************************************************************************************************
@@ -83,9 +71,12 @@ void cc_device_create(int device_id)
 
 void cc_device_destroy(int device_id)
 {
-    // TODO: deallocate descriptor
-    device_t* device = device_get(device_id);
+    device_t *device = cc_device_get(device_id);
     device->id = -1;
+
+    // destroy assigments list
+    if (device->assignments)
+        lili_destroy(device->assignments);
 
     // return if device hasn't descriptor
     if (!device->descriptor)
@@ -108,7 +99,7 @@ void cc_device_destroy(int device_id)
 
 void cc_device_descriptor(int device_id, cc_dev_descriptor_t *descriptor)
 {
-    device_t* device = device_get(device_id);
+    device_t* device = cc_device_get(device_id);
     device->descriptor = descriptor;
 }
 
@@ -135,4 +126,15 @@ device_t** cc_device_list(int filter)
 
     devices_list[count] = 0;
     return devices_list;
+}
+
+device_t* cc_device_get(int device_id)
+{
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        if (g_devices[i].id == device_id)
+            return &g_devices[i];
+    }
+
+    return 0;
 }
