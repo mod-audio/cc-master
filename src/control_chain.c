@@ -505,44 +505,26 @@ void cc_finish(cc_handle_t *handle)
 
 int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 {
-    uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
-    uint16_t size;
+    int id = cc_assignment_add(assignment);
 
-    int id = cc_assignment_add(assignment, buffer, &size);
-    if (id >= 0)
+    // build and send assignment message
+    cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, handle->msg_tx);
+    if (send_and_wait(handle, handle->msg_tx))
     {
-        cc_msg_t msg;
-        msg.dev_address = assignment->device_id;
-        msg.command = CC_CMD_ASSIGNMENT;
-        msg.data = buffer;
-        msg.data_size = size;
-
-        if (send_and_wait(handle, &msg))
-        {
-            cc_assignment_remove(id, NULL, NULL);
-            return -1;
-        }
-
-        return id;
+        cc_assignment_remove(assignment->device_id, id);
+        return -1;
     }
 
-    return -1;
+    return id;
 }
 
-void cc_unassignment(cc_handle_t *handle, int assignment_id)
+void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
 {
-    uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
-    uint16_t size;
+    cc_assignment_remove(unassignment->device_id, unassignment->assignment_id);
 
-    int device_id = cc_assignment_remove(assignment_id, buffer, &size);
-
-    cc_msg_t msg;
-    msg.dev_address = device_id;
-    msg.command = CC_CMD_UNASSIGNMENT;
-    msg.data = buffer;
-    msg.data_size = size;
-
-    send_and_wait(handle, &msg);
+    // build and send unassignment message
+    cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, handle->msg_tx);
+    send_and_wait(handle, handle->msg_tx);
 }
 
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))

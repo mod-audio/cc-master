@@ -42,19 +42,14 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-/*
-typedef struct cc_assignment_t {
-    int device_id;
-    int actuator_id;
-    float value, min, max, def;
-    uint32_t mode;
-} cc_assignment_t;
-*/
-    cc_assignment_t ass = {1, 0, 0.0, 0.0, 1.0, 0.0, 1};
-    int ass_id = cc_assignment(handle, &ass);
-    sleep(5);
-    cc_unassignment(handle, ass_id);
+    cc_assignment_t ass = {-1, 1, 0, 1.0, 0.0, 1.0, 0.0, 1};
+    int id = cc_assignment(handle, &ass);
     sleep(3);
+
+    cc_unassignment_t unass = {1, id};
+    cc_unassignment(handle, &unass);
+    sleep(3);
+
     cc_finish(handle);
 
     return 0;

@@ -32,11 +32,15 @@
 */
 
 typedef struct cc_assignment_t {
-    int device_id;
-    int actuator_id;
+    int id;
+    int device_id, actuator_id;
     float value, min, max, def;
     uint32_t mode;
 } cc_assignment_t;
+
+typedef struct cc_unassignment_t {
+    int device_id, assignment_id;
+} cc_unassignment_t;
 
 
 /*
@@ -45,8 +49,8 @@ typedef struct cc_assignment_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *written);
-int cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written);
+int cc_assignment_add(cc_assignment_t *assignment);
+void cc_assignment_remove(int device_id, int assignment_id);
 
 
 /*

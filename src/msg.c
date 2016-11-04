@@ -8,6 +8,7 @@
 #include "msg.h"
 #include "handshake.h"
 #include "device.h"
+#include "assignment.h"
 
 
 /*
@@ -148,6 +149,44 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         *pdata++ = handshake->status;
         *pdata++ = handshake->address;
         *pdata++ = handshake->channel;
+
+        msg->data_size = (pdata - msg->data);
+    }
+    else if (command == CC_CMD_ASSIGNMENT)
+    {
+        const cc_assignment_t *assignment = data_struct;
+        uint8_t *pdata = msg->data;
+
+        // device address
+        msg->dev_address = assignment->device_id;
+
+        // assignment id, actuator id
+        *pdata++ = assignment->id;
+        *pdata++ = assignment->actuator_id;
+
+        // value, min, max, def
+        pdata += float_to_bytes(assignment->value, pdata);
+        pdata += float_to_bytes(assignment->min, pdata);
+        pdata += float_to_bytes(assignment->max, pdata);
+        pdata += float_to_bytes(assignment->def, pdata);
+
+        // mode
+        uint32_t *mode = (uint32_t *) pdata;
+        *mode = assignment->mode;
+        pdata += 4;
+
+        msg->data_size = (pdata - msg->data);
+    }
+    else if (command == CC_CMD_UNASSIGNMENT)
+    {
+        const cc_unassignment_t *unassignment = data_struct;
+        uint8_t *pdata = msg->data;
+
+        // device address
+        msg->dev_address = unassignment->device_id;
+
+        // assignment id
+        *pdata++ = unassignment->assignment_id;
 
         msg->data_size = (pdata - msg->data);
     }

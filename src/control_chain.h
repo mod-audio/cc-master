@@ -59,7 +59,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate);
 void cc_finish(cc_handle_t *handle);
 
 int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
-void cc_unassignment(cc_handle_t *handle, int assignment_id);
+void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment);
 
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
 void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg));

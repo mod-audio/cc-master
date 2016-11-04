@@ -1,4 +1,3 @@
-
 /*
 ****************************************************************************************************
 *       INCLUDE FILES
@@ -6,8 +5,10 @@
 */
 
 #include "assignment.h"
+#include "device.h"
 #include "utils.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -17,7 +18,7 @@
 ****************************************************************************************************
 */
 
-#define CC_MAX_ASSIGNMENTS  1000
+#define CC_MAX_ASSIGNMENTS  256
 
 
 /*
@@ -33,10 +34,6 @@
 ****************************************************************************************************
 */
 
-struct assignment_key_t {
-    int device_id, actuator_id;
-};
-
 
 /*
 ****************************************************************************************************
@@ -44,7 +41,7 @@ struct assignment_key_t {
 ****************************************************************************************************
 */
 
-static struct assignment_key_t g_assignments[CC_MAX_ASSIGNMENTS];
+static int g_assignments_ids[CC_MAX_DEVICES][CC_MAX_ASSIGNMENTS];
 
 
 /*
@@ -53,6 +50,25 @@ static struct assignment_key_t g_assignments[CC_MAX_ASSIGNMENTS];
 ****************************************************************************************************
 */
 
+static int new_id(int device_id)
+{
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (g_assignments_ids[device_id][i] == 0)
+        {
+            g_assignments_ids[device_id][i] = 1;
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static void delete_id(int device_id, int assignment_id)
+{
+    g_assignments_ids[device_id][assignment_id] = 0;
+}
+
 
 /*
 ****************************************************************************************************
@@ -60,58 +76,46 @@ static struct assignment_key_t g_assignments[CC_MAX_ASSIGNMENTS];
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment, uint8_t *buffer, uint16_t *written)
+int cc_assignment_add(cc_assignment_t *assignment)
 {
-    *written = 0;
+    device_t *device = cc_device_get(assignment->device_id);
 
-    // get next free assignment
-    int assignment_id = -1;
-    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    if (!device->assignments)
+        device->assignments = lili_create();
+
+    // duplicate assignment
+    cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
+    memcpy(copy, assignment, sizeof(cc_assignment_t));
+
+    // get new assignment id
+    int assignment_id = new_id(device->id);
+    if (assignment_id >= 0)
     {
-        if (g_assignments[i].device_id == 0)
-        {
-            g_assignments[i].device_id = assignment->device_id;
-            g_assignments[i].actuator_id = assignment->actuator_id;
-            assignment_id = i;
-            break;
-        }
+        // store id and push to assigments list
+        assignment->id = assignment_id;
+        copy->id = assignment_id;
+        lili_push(device->assignments, copy);
     }
-
-    // no free assignment available
-    if (assignment_id < 0)
-        return -1;
-
-    int i = 0;
-    buffer[i++] = assignment_id;
-    buffer[i++] = assignment->actuator_id;
-    i += float_to_bytes(assignment->value, &buffer[i]);
-    i += float_to_bytes(assignment->min, &buffer[i]);
-    i += float_to_bytes(assignment->max, &buffer[i]);
-    i += float_to_bytes(assignment->def, &buffer[i]);
-    memcpy(&buffer[i], &assignment->mode, sizeof (uint32_t));
-    i += sizeof (uint32_t);
-
-    *written = i;
 
     return assignment_id;
 }
 
-int cc_assignment_remove(int assignment_id, uint8_t *buffer, uint16_t *written)
+void cc_assignment_remove(int device_id, int assignment_id)
 {
-    if (assignment_id < 0 || assignment_id > CC_MAX_ASSIGNMENTS)
-        return -1;
+    device_t *device = cc_device_get(device_id);
 
-    struct assignment_key_t *assignment = &g_assignments[assignment_id];
-
-    if (buffer)
+    int index = 0;
+    LILI_FOREACH(device->assignments, node)
     {
-        buffer[0] = assignment_id;
-        *written = 1;
+        cc_assignment_t *assignment = node->data;
+        if (assignment_id == assignment->id)
+        {
+            delete_id(device->id, assignment_id);
+            lili_pop_from(device->assignments, index);
+            free(assignment);
+            return;
+        }
+
+        index++;
     }
-
-    // make this assignment id available again
-    int device_id = assignment->device_id;
-    assignment->device_id = 0;
-
-    return device_id;
 }

@@ -30,9 +30,11 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-    cc_assignment_t ass = {1, 0, 1.0, 0.0, 1.0, 0.0, 1};
-    int ass_id = cc_assignment(handle, &ass);
-    cc_unassignment(handle, ass_id);
+    cc_assignment_t ass = {-1, 1, 0, 1.0, 0.0, 1.0, 0.0, 1};
+    int id = cc_assignment(handle, &ass);
+
+    cc_unassignment_t unass = {1, id};
+    cc_unassignment(handle, &unass);
 
     cc_finish(handle);
 
