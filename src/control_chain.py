@@ -11,38 +11,44 @@ class String(Structure):
 
 class Data(Structure):
     _fields_ = [
-        ("assigment_id", c_ubyte),
+        ("assigment_id", c_int),
         ("value", c_float),
     ]
 
-class DataUpdate(Structure):
+class UpdateList(Structure):
     _fields_ = [
-        ("count", c_ubyte),
-        ("updates_list", POINTER(Data)),
+        ("count", c_int),
+        ("list", POINTER(Data)),
     ]
 
 class Actuator(Structure):
     _fields_ = [
-        ("id", c_ubyte),
+        ("id", c_int),
     ]
 
 class DevDescriptor(Structure):
     _fields_ = [
-        ("id", c_ubyte),
         ("label", POINTER(String)),
-        ("actuators_count", c_ubyte),
+        ("actuators_count", c_int),
         ("actuators", POINTER(POINTER(Actuator))),
     ]
 
 class Assignment(Structure):
     _fields_ = [
-        ("device_id", c_ubyte),
-        ("actuator_id", c_ubyte),
+        ("id", c_int),
+        ("device_id", c_int),
+        ("actuator_id", c_int),
         ("value", c_float),
         ("min", c_float),
         ("max", c_float),
         ("def", c_float),
         ("mode", c_uint32),
+    ]
+
+class Unassignment(Structure):
+    _fields_ = [
+        ("device_id", c_int),
+        ("assignment_id", c_int),
     ]
 
 lib = cdll.LoadLibrary("../libcontrol_chain.so")
@@ -59,12 +65,12 @@ lib.cc_finish.restype = None
 lib.cc_assignment.argtypes = [c_void_p, POINTER(Assignment)]
 lib.cc_assignment.restype = int
 
-#void cc_unassignment(cc_handle_t *handle, int assignment_id);
-lib.cc_unassignment.argtypes = [c_void_p, c_ubyte]
+#void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
+lib.cc_unassignment.argtypes = [c_void_p, POINTER(Unassignment)]
 lib.cc_unassignment.restype = None
 
 #void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
-DATA_CB = CFUNCTYPE(None, POINTER(DataUpdate))
+DATA_CB = CFUNCTYPE(None, POINTER(UpdateList))
 lib.cc_data_update_cb.argtypes = [c_void_p, DATA_CB]
 lib.cc_data_update_cb.restype = None
 
@@ -94,7 +100,6 @@ class ControlChain(object):
 
     def _dev_desc(self, arg):
         dev_descriptor = {}
-        dev_descriptor['id'] = arg.contents.id
         dev_descriptor['label'] = arg.contents.label.contents.text.decode('utf-8')
 
         actuators = []
@@ -110,8 +115,8 @@ class ControlChain(object):
         updates = []
         for i in range(arg.contents.count):
             update = {}
-            update['assigment_id'] = arg.contents.updates_list[i].assigment_id
-            update['value'] = arg.contents.updates_list[i].value
+            update['assigment_id'] = arg.contents.list[i].assigment_id
+            update['value'] = arg.contents.list[i].value
             updates.append(update)
 
         self.user_data_update_cb(updates)
@@ -128,8 +133,9 @@ class ControlChain(object):
         assignment = Assignment(*assignment)
         return lib.cc_assignment(self.obj, assignment)
 
-    def unassignment(self, assignment_id):
-        lib.cc_unassignment(self.obj, assignment_id)
+    def unassignment(self, unassignment):
+        unassignment = Unassignment(*unassignment)
+        lib.cc_unassignment(self.obj, unassignment)
 
 ### test
 if __name__ == "__main__":
@@ -144,11 +150,10 @@ if __name__ == "__main__":
     cc.data_update_cb(data_update)
 
     import time
+    time.sleep(1)
+
+    assignment_id = cc.assignment((-1, 1, 0, 1.0, 0.0, 1.0, 0.0, 1))
     time.sleep(3)
 
-    assignment_id = cc.assignment((1, 0, 1.0, 0.0, 1.0, 0.0, 1))
-    print('assignment_id', assignment_id)
-    time.sleep(3)
-
-    cc.unassignment(assignment_id)
+    cc.unassignment((1, assignment_id))
     time.sleep(1)
