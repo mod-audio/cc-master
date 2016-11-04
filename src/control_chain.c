@@ -18,8 +18,6 @@
 
 #include "utils.h"
 #include "msg.h"
-#include "handshake.h"
-#include "device.h"
 #include "control_chain.h"
 
 
@@ -175,21 +173,14 @@ static int running(cc_handle_t *handle)
 static void parse_data_update(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg_rx;
-    cc_data_t data[256];
-    cc_data_update_t update;
 
-    update.count = msg->data[0];
-    update.updates_list = data;
-
-    for (int i = 0, j = 1; i < update.count; i++)
-    {
-        data[i].assignment_id = msg->data[j++];
-        memcpy(&data[i].value, &msg->data[j], sizeof (float));
-        j += sizeof (float);
-    }
+    // parse update list message to struct
+    cc_update_list_t *updates = cc_msg_parser(msg);
 
     if (handle->data_update_cb)
-        handle->data_update_cb(&update);
+        handle->data_update_cb(updates);
+
+    update_free(updates);
 }
 
 static void parser(cc_handle_t *handle)
@@ -505,17 +496,17 @@ void cc_finish(cc_handle_t *handle)
 
 int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 {
-    int id = cc_assignment_add(assignment);
+    cc_assignment_add(assignment);
 
     // build and send assignment message
     cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, handle->msg_tx);
     if (send_and_wait(handle, handle->msg_tx))
     {
-        cc_assignment_remove(assignment->device_id, id);
+        cc_assignment_remove(assignment->device_id, assignment->id);
         return -1;
     }
 
-    return id;
+    return assignment->id;
 }
 
 void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)

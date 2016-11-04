@@ -1,5 +1,6 @@
-#ifndef CONTROL_CHAIN_H
-#define CONTROL_CHAIN_H
+#ifndef CC_UPDATE_H
+#define CC_UPDATE_H
+
 
 /*
 ****************************************************************************************************
@@ -7,20 +8,12 @@
 ****************************************************************************************************
 */
 
-#include "handshake.h"
-#include "device.h"
-#include "assignment.h"
-#include "update.h"
-
 
 /*
 ****************************************************************************************************
 *       MACROS
 ****************************************************************************************************
 */
-
-#define CC_MODE_TOGGLE  0x01
-#define CC_MODE_TRIGGER 0x02
 
 
 /*
@@ -36,7 +29,15 @@
 ****************************************************************************************************
 */
 
-typedef struct cc_handle_t cc_handle_t;
+typedef struct cc_data_t {
+    int assignment_id;
+    float value;
+} cc_data_t;
+
+typedef struct cc_update_list_t {
+    int count;
+    cc_data_t *list;
+} cc_update_list_t;
 
 
 /*
@@ -45,14 +46,7 @@ typedef struct cc_handle_t cc_handle_t;
 ****************************************************************************************************
 */
 
-cc_handle_t* cc_init(const char *port_name, int baudrate);
-void cc_finish(cc_handle_t *handle);
-
-int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
-void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment);
-
-void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
-void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg));
+void update_free(cc_update_list_t *updates);
 
 
 /*

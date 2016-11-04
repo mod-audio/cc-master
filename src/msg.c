@@ -5,10 +5,12 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "msg.h"
 #include "handshake.h"
 #include "device.h"
 #include "assignment.h"
+#include "update.h"
 
 
 /*
@@ -126,6 +128,24 @@ void* cc_msg_parser(const cc_msg_t *msg)
         }
 
         return descriptor;
+    }
+    else if (msg->command == CC_CMD_DATA_UPDATE)
+    {
+        cc_update_list_t *updates = malloc(sizeof(cc_update_list_t));
+
+        updates->count = msg->data[0];
+        updates->list = malloc(sizeof(cc_data_t) * updates->count);
+
+        for (int i = 0, j = 1; i < updates->count; i++)
+        {
+            cc_data_t *data = &updates->list[i];
+            data->assignment_id = msg->data[j++];
+            float *value = (float *) &msg->data[j];
+            data->value = *value;
+            j += sizeof (float);
+        }
+
+        return updates;
     }
 
     return 0;
