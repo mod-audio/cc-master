@@ -200,10 +200,10 @@ void serialEvent()
 
             // address
             case 1:
-                if (byte == device_id)
-                {
+                if (byte == 0 || byte == device_id)
                     state++;
-                }
+                else
+                    state = 0;
                 break;
 
             // command

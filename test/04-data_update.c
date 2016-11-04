@@ -18,11 +18,12 @@ void dev_desc(void *arg)
 
 void data_update(void *arg)
 {
-    cc_data_update_t *updates = arg;
+    cc_update_list_t *updates = arg;
+    printf("*** received %i updates\n", updates->count);
 
     for (int i = 0; i < updates->count; ++i)
     {
-        cc_data_t *data = &updates->updates_list[i];
+        cc_data_t *data = &updates->list[i];
         printf("id = %i, value = %f\n", data->assignment_id, data->value);
     }
 }
