@@ -16,9 +16,13 @@
 #include <stdio.h>
 #endif
 
+#include "core.h"
 #include "utils.h"
 #include "msg.h"
-#include "control_chain.h"
+#include "handshake.h"
+#include "device.h"
+#include "assignment.h"
+#include "update.h"
 
 
 /*
