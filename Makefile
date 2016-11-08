@@ -1,4 +1,3 @@
-
 CC ?= gcc
 
 # source directory and output name
@@ -47,4 +46,4 @@ install:
 		control_chain.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/control_chain.pc
 
 clean:
-	rm -f $(SRC_DIR)/*.o $(OUTPUT)
+	rm -f $(OBJ) $(OUTPUT)

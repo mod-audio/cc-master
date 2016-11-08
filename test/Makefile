@@ -1,4 +1,3 @@
-
 CC ?= gcc
 
 # source directory
@@ -34,7 +33,7 @@ all: $(OUTPUTS)
 	$(CC) $(CFLAGS) $(INCS) -o $@ -c $<
 
 clean:
-	rm -f $(SRC_DIR)/*.o *.bin
+	rm -f $(OBJ) *.bin
 
 run-tests:
 	@for f in *.bin; do valgrind --leak-check=full --show-leak-kinds=all ./$$f; echo; done
