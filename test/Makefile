@@ -16,7 +16,7 @@ CFLAGS += -Wall -Wextra
 LDFLAGS += -L.. -Wl,-rpath=..
 
 # includes and libraries
-INCS = -I../src
+INCS = -I../lib
 LIBS = -l:$(LIB_NAME)
 
 # source, object and output

@@ -227,12 +227,13 @@ static void parser(cc_handle_t *handle)
         // parse device descriptor message to struct
         cc_dev_descriptor_t *descriptor = cc_msg_parser(msg);
 
-        // set device descriptor
-        cc_device_descriptor(msg->dev_address, descriptor);
+        // store device descriptor
+        cc_device_t *device = cc_device_get(msg->dev_address);
+        device->descriptor = descriptor;
 
         // proceed to callback if any
         if (handle->dev_descriptor_cb)
-            handle->dev_descriptor_cb(descriptor);
+            handle->dev_descriptor_cb(device);
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
              msg->command == CC_CMD_UNASSIGNMENT)
@@ -346,7 +347,7 @@ static void* chain_sync(void *arg)
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
         // list devices without device descriptor
-        device_t **devices_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
+        cc_device_t **devices_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
         for (int i = 0; devices_list[i]; i++)
         {
             dev_desc_msg.dev_address = devices_list[i]->id;
@@ -472,7 +473,7 @@ void cc_finish(cc_handle_t *handle)
     if (handle)
     {
         // destroy all devices
-        device_t **devices_list = cc_device_list(CC_DEVICE_LIST_ALL);
+        cc_device_t **devices_list = cc_device_list(CC_DEVICE_LIST_ALL);
         for (int i = 0; devices_list[i]; i++)
         {
             cc_device_destroy(devices_list[i]->id);

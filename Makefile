@@ -22,7 +22,7 @@ CFLAGS += -Wall -Wextra -fPIC -std=gnu99
 LDFLAGS += -shared
 
 # libraries
-LIBS = -lserialport -lpthread
+LIBS = -lserialport -lpthread -ljansson
 
 # source and object files
 SRC = $(wildcard $(SRC_DIR)/*.c)

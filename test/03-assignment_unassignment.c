@@ -11,8 +11,8 @@ int no_device = 1;
 
 void dev_desc(void *arg)
 {
-    cc_dev_descriptor_t *desc = arg;
-    printf("name = %s, n actuators = %i\n", desc->label->text, desc->actuators_count);
+    cc_device_t *device = arg;
+    printf("device %s connected\n", device->descriptor->label->text);
     no_device = 0;
 }
 

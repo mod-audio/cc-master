@@ -78,7 +78,7 @@ static void delete_id(int device_id, int assignment_id)
 
 int cc_assignment_add(cc_assignment_t *assignment)
 {
-    device_t *device = cc_device_get(assignment->device_id);
+    cc_device_t *device = cc_device_get(assignment->device_id);
 
     if (!device->assignments)
         device->assignments = lili_create();
@@ -102,7 +102,7 @@ int cc_assignment_add(cc_assignment_t *assignment)
 
 void cc_assignment_remove(cc_unassignment_t *unassignment)
 {
-    device_t *device = cc_device_get(unassignment->device_id);
+    cc_device_t *device = cc_device_get(unassignment->device_id);
 
     int index = 0;
     LILI_FOREACH(device->assignments, node)

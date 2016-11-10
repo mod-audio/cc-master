@@ -10,12 +10,11 @@ int no_device = 1;
 
 void dev_desc(void *arg)
 {
-    cc_dev_descriptor_t *desc = arg;
-    printf("name = %s, n actuators = %i\n", desc->label->text, desc->actuators_count);
-    for (int i = 0; i < desc->actuators_count; i++)
-    {
-        printf("   actuator id: %i\n", desc->actuators[i]->id);
-    }
+    cc_device_t *device = arg;
+    char *descriptor = cc_device_descriptor(device->id);
+
+    printf("%s\n", descriptor);
+    free(descriptor);
 
     no_device = 0;
 }

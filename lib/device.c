@@ -5,6 +5,7 @@
 */
 
 #include <stdlib.h>
+#include <jansson.h>
 #include "device.h"
 
 
@@ -38,7 +39,7 @@ enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR, DEV_WAITING_ASSIGNMENT};
 ****************************************************************************************************
 */
 
-static device_t g_devices[CC_MAX_DEVICES];
+static cc_device_t g_devices[CC_MAX_DEVICES];
 static int g_devices_initialized;
 
 
@@ -71,7 +72,7 @@ void cc_device_create(int device_id)
 
 void cc_device_destroy(int device_id)
 {
-    device_t *device = cc_device_get(device_id);
+    cc_device_t *device = cc_device_get(device_id);
     device->id = -1;
 
     // destroy assigments list
@@ -97,16 +98,46 @@ void cc_device_destroy(int device_id)
     device->descriptor = 0;
 }
 
-void cc_device_descriptor(int device_id, cc_dev_descriptor_t *descriptor)
+char* cc_device_descriptor(int device_id)
 {
-    device_t* device = cc_device_get(device_id);
-    device->descriptor = descriptor;
+    cc_device_t* device = cc_device_get(device_id);
+    cc_dev_descriptor_t *descriptor = device->descriptor;
+
+    json_t *root = json_object();
+
+    // label
+    json_t *label = json_stringn(descriptor->label->text, descriptor->label->size);
+    json_object_set_new(root, "label", label);
+
+    // actuators
+    json_t *actuators = json_array();
+    json_object_set_new(root, "actuators", actuators);
+
+    // populate actuators list
+    for (int i = 0; i < descriptor->actuators_count; i++)
+    {
+        json_t *actuator = json_object();
+
+        // actuator id
+        json_t *id = json_integer(descriptor->actuators[i]->id);
+        json_object_set_new(actuator, "id", id);
+
+        // add to list
+        json_array_append_new(actuators, actuator);
+    }
+
+    char *str = json_dumps(root, 0);
+
+    // free json object
+    json_decref(root);
+
+    return str;
 }
 
-device_t** cc_device_list(int filter)
+cc_device_t** cc_device_list(int filter)
 {
     int count = 0;
-    static device_t *devices_list[CC_MAX_DEVICES+1];
+    static cc_device_t *devices_list[CC_MAX_DEVICES+1];
 
     if (g_devices_initialized)
     {
@@ -128,7 +159,7 @@ device_t** cc_device_list(int filter)
     return devices_list;
 }
 
-device_t* cc_device_get(int device_id)
+cc_device_t* cc_device_get(int device_id)
 {
     for (int i = 0; i < CC_MAX_DEVICES; i++)
     {

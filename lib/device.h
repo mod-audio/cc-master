@@ -49,11 +49,11 @@ typedef struct cc_dev_descriptor_t {
     cc_actuator_t **actuators;
 } cc_dev_descriptor_t;
 
-typedef struct device_t {
+typedef struct cc_device_t {
     int id;
     cc_dev_descriptor_t *descriptor;
     lili_t *assignments;
-} device_t;
+} cc_device_t;
 
 
 /*
@@ -68,14 +68,14 @@ void cc_device_create(int device_id);
 // destroy the device
 void cc_device_destroy(int device_id);
 
-// set the device descriptor
-void cc_device_descriptor(int device_id, cc_dev_descriptor_t *descriptor);
+// return the device descriptor in json format
+char* cc_device_descriptor(int device_id);
 
 // return a NULL terminated devices list according the requested filter
-device_t** cc_device_list(int filter);
+cc_device_t** cc_device_list(int filter);
 
 // return the device pointer or NULL if id is invalid
-device_t* cc_device_get(int device_id);
+cc_device_t* cc_device_get(int device_id);
 
 
 /*
