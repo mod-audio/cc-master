@@ -133,6 +133,12 @@ void* cc_msg_parser(const cc_msg_t *msg)
     {
         cc_update_list_t *updates = malloc(sizeof(cc_update_list_t));
 
+        // store raw data
+        updates->raw_data = malloc(msg->data_size);
+        updates->raw_size = msg->data_size;
+        memcpy(updates->raw_data, msg->data, msg->data_size);
+
+        // parse data to struct
         updates->count = msg->data[0];
         updates->list = malloc(sizeof(cc_data_t) * updates->count);
 

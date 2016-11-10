@@ -8,6 +8,8 @@
 ****************************************************************************************************
 */
 
+#include <stdint.h>
+
 
 /*
 ****************************************************************************************************
@@ -37,6 +39,8 @@ typedef struct cc_data_t {
 typedef struct cc_update_list_t {
     int count;
     cc_data_t *list;
+    uint8_t *raw_data;
+    int raw_size;
 } cc_update_list_t;
 
 

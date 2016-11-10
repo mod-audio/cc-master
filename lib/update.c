@@ -52,5 +52,6 @@
 void update_free(cc_update_list_t *updates)
 {
     free(updates->list);
+    free(updates->raw_data);
     free(updates);
 }
