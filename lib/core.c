@@ -506,7 +506,10 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, handle->msg_tx);
     if (send_and_wait(handle, handle->msg_tx))
     {
-        cc_assignment_remove(assignment->device_id, assignment->id);
+        cc_unassignment_t unassignment;
+        unassignment.device_id = assignment->device_id;
+        unassignment.assignment_id = assignment->id;
+        cc_assignment_remove(&unassignment);
         return -1;
     }
 
@@ -515,7 +518,7 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 
 void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
 {
-    cc_assignment_remove(unassignment->device_id, unassignment->assignment_id);
+    cc_assignment_remove(unassignment);
 
     // build and send unassignment message
     cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, handle->msg_tx);
