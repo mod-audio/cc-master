@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: control chain
 Description: the Control Chain protocol library
 Version: @version@
-Libs: -L${libdir} -lcontrol_chain
+Libs: -L${libdir} -lcontrolchain
 Cflags: -I${includedir}

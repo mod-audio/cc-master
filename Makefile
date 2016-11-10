@@ -1,8 +1,8 @@
 CC ?= gcc
 
 # source directory and output name
-SRC_DIR = src
-OUTPUT = libcontrol_chain.so
+SRC_DIR = lib
+OUTPUT = libcontrolchain.so
 
 # installation paths
 PREFIX = /usr/local
@@ -40,10 +40,10 @@ $(OUTPUT): $(OBJ)
 install:
 	install -d $(DESTDIR)$(CCDIR)
 	install -d $(DESTDIR)$(LIBDIR)/pkgconfig
-	install -m 644 src/*.h $(DESTDIR)$(CCDIR)
+	install -m 644 $(SRC_DIR)/*.h $(DESTDIR)$(CCDIR)
 	install -m 755 $(OUTPUT) $(DESTDIR)$(LIBDIR)
 	sed 's|@prefix@|$(PREFIX)|;s|@libdir@|$(LIBDIR)|;s|@includedir@|$(INCDIR)|;s|@version@|$(VERSION)|' \
-		control_chain.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/control_chain.pc
+		controlchain.pc.in > $(DESTDIR)$(LIBDIR)/pkgconfig/controlchain.pc
 
 clean:
 	rm -f $(OBJ) $(OUTPUT)
