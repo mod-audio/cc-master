@@ -8,10 +8,12 @@
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
+int dev_id = -1;
 
 void dev_desc(void *arg)
 {
     cc_device_t *device = arg;
+    dev_id = device->id;
     printf("device %s connected\n", device->descriptor->label->text);
     no_device = 0;
 }
@@ -43,13 +45,22 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-    cc_assignment_t ass = {-1, 1, 0, 1.0, 0.0, 1.0, 0.0, 1};
+    int act_id = 0;
+    cc_assignment_t ass = {dev_id, act_id, 1.0, 0.0, 1.0, 0.0, 1};
     int id = cc_assignment(handle, &ass);
-    sleep(3);
 
-    cc_unassignment_t unass = {1, id};
-    cc_unassignment(handle, &unass);
-    sleep(3);
+    if (id >= 0)
+    {
+        sleep(3);
+        printf("removing assignment\n");
+        cc_unassignment_t unass = {dev_id, id};
+        cc_unassignment(handle, &unass);
+        sleep(1);
+    }
+    else
+    {
+        printf("assignment fail\n");
+    }
 
     cc_finish(handle);
 

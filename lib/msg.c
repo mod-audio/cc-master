@@ -186,8 +186,7 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         // device address
         msg->dev_address = assignment->device_id;
 
-        // assignment id, actuator id
-        *pdata++ = assignment->id;
+        // actuator id
         *pdata++ = assignment->actuator_id;
 
         // value, min, max, def

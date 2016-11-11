@@ -77,7 +77,7 @@ void cc_device_destroy(int device_id)
 
     // destroy assigments list
     if (device->assignments)
-        lili_destroy(device->assignments);
+        free(device->assignments);
 
     // return if device hasn't descriptor
     if (!device->descriptor)

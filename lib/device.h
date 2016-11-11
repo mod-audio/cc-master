@@ -8,8 +8,8 @@
 ****************************************************************************************************
 */
 
+#include "assignment.h"
 #include "utils.h"
-#include "lili.h"
 
 
 /*
@@ -52,7 +52,7 @@ typedef struct cc_dev_descriptor_t {
 typedef struct cc_device_t {
     int id;
     cc_dev_descriptor_t *descriptor;
-    lili_t *assignments;
+    cc_assignment_t **assignments;
 } cc_device_t;
 
 
