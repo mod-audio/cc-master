@@ -28,11 +28,6 @@
 ****************************************************************************************************
 */
 
-struct handshake_key_t {
-    int frame;
-    uint16_t random_id;
-};
-
 
 /*
 ****************************************************************************************************
@@ -61,6 +56,7 @@ cc_handshake_mod_t* cc_handshake_check(cc_handshake_dev_t *received)
     // TODO: check protocol version
     // TODO: check device firmware version
     // TODO: calculate channel (based on URI)
+    // TODO: check if device has this handshake already
 
     static cc_handshake_mod_t to_send;
     to_send.random_id = received->random_id;
