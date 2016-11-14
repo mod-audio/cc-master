@@ -5,6 +5,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "update.h"
 
 
@@ -49,7 +50,32 @@
 ****************************************************************************************************
 */
 
-void update_free(cc_update_list_t *updates)
+cc_update_list_t *cc_update_parse(uint8_t *raw_data)
+{
+    cc_update_list_t *updates = malloc(sizeof(cc_update_list_t));
+    updates->count = raw_data[0];
+    updates->list = malloc(sizeof(cc_update_data_t) * updates->count);
+
+    // parse data to struct
+    int j = 1;
+    for (int i = 0; i < updates->count; i++)
+    {
+        cc_update_data_t *data = &updates->list[i];
+        data->assignment_id = raw_data[j++];
+        float *value = (float *) &raw_data[j];
+        data->value = *value;
+        j += sizeof (float);
+    }
+
+    // store raw data
+    updates->raw_data = malloc(j);
+    updates->raw_size = j;
+    memcpy(updates->raw_data, raw_data, j);
+
+    return updates;
+}
+
+void cc_update_free(cc_update_list_t *updates)
 {
     free(updates->list);
     free(updates->raw_data);

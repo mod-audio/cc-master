@@ -31,14 +31,14 @@
 ****************************************************************************************************
 */
 
-typedef struct cc_data_t {
+typedef struct cc_update_data_t {
     int assignment_id;
     float value;
-} cc_data_t;
+} cc_update_data_t;
 
 typedef struct cc_update_list_t {
     int count;
-    cc_data_t *list;
+    cc_update_data_t *list;
     uint8_t *raw_data;
     int raw_size;
 } cc_update_list_t;
@@ -50,7 +50,8 @@ typedef struct cc_update_list_t {
 ****************************************************************************************************
 */
 
-void update_free(cc_update_list_t *updates);
+cc_update_list_t *cc_update_parse(uint8_t *data);
+void cc_update_free(cc_update_list_t *updates);
 
 
 /*
