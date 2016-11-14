@@ -39,6 +39,9 @@
 // UNREGISTERED means that the device still waiting for the device descriptor
 enum {CC_DEVICE_LIST_ALL, CC_DEVICE_LIST_REGISTERED, CC_DEVICE_LIST_UNREGISTERED};
 
+// device status
+enum {CC_DEVICE_DISCONNECTED, CC_DEVICE_CONNECTED};
+
 typedef struct cc_actuator_t {
     int id;
 } cc_actuator_t;
@@ -50,7 +53,7 @@ typedef struct cc_dev_descriptor_t {
 } cc_dev_descriptor_t;
 
 typedef struct cc_device_t {
-    int id;
+    int id, status;
     cc_dev_descriptor_t *descriptor;
     cc_assignment_t **assignments;
 } cc_device_t;

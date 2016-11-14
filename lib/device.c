@@ -74,6 +74,7 @@ void cc_device_destroy(int device_id)
 {
     cc_device_t *device = cc_device_get(device_id);
     device->id = -1;
+    device->status = CC_DEVICE_DISCONNECTED;
 
     // destroy assigments list
     if (device->assignments)
