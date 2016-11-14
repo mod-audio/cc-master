@@ -25,7 +25,7 @@ void data_update(void *arg)
 
     for (int i = 0; i < updates->count; ++i)
     {
-        cc_data_t *data = &updates->list[i];
+        cc_update_data_t *data = &updates->list[i];
         printf("id = %i, value = %f\n", data->assignment_id, data->value);
     }
 }
@@ -39,7 +39,7 @@ int main(void)
         exit(1);
     }
 
-    cc_dev_descriptor_cb(handle, dev_desc);
+    cc_device_status_cb(handle, dev_desc);
     cc_data_update_cb(handle, data_update);
 
     printf("waiting device descriptor\n");

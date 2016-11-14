@@ -27,7 +27,7 @@ int main(void)
         exit(1);
     }
 
-    cc_dev_descriptor_cb(handle, dev_desc);
+    cc_device_status_cb(handle, dev_desc);
 
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
