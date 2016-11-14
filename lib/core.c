@@ -348,15 +348,15 @@ static void* chain_sync(void *arg)
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
         // list devices without device descriptor
-        cc_device_t **devices_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
-        for (int i = 0; devices_list[i]; i++)
+        int *device_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
+        for (int i = 0; device_list[i]; i++)
         {
-            dev_desc_msg.dev_address = devices_list[i]->id;
+            dev_desc_msg.dev_address = device_list[i];
 
             // request device descriptor
             if (send_and_wait(handle, &dev_desc_msg))
             {
-                cc_device_destroy(devices_list[i]->id);
+                cc_device_destroy(device_list[i]);
             }
         }
 
@@ -474,10 +474,10 @@ void cc_finish(cc_handle_t *handle)
     if (handle)
     {
         // destroy all devices
-        cc_device_t **devices_list = cc_device_list(CC_DEVICE_LIST_ALL);
-        for (int i = 0; devices_list[i]; i++)
+        int *device_list = cc_device_list(CC_DEVICE_LIST_ALL);
+        for (int i = 0; device_list[i]; i++)
         {
-            cc_device_destroy(devices_list[i]->id);
+            cc_device_destroy(device_list[i]);
         }
 
         pthread_mutex_unlock(&handle->running);

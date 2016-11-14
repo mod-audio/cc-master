@@ -74,8 +74,8 @@ void cc_device_destroy(int device_id);
 // return the device descriptor in json format
 char* cc_device_descriptor(int device_id);
 
-// return a NULL terminated devices list according the requested filter
-cc_device_t** cc_device_list(int filter);
+// return a NULL terminated list containing the filtered devices id
+int* cc_device_list(int filter);
 
 // return the device pointer or NULL if id is invalid
 cc_device_t* cc_device_get(int device_id);

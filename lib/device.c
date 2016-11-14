@@ -135,10 +135,10 @@ char* cc_device_descriptor(int device_id)
     return str;
 }
 
-cc_device_t** cc_device_list(int filter)
+int* cc_device_list(int filter)
 {
     int count = 0;
-    static cc_device_t *devices_list[CC_MAX_DEVICES+1];
+    static int devices_list[CC_MAX_DEVICES+1];
 
     if (g_devices_initialized)
     {
@@ -151,7 +151,7 @@ cc_device_t** cc_device_list(int filter)
                (filter == CC_DEVICE_LIST_REGISTERED && g_devices[i].descriptor) ||
                (filter == CC_DEVICE_LIST_UNREGISTERED && !g_devices[i].descriptor))
             {
-                devices_list[count++] = &g_devices[i];
+                devices_list[count++] = g_devices[i].id;
             }
         }
     }
