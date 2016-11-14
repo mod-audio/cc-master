@@ -67,7 +67,7 @@ struct cc_handle_t {
     int state;
     struct sp_port *sp;
     void (*data_update_cb)(void *arg);
-    void (*dev_descriptor_cb)(void *arg);
+    void (*device_status_cb)(void *arg);
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
     sem_t waiting_response;
@@ -184,7 +184,7 @@ static void parse_data_update(cc_handle_t *handle)
     if (handle->data_update_cb)
         handle->data_update_cb(updates);
 
-    update_free(updates);
+    cc_update_free(updates);
 }
 
 static void parser(cc_handle_t *handle)
@@ -230,10 +230,11 @@ static void parser(cc_handle_t *handle)
         // store device descriptor
         cc_device_t *device = cc_device_get(msg->dev_address);
         device->descriptor = descriptor;
+        device->status = CC_DEVICE_CONNECTED;
 
         // proceed to callback if any
-        if (handle->dev_descriptor_cb)
-            handle->dev_descriptor_cb(device);
+        if (handle->device_status_cb)
+            handle->device_status_cb(device);
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
              msg->command == CC_CMD_UNASSIGNMENT)
@@ -532,10 +533,11 @@ void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
     handle->data_update_cb = callback;
 }
 
-void cc_dev_descriptor_cb(cc_handle_t *handle, void (*callback)(void *arg))
+void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg))
 {
-    handle->dev_descriptor_cb = callback;
+    handle->device_status_cb = callback;
 }
 
 
 // TODO: timeout to receive device descriptor (release frame of handshake)
+// TODO: detect if device has disconnected
