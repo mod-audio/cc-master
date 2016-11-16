@@ -432,7 +432,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     pthread_mutex_lock(&handle->running);
 
     // semaphores
-    sem_init(&handle->waiting_response, 0, 0);
+    sem_init(&handle->waiting_response, 0, 1);
 
     //////// receiver thread setup
 
