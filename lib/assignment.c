@@ -102,6 +102,10 @@ void cc_assignment_remove(cc_unassignment_t *unassignment)
 {
     cc_device_t *device = cc_device_get(unassignment->device_id);
     int id = unassignment->assignment_id;
-    free(device->assignments[id]);
-    device->assignments[id] = 0;
+
+    if (device->assignments)
+    {
+        free(device->assignments[id]);
+        device->assignments[id] = 0;
+    }
 }
