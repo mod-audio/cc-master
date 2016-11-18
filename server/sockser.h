@@ -38,6 +38,10 @@ typedef struct sockser_data_t {
     size_t size;
 } sockser_data_t;
 
+typedef struct sockser_event_t {
+    int id, client_fd;
+} sockser_event_t;
+
 
 /*
 ****************************************************************************************************
@@ -49,6 +53,7 @@ sockser_t* sockser_init(const char *path);
 void sockser_finish(sockser_t *server);
 int sockser_read(sockser_t *server, sockser_data_t *data);
 int sockser_write(sockser_data_t *data);
+void sockser_client_event_cb(sockser_t *server, void (*callback)(void *arg));
 
 
 /*

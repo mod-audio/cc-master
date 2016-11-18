@@ -52,6 +52,7 @@ typedef struct sockser_t {
     pthread_mutex_t rb_mutex;
     loribu_t *rb;
     sem_t receive_data;
+    void (*client_event_cb)(void *arg);
 } sockser_t;
 
 
@@ -102,6 +103,15 @@ static void* process_client(void *arg)
         }
     }
 
+    // raise event
+    if (server->client_event_cb)
+    {
+        sockser_event_t event;
+        event.id = SOCKSER_CLIENT_DISCONNECTED;
+        event.client_fd = client->conn_fd;
+        server->client_event_cb(&event);
+    }
+
     return NULL;
 }
 
@@ -133,6 +143,15 @@ static void* new_connections(void *arg)
         // create thread to new connected client
         pthread_create(&client->read_thread, &attributes, process_client, client);
         pthread_attr_destroy(&attributes);
+
+        // raise event
+        if (server->client_event_cb)
+        {
+            sockser_event_t event;
+            event.id = SOCKSER_CLIENT_CONNECTED;
+            event.client_fd = conn_fd;
+            server->client_event_cb(&event);
+        }
     }
 
     return NULL;
@@ -220,4 +239,9 @@ int sockser_read(sockser_t *server, sockser_data_t *data)
 int sockser_write(sockser_data_t *data)
 {
     return send(data->client_fd, data->buffer, data->size, 0);
+}
+
+void sockser_client_event_cb(sockser_t *server, void (*callback)(void *arg))
+{
+    server->client_event_cb = callback;
 }
