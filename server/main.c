@@ -19,6 +19,8 @@
 ****************************************************************************************************
 */
 
+#define MAX_CLIENTS_EVENTS  10
+
 #define SERIAL_PORT         "/dev/ttyACM0"
 #define SERIAL_BAUDRATE     115200
 
@@ -36,6 +38,11 @@
 ****************************************************************************************************
 */
 
+typedef struct clients_events_t {
+    int client_fd;
+    int event_id;
+} clients_events_t;
+
 
 /*
 ****************************************************************************************************
@@ -44,7 +51,7 @@
 */
 
 static sockser_t *g_server;
-
+static clients_events_t g_client_events[MAX_CLIENTS_EVENTS];
 
 
 /*
@@ -52,19 +59,118 @@ static sockser_t *g_server;
 *       INTERNAL FUNCTIONS
 ****************************************************************************************************
 */
-#if 0
+
+static void event_off(int client_fd)
+{
+    for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
+    {
+        if (g_client_events[i].client_fd == client_fd)
+        {
+            g_client_events[i].client_fd = 0;
+        }
+    }
+}
+
+static void event_toggle(int client_fd, int event_id)
+{
+    int free_spot = -1;
+
+    for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
+    {
+        // store posistion of first free spot
+        if (g_client_events[i].client_fd == 0 && free_spot < 0)
+        {
+            free_spot = i;
+        }
+
+        // remove event if it already exists
+        if (g_client_events[i].client_fd == client_fd &&
+            g_client_events[i].event_id == event_id)
+        {
+            g_client_events[i].client_fd = 0;
+            g_client_events[i].event_id = event_id;
+            return;
+        }
+    }
+
+    // add event
+    if (free_spot >= 0)
+    {
+        g_client_events[free_spot].client_fd = client_fd;
+        g_client_events[free_spot].event_id = event_id;
+    }
+}
+
 static void device_status_cb(void *arg)
 {
     cc_device_t *device = arg;
     char request = CC_DEVICE_STATUS;
+
+    int status[2];
+    status[0] = device->id;
+    status[1] = device->status;
+
+    for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
+    {
+        if (g_client_events[i].client_fd == 0)
+            continue;
+
+        if (g_client_events[i].event_id == request)
+        {
+            sockser_data_t data;
+            data.client_fd = g_client_events[i].client_fd;
+
+            // request id
+            data.buffer = &request;
+            data.size = sizeof(request);
+            sockser_write(&data);
+
+            // device status
+            data.buffer = status;
+            data.size = sizeof(status);
+            sockser_write(&data);
+        }
+    }
 }
 
 static void data_update_cb(void *arg)
 {
     cc_update_list_t *updates = arg;
     char request = CC_DATA_UPDATE;
+
+    for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
+    {
+        if (g_client_events[i].client_fd == 0)
+            continue;
+
+        if (g_client_events[i].event_id == request)
+        {
+            sockser_data_t data;
+            data.client_fd = g_client_events[i].client_fd;
+
+            // request id
+            data.buffer = &request;
+            data.size = sizeof(request);
+            sockser_write(&data);
+
+            // update list
+            data.buffer = updates->raw_data;
+            data.size = updates->raw_size;
+            sockser_write(&data);
+        }
+    }
 }
-#endif
+
+static void client_event_cb(void *arg)
+{
+    sockser_event_t *event = arg;
+
+    if (event->id == SOCKSER_CLIENT_DISCONNECTED)
+    {
+        event_off(event->client_fd);
+    }
+}
+
 
 /*
 ****************************************************************************************************
@@ -78,6 +184,9 @@ int main(void)
     g_server = sockser_init("/tmp/control-chain.sock");
     printf("server is running\n");
 
+    // set callback for clients events
+    sockser_client_event_cb(g_server, client_event_cb);
+
     // init control chain
     cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
     if (!handle)
@@ -89,8 +198,8 @@ int main(void)
     printf("control chain started\n");
 
     // set control chain callbacks
-    //cc_device_status_cb(handle, device_status_cb);
-    //cc_data_update_cb(handle, data_update_cb);
+    cc_device_status_cb(handle, device_status_cb);
+    cc_data_update_cb(handle, data_update_cb);
 
     char read_buffer[4096];
     sockser_data_t data;
@@ -98,76 +207,88 @@ int main(void)
     while (1)
     {
         data.buffer = read_buffer;
-        sockser_read(g_server, &data);
+        int n = sockser_read(g_server, &data);
 
+        char *buffer = data.buffer;
         char *pbuffer = data.buffer;
-        char request = pbuffer[0];
-        pbuffer++;
 
-        if (request == CC_DEVICE_LIST)
+        while ((pbuffer - buffer) < n)
         {
-            // list only devices with descriptor
-            int *devices_id = cc_device_list(CC_DEVICE_LIST_REGISTERED);
+            char request = *pbuffer++;
 
-            // count number of devices
-            int n_devices = 0;
-            while (devices_id[n_devices++]);
+            if (request == CC_DEVICE_LIST)
+            {
+                // list only devices with descriptor
+                int *devices_id = cc_device_list(CC_DEVICE_LIST_REGISTERED);
 
-            // request id
-            data.buffer = &request;
-            data.size = sizeof(request);
-            sockser_write(&data);
+                // count number of devices
+                int n_devices = 0;
+                while (devices_id[n_devices++]);
 
-            // devices count
-            data.buffer = &n_devices;
-            data.size = sizeof(n_devices);
-            sockser_write(&data);
+                // request id
+                data.buffer = &request;
+                data.size = sizeof(request);
+                sockser_write(&data);
 
-            // devices list
-            data.buffer = devices_id;
-            data.size = sizeof(int) * n_devices;
-            sockser_write(&data);
-        }
-        else if (request == CC_DEVICE_DESCRIPTOR)
-        {
-            int device_id = (*(int *) pbuffer);
-            pbuffer += sizeof(int);
-            char *descriptor = cc_device_descriptor(device_id);
+                // devices count
+                data.buffer = &n_devices;
+                data.size = sizeof(n_devices);
+                sockser_write(&data);
 
-            // request id
-            data.buffer = &request;
-            data.size = sizeof(request);
-            sockser_write(&data);
+                // devices list
+                data.buffer = devices_id;
+                data.size = sizeof(int) * n_devices;
+                sockser_write(&data);
+            }
+            else if (request == CC_DEVICE_DESCRIPTOR)
+            {
+                int device_id = (*(int *) pbuffer);
+                pbuffer += sizeof(int);
+                char *descriptor = cc_device_descriptor(device_id);
 
-            // device descriptor
-            data.buffer = descriptor;
-            data.size = strlen(descriptor);
-            sockser_write(&data);
+                // request id
+                data.buffer = &request;
+                data.size = sizeof(request);
+                sockser_write(&data);
 
-            // free descriptor
-            free(descriptor);
-        }
-        else if (request == CC_ASSIGNMENT)
-        {
-            cc_assignment_t assignment;
-            memcpy(&assignment, pbuffer, sizeof(cc_assignment_t));
-            int assignment_id = cc_assignment(handle, &assignment);
+                // device descriptor
+                data.buffer = descriptor;
+                data.size = strlen(descriptor);
+                sockser_write(&data);
 
-            // request id
-            data.buffer = &request;
-            data.size = sizeof(request);
-            sockser_write(&data);
+                // free descriptor
+                free(descriptor);
+            }
+            else if (request == CC_ASSIGNMENT)
+            {
+                cc_assignment_t assignment;
+                memcpy(&assignment, pbuffer, sizeof(cc_assignment_t));
+                pbuffer += sizeof(cc_assignment_t);
 
-            // assignment id
-            data.buffer = &assignment_id;
-            data.size = sizeof(assignment_id);
-            sockser_write(&data);
-        }
-        else if (request == CC_UNASSIGNMENT)
-        {
-            cc_unassignment_t unassignment;
-            memcpy(&unassignment, pbuffer, sizeof(cc_unassignment_t));
-            cc_unassignment(handle, &unassignment);
+                int assignment_id = cc_assignment(handle, &assignment);
+
+                // request id
+                data.buffer = &request;
+                data.size = sizeof(request);
+                sockser_write(&data);
+
+                // assignment id
+                data.buffer = &assignment_id;
+                data.size = sizeof(assignment_id);
+                sockser_write(&data);
+            }
+            else if (request == CC_UNASSIGNMENT)
+            {
+                cc_unassignment_t unassignment;
+                memcpy(&unassignment, pbuffer, sizeof(cc_unassignment_t));
+                pbuffer += sizeof(cc_unassignment_t);
+
+                cc_unassignment(handle, &unassignment);
+            }
+            else if (request == CC_DEVICE_STATUS || request == CC_DATA_UPDATE)
+            {
+                event_toggle(data.client_fd, request);
+            }
         }
     }
 
