@@ -71,33 +71,37 @@ static void event_off(int client_fd)
     }
 }
 
-static void event_toggle(int client_fd, int event_id)
+static void event_set(int client_fd, int event_id, int event_enable)
 {
-    int free_spot = -1;
+    int index = -1;
 
     for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
     {
-        // store posistion of first free spot
-        if (g_client_events[i].client_fd == 0 && free_spot < 0)
+        // store position of first free spot
+        if (g_client_events[i].client_fd == 0 && index < 0)
         {
-            free_spot = i;
+            index = i;
         }
 
-        // remove event if it already exists
+        // check if event already exists for this client
         if (g_client_events[i].client_fd == client_fd &&
             g_client_events[i].event_id == event_id)
         {
-            g_client_events[i].client_fd = 0;
-            g_client_events[i].event_id = event_id;
+            if (!event_enable)
+            {
+                g_client_events[i].client_fd = 0;
+                g_client_events[i].event_id = event_id;
+            }
+
             return;
         }
     }
 
     // add event
-    if (free_spot >= 0)
+    if (index >= 0 && event_enable)
     {
-        g_client_events[free_spot].client_fd = client_fd;
-        g_client_events[free_spot].event_id = event_id;
+        g_client_events[index].client_fd = client_fd;
+        g_client_events[index].event_id = event_id;
     }
 }
 
@@ -293,7 +297,8 @@ int main(void)
             }
             else if (request == CC_DEVICE_STATUS || request == CC_DATA_UPDATE)
             {
-                event_toggle(data.client_fd, request);
+                char event_enable = *pbuffer++;
+                event_set(data.client_fd, request, event_enable);
             }
         }
     }
