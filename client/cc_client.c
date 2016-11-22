@@ -80,7 +80,12 @@ static void *reader(void *arg)
 
         if (request == CC_DATA_UPDATE)
         {
-            cc_update_list_t *updates = cc_update_parse(data);
+            // device id
+            int device_id = *((int *)data);
+            data += sizeof(device_id);
+
+            // update list
+            cc_update_list_t *updates = cc_update_parse(device_id, data);
             if (client->data_update_cb)
                 client->data_update_cb(updates);
 

@@ -153,6 +153,12 @@ static void data_update_cb(void *arg)
             data.size = sizeof(request);
             sockser_write(&data);
 
+            // device id
+            int device_id = updates->device_id;
+            data.buffer = &device_id;
+            data.size = sizeof(device_id);
+            sockser_write(&data);
+
             // update list
             data.buffer = updates->raw_data;
             data.size = updates->raw_size;
