@@ -69,9 +69,10 @@
 ****************************************************************************************************
 */
 
-cc_update_list_t *cc_update_parse(uint8_t *raw_data)
+cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data)
 {
     cc_update_list_t *updates = malloc(sizeof(cc_update_list_t));
+    updates->device_id = device_id;
     updates->count = raw_data[0];
     updates->list = malloc(sizeof(cc_update_data_t) * updates->count);
 

@@ -56,7 +56,7 @@ typedef struct cc_update_data_t {
 } cc_update_data_t;
 
 typedef struct cc_update_list_t {
-    int count;
+    int device_id, count;
     cc_update_data_t *list;
     uint8_t *raw_data;
     int raw_size;
@@ -69,7 +69,7 @@ typedef struct cc_update_list_t {
 ****************************************************************************************************
 */
 
-cc_update_list_t *cc_update_parse(uint8_t *data);
+cc_update_list_t *cc_update_parse(int device_id, uint8_t *data);
 void cc_update_free(cc_update_list_t *updates);
 
 

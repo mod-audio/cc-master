@@ -150,7 +150,7 @@ void* cc_msg_parser(const cc_msg_t *msg)
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
-        return cc_update_parse(msg->data);
+        return cc_update_parse(msg->dev_address, msg->data);
     }
 
     return 0;
