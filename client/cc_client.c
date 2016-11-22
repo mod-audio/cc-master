@@ -233,26 +233,24 @@ char *cc_client_device_descriptor(cc_client_t *client, int device_id)
     return 0;
 }
 
-void cc_client_device_status(cc_client_t *client)
-{
-    // send request
-    char request = CC_DEVICE_STATUS;
-    sockcli_write(client->socket, &request, sizeof(request));
-}
-
-void cc_client_data_update(cc_client_t *client)
-{
-    // send request
-    char request = CC_DATA_UPDATE;
-    sockcli_write(client->socket, &request, sizeof(request));
-}
-
 void cc_client_device_status_cb(cc_client_t *client, void (*callback)(void *arg))
 {
     client->device_status_cb = callback;
+
+    // send request
+    char request[2];
+    request[0] = CC_DEVICE_STATUS;
+    request[1] = callback ? 1 : 0;
+    sockcli_write(client->socket, &request, sizeof(request));
 }
 
 void cc_client_data_update_cb(cc_client_t *client, void (*callback)(void *arg))
 {
     client->data_update_cb = callback;
+
+    // send request
+    char request[2];
+    request[0] = CC_DATA_UPDATE;
+    request[1] = callback ? 1 : 0;
+    sockcli_write(client->socket, &request, sizeof(request));
 }
