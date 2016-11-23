@@ -17,8 +17,25 @@
 ****************************************************************************************************
 */
 
-enum cc_request_t {CC_DEVICE_LIST, CC_DEVICE_DESCRIPTOR, CC_DEVICE_STATUS, CC_ASSIGNMENT,
-                   CC_UNASSIGNMENT, CC_DATA_UPDATE};
+#define CC_DEV_LIST_REQ_FORMAT          "n"
+#define CC_DEV_LIST_REPLY_FORMAT        ""
+
+#define CC_DEV_DESCRIPTOR_REQ_FORMAT    "{si}"
+#define CC_DEV_DESCRIPTOR_REPLY_FORMAT  ""
+
+#define CC_DEV_STATUS_REQ_FORMAT        "{si}"
+#define CC_DEV_STATUS_REPLY_FORMAT      "n"
+#define CC_DEV_STATUS_EVENT_FORMAT      "{si,si}"
+
+#define CC_ASSIGNMENT_REQ_FORMAT        "{si,si,sf,sf,sf,sf,si}"
+#define CC_ASSIGNMENT_REPLY_FORMAT      "{si}"
+
+#define CC_UNASSIGNMENT_REQ_FORMAT      "{si,si}"
+#define CC_UNASSIGNMENT_REPLY_FORMAT    "n"
+
+#define CC_DATA_UPDATE_REQ_FORMAT       "{si}"
+#define CC_DATA_UPDATE_REPLY_FORMAT     "n"
+#define CC_DATA_UPDATE_EVENT_FORMAT     "{si,ss}"
 
 
 /*

@@ -214,7 +214,10 @@ sockser_t* sockser_init(const char *path)
 void sockser_finish(sockser_t *server)
 {
     if (server->conn_thread)
+    {
+        pthread_cancel(server->conn_thread);
         pthread_join(server->conn_thread, NULL);
+    }
 
     if (server->rb)
         loribu_destroy(server->rb);
@@ -224,7 +227,9 @@ void sockser_finish(sockser_t *server)
 
 int sockser_read(sockser_t *server, sockser_data_t *data)
 {
-    sem_wait(&server->receive_data);
+    // if buffer is empty lock and wait for more data
+    if (loribu_is_empty(server->rb))
+        sem_wait(&server->receive_data);
 
     // read client file descriptor
     loribu_read(server->rb, (uint8_t *) &data->client_fd, sizeof(int));
@@ -234,6 +239,22 @@ int sockser_read(sockser_t *server, sockser_data_t *data)
 
     // read data
     return loribu_read(server->rb, data->buffer, data->size);
+}
+
+int sockser_read_string(sockser_t *server, sockser_data_t *data)
+{
+    // if buffer is empty lock and wait for more data
+    if (loribu_is_empty(server->rb))
+        sem_wait(&server->receive_data);
+
+    // read client file descriptor
+    loribu_read(server->rb, (uint8_t *) &data->client_fd, sizeof(int));
+
+    // read buffer size
+    loribu_read(server->rb, (uint8_t *) &data->size, sizeof(int));
+
+    // read data until find '\0'
+    return loribu_read_until(server->rb, data->buffer, data->size, 0);
 }
 
 int sockser_write(sockser_data_t *data)

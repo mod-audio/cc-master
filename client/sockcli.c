@@ -99,7 +99,7 @@ int sockcli_read(sockcli_t *client, void *buffer, size_t size)
     return recv(client->sock_fd, buffer, size, 0);
 }
 
-int sockcli_write(sockcli_t *client, void *buffer, size_t size)
+int sockcli_write(sockcli_t *client, const void *buffer, size_t size)
 {
     return send(client->sock_fd, buffer, size, 0);
 }

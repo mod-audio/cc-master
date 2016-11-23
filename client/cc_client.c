@@ -4,13 +4,16 @@
 ****************************************************************************************************
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <jansson.h>
 
 #include "cc_client.h"
 #include "sockcli.h"
+#include "base64.h"
 
 
 /*
@@ -41,7 +44,7 @@
 
 typedef struct cc_client_t {
     sockcli_t *socket;
-    uint8_t *buffer;
+    char *buffer;
     void (*device_status_cb)(void *arg);
     void (*data_update_cb)(void *arg);
     pthread_t read_thread;
@@ -66,6 +69,7 @@ static void *reader(void *arg)
 {
     cc_client_t *client = arg;
     char buffer[READ_BUFFER_SIZE];
+    uint8_t raw_data[READ_BUFFER_SIZE];
 
     while (1)
     {
@@ -73,33 +77,82 @@ static void *reader(void *arg)
         if (n == 0)
             continue;
 
-        memcpy(client->buffer, buffer, n);
-
-        int request = client->buffer[0];
-        uint8_t *data = &client->buffer[1];
-
-        if (request == CC_DATA_UPDATE)
+        // check if is an event
+        if (strstr(buffer, "\"event\""))
         {
-            // device id
-            int device_id = *((int *)data);
-            data += sizeof(device_id);
+            json_error_t error;
+            json_t *root = json_loads(buffer, 0, &error);
+            json_t *event = json_object_get(root, "event");
 
-            // update list
-            cc_update_list_t *updates = cc_update_parse(device_id, data);
-            if (client->data_update_cb)
-                client->data_update_cb(updates);
+            if (event)
+            {
+                const char *event_name = json_string_value(event);
+                json_t *data = json_object_get(root, "data");
 
-             cc_update_free(updates);
+                if (strcmp(event_name, "device_status") == 0)
+                {
+                    cc_device_t device;
+                    device.descriptor = 0;
+                    device.assignments = 0;
+
+                    // unpack json
+                    json_unpack(data, CC_DEV_STATUS_EVENT_FORMAT,
+                        "device_id", &device.id,
+                        "status", &device.status);
+
+                    // device status callback
+                    if (client->device_status_cb)
+                        client->device_status_cb(&device);
+                }
+                else if (strcmp(event_name, "data_update") == 0)
+                {
+                    int device_id;
+                    const char *encode;
+
+                    // unpack json
+                    json_unpack(data, CC_DATA_UPDATE_EVENT_FORMAT,
+                        "device_id", &device_id,
+                        "raw_data", &encode);
+
+                    // decode data
+                    base64_decode(encode, strlen(encode), raw_data);
+
+                    // update list callback
+                    cc_update_list_t *updates = cc_update_parse(device_id, raw_data);
+                    if (client->data_update_cb)
+                        client->data_update_cb(updates);
+
+                     cc_update_free(updates);
+                }
+
+                json_decref(root);
+                continue;
+            }
         }
 
+        memcpy(client->buffer, buffer, n);
         sem_post(&client->waiting_reply);
     }
 
     return 0;
 }
 
-static uint8_t* wait_reply(cc_client_t *client, int request)
+static json_t* cc_client_request(cc_client_t *client, const char *name, json_t *data)
 {
+    // build request: {"request":"name", "data": {...}}
+    json_t *root = json_object();
+    json_object_set_new(root, "request", json_string(name));
+    json_object_set(root, "data", data);
+
+    // dump json and send request
+    char *request_str = json_dumps(root, 0);
+    sockcli_write(client->socket, request_str, strlen(request_str) + 1);
+
+    // free memory
+    json_decref(root);
+    json_decref(data);
+    free(request_str);
+
     // set timeout
     struct timespec timeout;
     clock_gettime(CLOCK_REALTIME, &timeout);
@@ -114,10 +167,9 @@ static uint8_t* wait_reply(cc_client_t *client, int request)
 
     if (sem_timedwait(&client->waiting_reply, &timeout) == 0)
     {
-        if (client->buffer[0] == request)
-        {
-            return &client->buffer[1];
-        }
+        json_error_t error;
+        json_t *root = json_loads(client->buffer, 0, &error);
+        return root;
     }
 
     return 0;
@@ -156,6 +208,8 @@ cc_client_t *cc_client_new(const char *path)
 
 void cc_client_delete(cc_client_t *client)
 {
+    pthread_cancel(client->read_thread);
+    pthread_join(client->read_thread, NULL);
     sockcli_finish(client->socket);
     free(client->buffer);
     free(client);
@@ -163,16 +217,26 @@ void cc_client_delete(cc_client_t *client)
 
 int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
 {
-    // send request
-    char request = CC_ASSIGNMENT;
-    sockcli_write(client->socket, &request, sizeof(request));
-    sockcli_write(client->socket, assignment, sizeof(cc_assignment_t));
+    json_t *request_data = json_pack(CC_ASSIGNMENT_REQ_FORMAT,
+        "device_id", assignment->device_id,
+        "actuator_id", assignment->actuator_id,
+        "value", assignment->value,
+        "min", assignment->min,
+        "max", assignment->max,
+        "def", assignment->def,
+        "mode", assignment->mode);
 
-    uint8_t *data = wait_reply(client, request);
-    if (data)
+    json_t *root = cc_client_request(client, "assignment", request_data);
+    if (root)
     {
-        int id = *((int *)data);
-        return id;
+        json_t *data = json_object_get(root, "data");
+
+        // unpack reply
+        int assignment_id;
+        json_unpack(data, CC_ASSIGNMENT_REPLY_FORMAT, "assignment_id", &assignment_id);
+        json_decref(root);
+
+        return assignment_id;
     }
 
     return -1;
@@ -180,35 +244,39 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
 
 void cc_client_unassignment(cc_client_t *client, cc_unassignment_t *unassignment)
 {
-    // send request
-    char request = CC_UNASSIGNMENT;
-    sockcli_write(client->socket, &request, sizeof(request));
-    sockcli_write(client->socket, unassignment, sizeof(cc_unassignment_t));
+    json_t *request_data = json_pack(CC_UNASSIGNMENT_REQ_FORMAT,
+        "device_id", unassignment->device_id,
+        "assignment_id", unassignment->assignment_id);
+
+    json_t *root = cc_client_request(client, "unassignment", request_data);
+    if (root)
+    {
+        // reply is null
+
+        json_decref(root);
+    }
 }
 
 int* cc_client_device_list(cc_client_t *client)
 {
-    // send request
-    char request = CC_DEVICE_LIST;
-    sockcli_write(client->socket, &request, sizeof(request));
+    json_t *request_data = json_pack(CC_DEV_LIST_REQ_FORMAT);
 
-    uint8_t *data = wait_reply(client, request);
-    if (data)
+    json_t *root = cc_client_request(client, "device_list", request_data);
+    if (root)
     {
-        // number of devices
-        int n_devices = *((int *)data);
-        data += sizeof(int);
+        json_t *array = json_object_get(root, "data");
 
-        // list of devices id
-        int *device_list = malloc(sizeof(int) * (n_devices + 1));
-        for (int i = 0; i < n_devices; i++)
+        // create list
+        int i, count = json_array_size(array);
+        int *device_list = malloc((count + 1) * sizeof(int));
+        for (i = 0; i < count; i++)
         {
-            device_list[i] = *((int *)data);
-            data += sizeof(int);
+            json_t *value = json_array_get(array, i);
+            device_list[i] = json_integer_value(value);
         }
+        device_list[i] = 0;
 
-        device_list[n_devices] = 0;
-
+        json_decref(root);
         return device_list;
     }
 
@@ -217,16 +285,15 @@ int* cc_client_device_list(cc_client_t *client)
 
 char *cc_client_device_descriptor(cc_client_t *client, int device_id)
 {
-    // send request
-    char request = CC_DEVICE_DESCRIPTOR;
-    sockcli_write(client->socket, &request, sizeof(request));
-    sockcli_write(client->socket, &device_id, sizeof(int));
+    json_t *request_data = json_pack(CC_DEV_DESCRIPTOR_REQ_FORMAT,
+        "device_id", device_id);
 
-    char *data = (char *) wait_reply(client, request);
-    if (data)
+    json_t *root = cc_client_request(client, "device_descriptor", request_data);
+    if (root)
     {
-        char *descriptor = malloc(strlen(data) + 1);
-        strcpy(descriptor, data);
+        json_t *data = json_object_get(root, "data");
+        char *descriptor = json_dumps(data, 0);
+        json_decref(root);
         return descriptor;
     }
 
@@ -237,20 +304,30 @@ void cc_client_device_status_cb(cc_client_t *client, void (*callback)(void *arg)
 {
     client->device_status_cb = callback;
 
-    // send request
-    char request[2];
-    request[0] = CC_DEVICE_STATUS;
-    request[1] = callback ? 1 : 0;
-    sockcli_write(client->socket, &request, sizeof(request));
+    int enable = callback ? 1 : 0;
+    json_t *request_data = json_pack(CC_DEV_STATUS_REQ_FORMAT, "enable", enable);
+
+    json_t *root = cc_client_request(client, "device_status", request_data);
+    if (root)
+    {
+        // reply is null
+
+        json_decref(root);
+    }
 }
 
 void cc_client_data_update_cb(cc_client_t *client, void (*callback)(void *arg))
 {
     client->data_update_cb = callback;
 
-    // send request
-    char request[2];
-    request[0] = CC_DATA_UPDATE;
-    request[1] = callback ? 1 : 0;
-    sockcli_write(client->socket, &request, sizeof(request));
+    int enable = callback ? 1 : 0;
+    json_t *request_data = json_pack(CC_DATA_UPDATE_REQ_FORMAT, "enable", enable);
+
+    json_t *root = cc_client_request(client, "data_update", request_data);
+    if (root)
+    {
+        // reply is null
+
+        json_decref(root);
+    }
 }

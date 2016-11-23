@@ -7,10 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <jansson.h>
 #include <cc/control_chain.h>
 #include <cc/cc_client.h>
 
 #include "sockser.h"
+#include "base64.h"
 
 
 /*
@@ -20,6 +22,7 @@
 */
 
 #define MAX_CLIENTS_EVENTS  10
+#define BUFFER_SIZE         8*1024
 
 #define SERIAL_PORT         "/dev/ttyACM0"
 #define SERIAL_BAUDRATE     115200
@@ -37,6 +40,8 @@
 *       INTERNAL DATA TYPES
 ****************************************************************************************************
 */
+
+enum {CC_DEVICE_STATUS_EV, CC_DATA_UPDATE_EV};
 
 typedef struct clients_events_t {
     int client_fd;
@@ -105,34 +110,56 @@ static void event_set(int client_fd, int event_id, int event_enable)
     }
 }
 
+static void send_reply(const char *reply, json_t *data, sockser_data_t *output)
+{
+    // build reply: {"reply":"name", "data": {...}}
+    json_t *root = json_object();
+    json_object_set_new(root, "reply", json_string(reply));
+    json_object_set(root, "data", data);
+
+    // dump json and send reply
+    output->buffer = json_dumps(root, 0);
+    output->size = strlen(output->buffer) + 1;
+    sockser_write(output);
+
+    // free memory
+    json_decref(root);
+    json_decref(data);
+    free(output->buffer);
+}
+
+static void send_event(int client_fd, const char *event, const char *data)
+{
+    sockser_data_t output;
+    char buffer[BUFFER_SIZE];
+
+    // build json event
+    sprintf(buffer, "{\"event\":\"%s\",\"data\":%s}", event, data);
+
+    output.client_fd = client_fd;
+    output.buffer = buffer;
+    output.size = strlen(buffer) + 1;
+    sockser_write(&output);
+}
+
 static void device_status_cb(void *arg)
 {
     cc_device_t *device = arg;
-    char request = CC_DEVICE_STATUS;
-
-    int status[2];
-    status[0] = device->id;
-    status[1] = device->status;
+    char buffer[BUFFER_SIZE];
 
     for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
     {
         if (g_client_events[i].client_fd == 0)
             continue;
 
-        if (g_client_events[i].event_id == request)
+        if (g_client_events[i].event_id == CC_DEVICE_STATUS_EV)
         {
-            sockser_data_t data;
-            data.client_fd = g_client_events[i].client_fd;
+            // build json event data
+            sprintf(buffer, "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
 
-            // request id
-            data.buffer = &request;
-            data.size = sizeof(request);
-            sockser_write(&data);
-
-            // device status
-            data.buffer = status;
-            data.size = sizeof(status);
-            sockser_write(&data);
+            // send event
+            int client_fd = g_client_events[i].client_fd;
+            send_event(client_fd, "device_status", buffer);
         }
     }
 }
@@ -140,33 +167,26 @@ static void device_status_cb(void *arg)
 static void data_update_cb(void *arg)
 {
     cc_update_list_t *updates = arg;
-    char request = CC_DATA_UPDATE;
+    char buffer[BUFFER_SIZE];
+    char raw_data[BUFFER_SIZE];
 
     for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
     {
         if (g_client_events[i].client_fd == 0)
             continue;
 
-        if (g_client_events[i].event_id == request)
+        if (g_client_events[i].event_id == CC_DATA_UPDATE_EV)
         {
-            sockser_data_t data;
-            data.client_fd = g_client_events[i].client_fd;
+            // encode data
+            base64_encode(updates->raw_data, updates->raw_size, raw_data);
 
-            // request id
-            data.buffer = &request;
-            data.size = sizeof(request);
-            sockser_write(&data);
+            // build json event data
+            sprintf(buffer, "{\"device_id\":%i,\"raw_data\":\"%s\"}",
+                updates->device_id, raw_data);
 
-            // device id
-            int device_id = updates->device_id;
-            data.buffer = &device_id;
-            data.size = sizeof(device_id);
-            sockser_write(&data);
-
-            // update list
-            data.buffer = updates->raw_data;
-            data.size = updates->raw_size;
-            sockser_write(&data);
+            // send event
+            int client_fd = g_client_events[i].client_fd;
+            send_event(client_fd, "data_update", buffer);
         }
     }
 }
@@ -211,95 +231,107 @@ int main(void)
     cc_device_status_cb(handle, device_status_cb);
     cc_data_update_cb(handle, data_update_cb);
 
-    char read_buffer[4096];
-    sockser_data_t data;
+    char read_buffer[BUFFER_SIZE];
+    sockser_data_t read_data;
 
     while (1)
     {
-        data.buffer = read_buffer;
-        int n = sockser_read(g_server, &data);
+        read_data.buffer = read_buffer;
+        sockser_read_string(g_server, &read_data);
 
-        char *buffer = data.buffer;
-        char *pbuffer = data.buffer;
+        json_error_t error;
+        json_t *root = json_loads(read_data.buffer, 0, &error);
 
-        while ((pbuffer - buffer) < n)
+        const char *request = json_string_value(json_object_get(root, "request"));
+        json_t *data = json_object_get(root, "data");
+
+        if (strcmp(request, "device_list") == 0)
         {
-            char request = *pbuffer++;
+            // list only devices with descriptor
+            int *devices_id = cc_device_list(CC_DEVICE_LIST_REGISTERED);
 
-            if (request == CC_DEVICE_LIST)
+            // create json array
+            json_t *array = json_array();
+            int n_devices = 0;
+            while (devices_id[n_devices])
             {
-                // list only devices with descriptor
-                int *devices_id = cc_device_list(CC_DEVICE_LIST_REGISTERED);
-
-                // count number of devices
-                int n_devices = 0;
-                while (devices_id[n_devices++]);
-
-                // request id
-                data.buffer = &request;
-                data.size = sizeof(request);
-                sockser_write(&data);
-
-                // devices count
-                data.buffer = &n_devices;
-                data.size = sizeof(n_devices);
-                sockser_write(&data);
-
-                // devices list
-                data.buffer = devices_id;
-                data.size = sizeof(int) * n_devices;
-                sockser_write(&data);
+                json_array_append_new(array, json_integer(devices_id[n_devices]));
+                n_devices++;
             }
-            else if (request == CC_DEVICE_DESCRIPTOR)
-            {
-                int device_id = (*(int *) pbuffer);
-                pbuffer += sizeof(int);
-                char *descriptor = cc_device_descriptor(device_id);
 
-                // request id
-                data.buffer = &request;
-                data.size = sizeof(request);
-                sockser_write(&data);
+            // send reply
+            send_reply(request, array, &read_data);
 
-                // device descriptor
-                data.buffer = descriptor;
-                data.size = strlen(descriptor);
-                sockser_write(&data);
+            free(devices_id);
+        }
+        else if (strcmp(request, "device_descriptor") == 0)
+        {
+            int device_id;
+            json_unpack(data, CC_DEV_DESCRIPTOR_REQ_FORMAT, "device_id", &device_id);
 
-                // free descriptor
-                free(descriptor);
-            }
-            else if (request == CC_ASSIGNMENT)
-            {
-                cc_assignment_t assignment;
-                memcpy(&assignment, pbuffer, sizeof(cc_assignment_t));
-                pbuffer += sizeof(cc_assignment_t);
+            char *descriptor = cc_device_descriptor(device_id);
+            sprintf(read_data.buffer, "{\"reply\":\"%s\",\"data\":%s}", request, descriptor);
 
-                int assignment_id = cc_assignment(handle, &assignment);
+            read_data.size = strlen(read_data.buffer) + 1;
+            sockser_write(&read_data);
 
-                // request id
-                data.buffer = &request;
-                data.size = sizeof(request);
-                sockser_write(&data);
+            free(descriptor);
+        }
+        else if (strcmp(request, "device_status") == 0)
+        {
+            int enable;
+            json_unpack(data, CC_DEV_STATUS_REQ_FORMAT, "enable", &enable);
 
-                // assignment id
-                data.buffer = &assignment_id;
-                data.size = sizeof(assignment_id);
-                sockser_write(&data);
-            }
-            else if (request == CC_UNASSIGNMENT)
-            {
-                cc_unassignment_t unassignment;
-                memcpy(&unassignment, pbuffer, sizeof(cc_unassignment_t));
-                pbuffer += sizeof(cc_unassignment_t);
+            event_set(read_data.client_fd, CC_DEVICE_STATUS_EV, enable);
 
-                cc_unassignment(handle, &unassignment);
-            }
-            else if (request == CC_DEVICE_STATUS || request == CC_DATA_UPDATE)
-            {
-                char event_enable = *pbuffer++;
-                event_set(data.client_fd, request, event_enable);
-            }
+            // pack data and send reply
+            json_t *data = json_pack(CC_DEV_STATUS_REPLY_FORMAT);
+            send_reply(request, data, &read_data);
+        }
+        else if (strcmp(request, "assignment") == 0)
+        {
+            cc_assignment_t assignment;
+
+            json_unpack(data, CC_ASSIGNMENT_REQ_FORMAT,
+                "device_id", &assignment.device_id,
+                "actuator_id", &assignment.actuator_id,
+                "value", &assignment.value,
+                "min", &assignment.min,
+                "max", &assignment.max,
+                "def", &assignment.def,
+                "mode", &assignment.mode);
+
+            int assignment_id = cc_assignment(handle, &assignment);
+
+            // pack data and send reply
+            json_t *data = json_pack(CC_ASSIGNMENT_REPLY_FORMAT,
+                "assignment_id", assignment_id);
+            send_reply(request, data, &read_data);
+        }
+        else if (strcmp(request, "unassignment") == 0)
+        {
+            cc_unassignment_t unassignment;
+
+            json_unpack(data, CC_UNASSIGNMENT_REQ_FORMAT,
+                "device_id", &unassignment.device_id,
+                "assignment_id", &unassignment.assignment_id);
+
+            cc_unassignment(handle, &unassignment);
+
+            // pack data and send reply
+            json_t *data = json_pack(CC_UNASSIGNMENT_REPLY_FORMAT);
+            send_reply(request, data, &read_data);
+        }
+        else if (strcmp(request, "data_update") == 0)
+        {
+            int enable;
+            json_unpack(data, CC_DATA_UPDATE_REQ_FORMAT, "enable", &enable);
+
+            event_set(read_data.client_fd, CC_DATA_UPDATE_EV, enable);
+
+            // pack data and send reply
+            json_t *data = json_pack(CC_DATA_UPDATE_REPLY_FORMAT);
+            send_reply(request, data, &read_data);
         }
     }
 

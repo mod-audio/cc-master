@@ -42,7 +42,7 @@ typedef struct sockcli_t sockcli_t;
 sockcli_t* sockcli_init(const char *path);
 void sockcli_finish(sockcli_t *client);
 int sockcli_read(sockcli_t *client, void *buffer, size_t size);
-int sockcli_write(sockcli_t *client, void *buffer, size_t size);
+int sockcli_write(sockcli_t *client, const void *buffer, size_t size);
 
 
 /*

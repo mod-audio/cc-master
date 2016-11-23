@@ -20,7 +20,7 @@ CFLAGS += -Wall -Wextra
 LDFLAGS +=
 
 # libraries
-LIBS = -lcontrolchain -pthread
+LIBS = -lcontrolchain -pthread -ljansson
 
 # source and object files
 SRC = $(wildcard $(SRC_DIR)/*.c)
