@@ -157,7 +157,7 @@ char* cc_device_descriptor(int device_id)
 int* cc_device_list(int filter)
 {
     int count = 0;
-    static int devices_list[CC_MAX_DEVICES+1];
+    int *devices_list = malloc((CC_MAX_DEVICES + 1) * sizeof(int));
 
     if (g_devices_initialized)
     {
