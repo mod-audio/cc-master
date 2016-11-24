@@ -25,6 +25,7 @@
 */
 
 #define READ_BUFFER_SIZE    100*1024
+#define MAX_CLIENTS         10
 
 
 /*
@@ -41,7 +42,7 @@
 */
 
 typedef struct client_t {
-    int conn_fd;
+    int conn_fd, index;
     pthread_t read_thread;
     sockser_t *server;
 } client_t;
@@ -53,6 +54,7 @@ typedef struct sockser_t {
     loribu_t *rb;
     sem_t receive_data;
     void (*client_event_cb)(void *arg);
+    client_t *clients[MAX_CLIENTS];
 } sockser_t;
 
 
@@ -112,6 +114,9 @@ static void* process_client(void *arg)
         server->client_event_cb(&event);
     }
 
+    // set index negative to indicate thread is finished
+    client->index = -1;
+
     return NULL;
 }
 
@@ -130,8 +135,32 @@ static void* new_connections(void *arg)
             exit(-1);
         }
 
-        client_t *client = calloc(1, sizeof(client_t));
+        // allocate memory for the new client
+        int index;
+        client_t *client = 0;
+        for (index = 0; index < MAX_CLIENTS; index++)
+        {
+            client = server->clients[index];
+            if (!client)
+            {
+                client = calloc(1, sizeof(client_t));
+                server->clients[index] = client;
+                break;
+            }
+            else if (client->index == -1)
+            {
+                pthread_join(client->read_thread, NULL);
+                break;
+            }
+        }
+
+        // there is no space for more clients
+        if (!client)
+            continue;
+
+        // fill up client information
         client->conn_fd = conn_fd;
+        client->index = index;
         client->server = server;
 
         // thread attributes
@@ -213,6 +242,19 @@ sockser_t* sockser_init(const char *path)
 
 void sockser_finish(sockser_t *server)
 {
+    // cancel clients threads
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (server->clients[i])
+        {
+            client_t *client = server->clients[i];
+            pthread_cancel(client->read_thread);
+            pthread_join(client->read_thread, NULL);
+            free(client);
+        }
+    }
+
+    // cancel connections thread
     if (server->conn_thread)
     {
         pthread_cancel(server->conn_thread);

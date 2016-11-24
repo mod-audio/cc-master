@@ -378,6 +378,7 @@ static void* chain_sync(void *arg)
                 cc_device_destroy(device_list[i]);
             }
         }
+        free(device_list);
 
         cycles_counter++;
 
@@ -495,9 +496,9 @@ void cc_finish(cc_handle_t *handle)
         // destroy all devices
         int *device_list = cc_device_list(CC_DEVICE_LIST_ALL);
         for (int i = 0; device_list[i]; i++)
-        {
             cc_device_destroy(device_list[i]);
-        }
+
+        free(device_list);
 
         pthread_mutex_unlock(&handle->running);
 
