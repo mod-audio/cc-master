@@ -239,7 +239,10 @@ int main(void)
     while (1)
     {
         read_data.buffer = read_buffer;
-        sockser_read_string(g_server, &read_data);
+        int ret = sockser_read_string(g_server, &read_data);
+
+        if (ret <= 0)
+            continue;
 
         // client file descriptor
         int client_fd = read_data.client_fd;
