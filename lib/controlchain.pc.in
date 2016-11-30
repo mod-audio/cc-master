@@ -1,0 +1,10 @@
+prefix=@PREFIX@
+exec_prefix=${prefix}
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: Control Chain
+Description: Control Chain protocol library
+Version: @VERSION@
+Libs: -L${libdir} -lcontrolchain
+Cflags: -I${includedir}
