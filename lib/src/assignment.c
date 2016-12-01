@@ -76,6 +76,9 @@ int cc_assignment_add(cc_assignment_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
+    if (!device)
+        return -1;
+
     if (!device->assignments)
         device->assignments = calloc(CC_MAX_ASSIGNMENTS, sizeof(cc_assignment_t *));
 
@@ -96,14 +99,19 @@ int cc_assignment_add(cc_assignment_t *assignment)
     return -1;
 }
 
-void cc_assignment_remove(cc_unassignment_t *unassignment)
+int cc_assignment_remove(cc_unassignment_t *unassignment)
 {
     cc_device_t *device = cc_device_get(unassignment->device_id);
-    int id = unassignment->assignment_id;
 
+    if (!device)
+        return -1;
+
+    int id = unassignment->assignment_id;
     if (device->assignments)
     {
         free(device->assignments[id]);
         device->assignments[id] = 0;
     }
+
+    return id;
 }

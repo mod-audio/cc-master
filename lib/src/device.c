@@ -92,6 +92,11 @@ void cc_device_create(int device_id)
 void cc_device_destroy(int device_id)
 {
     cc_device_t *device = cc_device_get(device_id);
+
+    if (!device)
+        return;
+
+    // reset id and status values
     device->id = -1;
     device->status = CC_DEVICE_DISCONNECTED;
 
@@ -121,8 +126,11 @@ void cc_device_destroy(int device_id)
 char* cc_device_descriptor(int device_id)
 {
     cc_device_t* device = cc_device_get(device_id);
-    cc_dev_descriptor_t *descriptor = device->descriptor;
 
+    if (!device)
+        return 0;
+
+    cc_dev_descriptor_t *descriptor = device->descriptor;
     json_t *root = json_object();
 
     // label

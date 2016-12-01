@@ -243,17 +243,20 @@ static void parser(cc_handle_t *handle)
     {
         sem_post(&handle->waiting_response);
 
-        // parse device descriptor message to struct
-        cc_dev_descriptor_t *descriptor = cc_msg_parser(msg);
-
-        // store device descriptor
         cc_device_t *device = cc_device_get(msg->dev_address);
-        device->descriptor = descriptor;
-        device->status = CC_DEVICE_CONNECTED;
+        if (device)
+        {
+            // parse device descriptor message to struct
+            cc_dev_descriptor_t *descriptor = cc_msg_parser(msg);
 
-        // proceed to callback if any
-        if (handle->device_status_cb)
-            handle->device_status_cb(device);
+            // store device information
+            device->descriptor = descriptor;
+            device->status = CC_DEVICE_CONNECTED;
+
+           // proceed to callback if any
+           if (handle->device_status_cb)
+               handle->device_status_cb(device);
+        }
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
              msg->command == CC_CMD_UNASSIGNMENT)
@@ -524,6 +527,9 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 {
     int id = cc_assignment_add(assignment);
 
+    if (id < 0)
+        return id;
+
     // build and send assignment message
     cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, handle->msg_tx);
     if (send_and_wait(handle, handle->msg_tx))
@@ -541,7 +547,10 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 
 void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
 {
-    cc_assignment_remove(unassignment);
+    int ret = cc_assignment_remove(unassignment);
+
+    if (ret < 0)
+        return;
 
     // build and send unassignment message
     cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, handle->msg_tx);
