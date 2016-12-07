@@ -28,8 +28,8 @@
 #include <string.h>
 #include <jansson.h>
 #include <cc/control_chain.h>
-#include <cc/cc_client.h>
 
+#include "request.h"
 #include "sockser.h"
 #include "base64.h"
 

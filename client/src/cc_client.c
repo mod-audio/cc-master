@@ -31,6 +31,7 @@
 #include <jansson.h>
 
 #include "cc_client.h"
+#include "request.h"
 #include "sockcli.h"
 #include "base64.h"
 
