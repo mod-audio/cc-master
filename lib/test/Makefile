@@ -11,9 +11,10 @@ CFLAGS += -O3
 endif
 
 # flags
-LIB_NAME=$(shell basename ../build/*.so)
+LIB_PATH=../../build/lib
+LIB_NAME=$(shell basename $(LIB_PATH)/*.so)
 CFLAGS += -Wall -Wextra
-LDFLAGS += -L.. -Wl,-rpath=..
+LDFLAGS += -L$(LIB_PATH) -Wl,-rpath=$(LIB_PATH)
 
 # includes and libraries
 INCS = -I../src
