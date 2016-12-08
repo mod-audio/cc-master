@@ -97,25 +97,27 @@ void* cc_msg_parser(const cc_msg_t *msg)
 {
     if (msg->command == CC_CMD_HANDSHAKE)
     {
-        uint32_t i;
         cc_handshake_dev_t *handshake = malloc(sizeof(cc_handshake_dev_t));
+        uint8_t *pdata = msg->data;
 
         // URI
-        handshake->uri = string_deserialize(msg->data, &i);
+        uint32_t size;
+        handshake->uri = string_deserialize(pdata, &size);
+        pdata += size;
 
         // random id
-        handshake->random_id = *((uint16_t *) &msg->data[i]);
-        i += 2;
+        handshake->random_id = *((uint16_t *) pdata);
+        pdata += sizeof(uint16_t);
 
         // device protocol version
-        handshake->protocol.major = msg->data[i++];
-        handshake->protocol.minor = msg->data[i++];
+        handshake->protocol.major = *pdata++;
+        handshake->protocol.minor = *pdata++;
         handshake->protocol.micro = 0;
 
         // device firmware version
-        handshake->firmware.major = msg->data[i++];
-        handshake->firmware.minor = msg->data[i++];
-        handshake->firmware.micro = msg->data[i++];
+        handshake->firmware.major = *pdata++;
+        handshake->firmware.minor = *pdata++;
+        handshake->firmware.micro = *pdata++;
 
         return handshake;
     }
