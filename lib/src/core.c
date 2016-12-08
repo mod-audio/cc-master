@@ -228,7 +228,7 @@ static void parser(cc_handle_t *handle)
         {
             //TODO: check response status
 
-            // create a new device using the passing the required address
+            // create a new device using address as device id
             cc_device_create(response->address);
 
             // build and send response message
