@@ -14,15 +14,14 @@ def options(opt):
 def configure(conf):
     conf.load('gnu_dirs compiler_c')
 
-    conf.check_cfg(package='controlchain', args='--cflags --libs', uselib_store='CONTROLCHAIN',
-        mandatory=True)
-
     conf.check_cfg(package='jansson', args='--cflags --libs', uselib_store='JANSSON',
         mandatory=True)
 
     conf.env.VERSION = VERSION
-    conf.env.CFLAGS = ['-Wall', '-Wextra', '-std=gnu99']
+    conf.env.CFLAGS += ['-Wall', '-Wextra', '-std=gnu99']
     conf.env.LIB = ['pthread']
+
+    conf.env.INCLUDES_CC = ['../lib/src']
 
     if conf.options.debug:
         conf.define('DEBUG',1)
@@ -32,4 +31,4 @@ def configure(conf):
 
 def build(bld):
     source_files = bld.path.ant_glob('src/*.c')
-    bld.program(source=source_files, target=APPNAME, use='CONTROLCHAIN JANSSON')
+    bld.program(source=source_files, target=APPNAME, use='CC CCLIB JANSSON')

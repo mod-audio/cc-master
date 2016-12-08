@@ -21,7 +21,7 @@ def configure(conf):
         atleast_version='2.7.0', msg="Checking for 'jansson 2.7.0'", mandatory=True)
 
     conf.env.VERSION = VERSION
-    conf.env.CFLAGS = ['-Wall', '-Wextra', '-std=gnu99']
+    conf.env.CFLAGS += ['-Wall', '-Wextra', '-std=gnu99']
     conf.env.LIB = ['pthread']
 
     if conf.options.debug:
@@ -37,4 +37,4 @@ def build(bld):
     bld(source="controlchain.pc.in")
 
     source_files = bld.path.ant_glob('src/*.c')
-    bld.shlib(source=source_files, target=APPNAME, use='SERIALPORT JANSSON')
+    bld.shlib(source=source_files, target=APPNAME, use='SERIALPORT JANSSON', name='CCLIB')
