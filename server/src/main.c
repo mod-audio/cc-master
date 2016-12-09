@@ -286,6 +286,10 @@ int main(int argc, char **argv)
 
     // init server
     g_server = sockser_init("/tmp/control-chain.sock");
+
+    if (!g_server)
+        return -1;
+
     printf("server is running\n");
 
     // set callback for clients events

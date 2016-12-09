@@ -446,8 +446,13 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
 
     // if it's an Arduino connected sleeps some seconds for initialization
     char *manufacturer = sp_get_port_usb_manufacturer(handle->sp);
-    if (strstr(manufacturer, "Arduino"))
+    if (manufacturer && strstr(manufacturer, "Arduino"))
+    {
+#ifdef DEBUG
+        printf("resetting arduino\n");
+#endif
         sleep(3);
+    }
 
     // create mutexes
     pthread_mutex_init(&handle->sending, NULL);

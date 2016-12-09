@@ -207,6 +207,12 @@ cc_client_t *cc_client_new(const char *path)
     cc_client_t *client = malloc(sizeof(cc_client_t));
     client->socket = sockcli_init(path);
 
+    if (!client->socket)
+    {
+        free(client);
+        return NULL;
+    }
+
     // allocate read buffer
     client->buffer = malloc(READ_BUFFER_SIZE);
 

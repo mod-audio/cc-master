@@ -90,7 +90,7 @@ sockcli_t* sockcli_init(const char *path)
     if (client->sock_fd < 0)
     {
         perror("ERROR opening socket");
-        exit(1);
+        return NULL;
     }
 
     // set server address
@@ -103,7 +103,7 @@ sockcli_t* sockcli_init(const char *path)
     if (connect(client->sock_fd, (struct sockaddr*)&remote, len) < 0)
     {
         perror("ERROR connecting");
-        exit(1);
+        return NULL;
     }
 
     return client;

@@ -154,7 +154,7 @@ static void* new_connections(void *arg)
         if (conn_fd < 0)
         {
             perror("ERROR on accept");
-            exit(-1);
+            break;
         }
 
         // allocate memory for the new client
@@ -205,6 +205,7 @@ static void* new_connections(void *arg)
         }
     }
 
+    server->conn_thread = 0;
     return NULL;
 }
 
@@ -224,7 +225,7 @@ sockser_t* sockser_init(const char *path)
     if (server->sock_fd < 0)
     {
         perror("ERROR opening socket");
-        return 0;
+        return NULL;
     }
 
     // configure address
@@ -238,7 +239,7 @@ sockser_t* sockser_init(const char *path)
     if (bind(server->sock_fd, (struct sockaddr *) &local, len) < 0)
     {
         perror("ERROR on binding");
-        return 0;
+        return NULL;
     }
 
     // start listening for the clients

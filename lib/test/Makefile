@@ -13,7 +13,7 @@ endif
 # flags
 LIB_PATH=../../build/lib
 LIB_NAME=$(shell basename $(LIB_PATH)/*.so)
-CFLAGS += -Wall -Wextra
+CFLAGS += -Wall -Wextra -std=c99
 LDFLAGS += -L$(LIB_PATH) -Wl,-rpath=$(LIB_PATH)
 
 # includes and libraries
