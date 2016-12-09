@@ -27,7 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <jansson.h>
+#include <getopt.h>
 
+#include "config.h"
 #include "control_chain.h"
 #include "request.h"
 #include "sockser.h"
@@ -43,7 +45,6 @@
 #define MAX_CLIENTS_EVENTS  10
 #define BUFFER_SIZE         8*1024
 
-#define SERIAL_PORT         "/dev/ttyACM0"
 #define SERIAL_BAUDRATE     115200
 
 
@@ -76,6 +77,8 @@ typedef struct clients_events_t {
 
 static sockser_t *g_server;
 static clients_events_t g_client_events[MAX_CLIENTS_EVENTS];
+static char *g_serial;
+static int g_baudrate;
 
 
 /*
@@ -222,6 +225,54 @@ static void client_event_cb(void *arg)
     }
 }
 
+static void print_usage(int status)
+{
+    printf("Usage: " SERVER_NAME " <serial> [-bVh]\n");
+    printf("  -b    define baud rate\n");
+    printf("  -V,   display version information and exit\n");
+    printf("  -h,   display this help and exit\n");
+
+    exit(status);
+}
+
+static void print_version(void)
+{
+    printf(SERVER_NAME " " SERVER_VERSION " <https://github.com/moddevices/cc-master>\n");
+    printf("License LGPLv3: <https://www.gnu.org/licenses/lgpl.html>.\n");
+    printf("This is free software: you are free to change and redistribute it.\n");
+    printf("There is NO WARRANTY, to the extent permitted by law.\n");
+
+    exit(EXIT_SUCCESS);
+}
+
+static void parse_cmd_line(int argc, char **argv)
+{
+    if (argc < 2)
+        print_usage(EXIT_FAILURE);
+
+    g_serial = argv[1];
+    g_baudrate = SERIAL_BAUDRATE;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "bVh")) != -1)
+    {
+        switch (opt)
+        {
+            case 'b':
+                g_baudrate = atoi(argv[optind]);
+                break;
+
+            case 'V':
+                print_version();
+                break;
+
+            case 'h':
+                print_usage(EXIT_SUCCESS);
+                break;
+        }
+    }
+}
+
 
 /*
 ****************************************************************************************************
@@ -229,8 +280,10 @@ static void client_event_cb(void *arg)
 ****************************************************************************************************
 */
 
-int main(void)
+int main(int argc, char **argv)
 {
+    parse_cmd_line(argc, argv);
+
     // init server
     g_server = sockser_init("/tmp/control-chain.sock");
     printf("server is running\n");
@@ -239,10 +292,10 @@ int main(void)
     sockser_client_event_cb(g_server, client_event_cb);
 
     // init control chain
-    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
+    cc_handle_t *handle = cc_init(g_serial, g_baudrate);
     if (!handle)
     {
-        printf("can't initiate control chain using %s\n", SERIAL_PORT);
+        fprintf(stderr, "error starting control chain using serial '%s'\n", g_serial);
         return -1;
     }
 
