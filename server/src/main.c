@@ -315,6 +315,10 @@ static void daemonize(void)
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
+
+    // open syslog
+    openlog(SERVER_NAME, LOG_PID, LOG_DAEMON);
+    syslog(LOG_INFO, "daemon started");
 }
 
 
@@ -330,26 +334,26 @@ int main(int argc, char **argv)
 
     daemonize();
 
-    // init server
+    // open socket
     g_server = sockser_init("/tmp/control-chain.sock");
-
     if (!g_server)
+    {
+        syslog(LOG_ERR, "error when opening socket");
         return -1;
+    }
 
-    printf("server is running\n");
-
-    // set callback for clients events
+    // set callback for socket clients events
     sockser_client_event_cb(g_server, client_event_cb);
 
     // init control chain
     cc_handle_t *handle = cc_init(g_serial, g_baudrate);
     if (!handle)
     {
-        fprintf(stderr, "error starting control chain using serial '%s'\n", g_serial);
+        syslog(LOG_ERR, "error starting control chain using serial '%s'", g_serial);
         return -1;
     }
 
-    printf("control chain started\n");
+    syslog(LOG_INFO, "control chain library loaded");
 
     // set control chain callbacks
     cc_device_status_cb(handle, device_status_cb);
@@ -469,6 +473,7 @@ int main(int argc, char **argv)
 
     cc_finish(handle);
     sockser_finish(g_server);
+    closelog();
 
     return 0;
 }
