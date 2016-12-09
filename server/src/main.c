@@ -28,6 +28,11 @@
 #include <string.h>
 #include <jansson.h>
 #include <getopt.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <syslog.h>
 
 #include "config.h"
 #include "control_chain.h"
@@ -273,6 +278,45 @@ static void parse_cmd_line(int argc, char **argv)
     }
 }
 
+static void daemonize(void)
+{
+    // fork process
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        fprintf(stderr, "failed forking process\n");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid > 0)
+    {
+        // this is the parent process
+        exit(EXIT_SUCCESS);
+    }
+
+    // unmask the file mode
+    umask(0);
+
+    // set new session
+    pid_t sid = setsid();
+    if (sid < 0)
+    {
+        fprintf(stderr, "failed creating new session\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // change current directory
+    if ((chdir("/")) < 0)
+    {
+        fprintf(stderr, "failed changing current directory\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // close out the standard file descriptors
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+
 
 /*
 ****************************************************************************************************
@@ -283,6 +327,8 @@ static void parse_cmd_line(int argc, char **argv)
 int main(int argc, char **argv)
 {
     parse_cmd_line(argc, argv);
+
+    daemonize();
 
     // init server
     g_server = sockser_init("/tmp/control-chain.sock");
@@ -426,5 +472,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-// TODO: daemonize
