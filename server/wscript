@@ -19,9 +19,6 @@ def options(opt):
 def configure(conf):
     conf.load('gnu_dirs compiler_c')
 
-    conf.check_cfg(package='jansson', args='--cflags --libs', uselib_store='JANSSON',
-        mandatory=True)
-
     conf.env.VERSION = VERSION
     conf.env.CFLAGS += ['-Wall', '-Wextra', '-std=gnu99']
     conf.env.LIB = ['pthread']

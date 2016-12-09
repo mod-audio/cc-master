@@ -18,7 +18,7 @@ def configure(conf):
         mandatory=True)
 
     conf.check_cfg(package='jansson', args='--cflags --libs', uselib_store='JANSSON',
-        atleast_version='2.7.0', msg="Checking for 'jansson 2.7.0'", mandatory=True)
+        atleast_version='2.7', msg="Checking for 'jansson 2.7'", mandatory=True)
 
     conf.env.VERSION = VERSION
     conf.env.CFLAGS += ['-Wall', '-Wextra', '-std=gnu99']
