@@ -87,6 +87,9 @@ int cc_assignment_add(cc_assignment_t *assignment)
     {
         if (!device->assignments[i])
         {
+            // set assignment id
+            assignment->id = i;
+
             // duplicate assignment
             cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
             device->assignments[i] = copy;

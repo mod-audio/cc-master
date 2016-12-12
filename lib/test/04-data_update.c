@@ -46,7 +46,7 @@ int main(void)
     while (no_device) sleep(1);
 
     int act_id = 0;
-    cc_assignment_t ass = {dev_id, act_id, 1.0, 0.0, 1.0, 0.0, 1};
+    cc_assignment_t ass = {-1, dev_id, act_id, 1.0, 0.0, 1.0, 0.0, 1};
     int id = cc_assignment(handle, &ass);
 
     if (id >= 0)
