@@ -10,11 +10,12 @@ top     = '.'           # Source directory
 out     = 'build'       # Build directory
 
 def options(opt):
-    opt.load('compiler_c')
+    opt.load('compiler_c python')
     opt.add_option('--debug', action='store_true', default=False, help='enable debug build')
 
 def configure(conf):
-    conf.load('gnu_dirs compiler_c')
+    conf.load('gnu_dirs compiler_c python')
+    conf.check_python_version(minver=(2,7))
 
     conf.env.VERSION = VERSION
     conf.env.CFLAGS += ['-Wall', '-Wextra', '-std=gnu99']
@@ -30,9 +31,8 @@ def configure(conf):
 
 def build(bld):
     includedir = '${PREFIX}/include/cc'
-    pythondir = '${LIBDIR}/' + 'python{0[0]}.{0[1]}/site-packages'.format(sys.version_info)
     bld.install_files(includedir, bld.path.ant_glob('src/cc_client.h'))
-    bld.install_files(pythondir, bld.path.ant_glob('src/cc_client.py'))
+    bld(features='py', source=bld.path.ant_glob('src/cc_client.py'), install_from='src')
 
     bld(source="cc_client.pc.in")
 
