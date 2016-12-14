@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import socket, json
 from threading import Thread, Lock
 from base64 import b64decode
@@ -49,7 +51,7 @@ class ControlChainClient(object):
     def __init__(self, socket_path):
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.socket.connect(socket_path)
-        self.thread = Thread(target=self._reader)
+        self.thread = Thread(target=self._reader, daemon=True)
         self.thread.start()
         self.lock = Lock()
         self.lock.acquire()
@@ -122,3 +124,4 @@ if __name__ == "__main__":
 
     unassignment = {'device_id':1, 'assignment_id':0}
     cc.unassignment(unassignment)
+    print('done')
