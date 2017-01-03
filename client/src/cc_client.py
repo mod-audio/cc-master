@@ -110,6 +110,11 @@ if __name__ == "__main__":
     cc.data_update_cb(data_update_cb)
 
     devices = cc.device_list()
+    print('devices list:', devices)
+
+    if not devices:
+        exit(0)
+
     for dev in devices:
         descriptor = cc.device_descriptor(dev)
         print('dev: {0}, descriptor: {1}'.format(dev, descriptor))
@@ -117,7 +122,7 @@ if __name__ == "__main__":
     assignment = {'device_id':1, 'actuator_id':0, 'value':1.0, 'min':0.0, 'max':2.0,
                   'def':1.5, 'mode':1}
 
-    print('assignment id: ', cc.assignment(assignment))
+    print('assignment id:', cc.assignment(assignment))
 
     from time import sleep
     sleep(0.5)
