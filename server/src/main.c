@@ -83,7 +83,7 @@ typedef struct clients_events_t {
 static sockser_t *g_server;
 static clients_events_t g_client_events[MAX_CLIENTS_EVENTS];
 static char *g_serial;
-static int g_baudrate;
+static int g_baudrate, g_foreground;
 
 
 /*
@@ -234,6 +234,7 @@ static void print_usage(int status)
 {
     printf("Usage: " SERVER_NAME " <serial> [-bVh]\n");
     printf("  -b    define baud rate\n");
+    printf("  -f    run server on foreground\n");
     printf("  -V,   display version information and exit\n");
     printf("  -h,   display this help and exit\n");
 
@@ -259,12 +260,16 @@ static void parse_cmd_line(int argc, char **argv)
     g_baudrate = SERIAL_BAUDRATE;
 
     int opt;
-    while ((opt = getopt(argc, argv, "bVh")) != -1)
+    while ((opt = getopt(argc, argv, "bfVh")) != -1)
     {
         switch (opt)
         {
             case 'b':
                 g_baudrate = atoi(argv[optind]);
+                break;
+
+            case 'f':
+                g_foreground = 1;
                 break;
 
             case 'V':
@@ -315,10 +320,6 @@ static void daemonize(void)
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-
-    // open syslog
-    openlog(SERVER_NAME, LOG_PID, LOG_DAEMON);
-    syslog(LOG_INFO, "daemon started");
 }
 
 
@@ -332,7 +333,12 @@ int main(int argc, char **argv)
 {
     parse_cmd_line(argc, argv);
 
-    daemonize();
+    if (!g_foreground)
+        daemonize();
+
+    // open syslog
+    openlog(SERVER_NAME, LOG_PID, LOG_DAEMON);
+    syslog(LOG_INFO, "daemon started");
 
     // open socket
     g_server = sockser_init("/tmp/control-chain.sock");
