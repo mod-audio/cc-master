@@ -431,15 +431,22 @@ int main(int argc, char **argv)
         else if (strcmp(request, "assignment") == 0)
         {
             cc_assignment_t assignment;
+            double value, min, max, def;
 
             json_unpack(data, CC_ASSIGNMENT_REQ_FORMAT,
                 "device_id", &assignment.device_id,
                 "actuator_id", &assignment.actuator_id,
-                "value", &assignment.value,
-                "min", &assignment.min,
-                "max", &assignment.max,
-                "def", &assignment.def,
+                "value", &value,
+                "min", &min,
+                "max", &max,
+                "def", &def,
                 "mode", &assignment.mode);
+
+            // double to float
+            assignment.value = value;
+            assignment.min = min;
+            assignment.max = max;
+            assignment.def = def;
 
             int assignment_id = cc_assignment(handle, &assignment);
 
