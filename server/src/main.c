@@ -436,6 +436,7 @@ int main(int argc, char **argv)
             json_unpack(data, CC_ASSIGNMENT_REQ_FORMAT,
                 "device_id", &assignment.device_id,
                 "actuator_id", &assignment.actuator_id,
+                "label", &assignment.label,
                 "value", &value,
                 "min", &min,
                 "max", &max,

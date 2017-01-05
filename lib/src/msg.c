@@ -191,6 +191,19 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         *pdata++ = assignment->id;
         *pdata++ = assignment->actuator_id;
 
+        // assignment label
+        if (assignment->label)
+        {
+            int size = strlen(assignment->label);
+            *pdata++ = size;
+            memcpy(pdata, assignment->label, size);
+            pdata += size;
+        }
+        else
+        {
+            *pdata++ = 0;
+        }
+
         // value, min, max, def
         pdata += float_to_bytes(assignment->value, pdata);
         pdata += float_to_bytes(assignment->min, pdata);

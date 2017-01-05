@@ -246,6 +246,7 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
     json_t *request_data = json_pack(CC_ASSIGNMENT_REQ_FORMAT,
         "device_id", assignment->device_id,
         "actuator_id", assignment->actuator_id,
+        "label", assignment->label,
         "value", assignment->value,
         "min", assignment->min,
         "max", assignment->max,
