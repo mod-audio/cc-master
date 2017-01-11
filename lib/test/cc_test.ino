@@ -74,7 +74,7 @@ void send_msg(uint8_t command, uint8_t *data, uint16_t data_size)
 {
     uint8_t i = 0, buffer[32];
 
-    // dev address
+    // device id
     buffer[i++] = device_id;
 
     // command
@@ -152,7 +152,7 @@ void parser(int command, uint8_t *data)
     else if (command == CC_CMD_HANDSHAKE)
     {
 //        digitalWrite(13, HIGH);
-        device_id = data[3]; // set device address
+        device_id = data[3]; // set device id
         need_handshake = 0;
     }
     else if (command == CC_CMD_DEV_DESCRIPTOR)
@@ -198,7 +198,7 @@ void serialEvent()
                 }
                 break;
 
-            // address
+            // device id
             case 1:
                 if (byte == 0 || byte == device_id)
                     state++;

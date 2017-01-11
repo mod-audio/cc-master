@@ -60,7 +60,7 @@ enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CM
 // DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA (N), CHECKSUM (1)
 
 typedef struct cc_msg_t {
-    uint8_t dev_address;
+    uint8_t device_id;
     uint8_t command;
     uint16_t data_size;
     uint8_t *header, *data;

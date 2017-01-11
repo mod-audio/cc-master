@@ -152,7 +152,7 @@ void* cc_msg_parser(const cc_msg_t *msg)
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
-        return cc_update_parse(msg->dev_address, msg->data);
+        return cc_update_parse(msg->device_id, msg->data);
     }
 
     return 0;
@@ -174,7 +174,7 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
 
         // status, frame, channel
         *pdata++ = handshake->status;
-        *pdata++ = handshake->address;
+        *pdata++ = handshake->device_id;
         *pdata++ = handshake->channel;
 
         msg->data_size = (pdata - msg->data);
@@ -184,8 +184,8 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         const cc_assignment_t *assignment = data_struct;
         uint8_t *pdata = msg->data;
 
-        // device address
-        msg->dev_address = assignment->device_id;
+        // device id
+        msg->device_id = assignment->device_id;
 
         // assignment id, actuator id
         *pdata++ = assignment->id;
@@ -222,8 +222,8 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         const cc_unassignment_t *unassignment = data_struct;
         uint8_t *pdata = msg->data;
 
-        // device address
-        msg->dev_address = unassignment->device_id;
+        // device id
+        msg->device_id = unassignment->device_id;
 
         // assignment id
         *pdata++ = unassignment->assignment_id;

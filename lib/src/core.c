@@ -115,7 +115,7 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
 
         // header
         int i = 0;
-        buffer[i++] = msg->dev_address;
+        buffer[i++] = msg->device_id;
         buffer[i++] = msg->command;
         buffer[i++] = (msg->data_size >> 0) & 0xFF;
         buffer[i++] = (msg->data_size >> 8) & 0xFF;
@@ -147,7 +147,7 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
         if (msg->command == CC_CMD_CHAIN_SYNC)
             return;
 
-        printf("SEND: device: %i, command: %i\n", msg->dev_address, msg->command);
+        printf("SEND: device: %i, command: %i\n", msg->device_id, msg->command);
         printf("      data size: %i, data:", msg->data_size);
         for (int i = 0; i < msg->data_size; i++)
             printf(" %02X", msg->data[i]);
@@ -211,7 +211,7 @@ static void parser(cc_handle_t *handle)
     cc_msg_t *msg = handle->msg_rx;
 
 #ifdef DEBUG
-        printf("RECV: device: %i, command: %i\n", msg->dev_address, msg->command);
+        printf("RECV: device: %i, command: %i\n", msg->device_id, msg->command);
         printf("      data size: %i, data:", msg->data_size);
         for (int i = 0; i < msg->data_size; i++)
             printf(" %02X", msg->data[i]);
@@ -228,8 +228,8 @@ static void parser(cc_handle_t *handle)
         {
             //TODO: check response status
 
-            // create a new device using address as device id
-            cc_device_create(response->address);
+            // create a new device
+            cc_device_create(response->device_id);
 
             // build and send response message
             cc_msg_builder(msg->command, response, handle->msg_tx);
@@ -243,7 +243,7 @@ static void parser(cc_handle_t *handle)
     {
         sem_post(&handle->waiting_response);
 
-        cc_device_t *device = cc_device_get(msg->dev_address);
+        cc_device_t *device = cc_device_get(msg->device_id);
         if (device)
         {
             // parse device descriptor message to struct
@@ -299,7 +299,7 @@ static void* receiver(void *arg)
             ret = sp_blocking_read(handle->sp, msg->header, CC_MSG_HEADER_SIZE, CC_HEADER_TIMEOUT);
             if (ret == CC_MSG_HEADER_SIZE)
             {
-                msg->dev_address = msg->header[0];
+                msg->device_id = msg->header[0];
                 msg->command = msg->header[1];
                 msg->data_size = *((uint16_t *) &msg->header[2]);
 
@@ -352,7 +352,7 @@ static void* chain_sync(void *arg)
 
     uint8_t chain_sync_msg_data;
     cc_msg_t chain_sync_msg = {
-        .dev_address = 0,
+        .device_id = 0,
         .command = CC_CMD_CHAIN_SYNC,
         .data_size = sizeof (chain_sync_msg_data),
         .data = &chain_sync_msg_data
@@ -373,7 +373,7 @@ static void* chain_sync(void *arg)
         int *device_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
         for (int i = 0; device_list[i]; i++)
         {
-            dev_desc_msg.dev_address = device_list[i];
+            dev_desc_msg.device_id = device_list[i];
 
             // request device descriptor
             if (send_and_wait(handle, &dev_desc_msg))
