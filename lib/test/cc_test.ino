@@ -143,8 +143,8 @@ void parser(int command, uint8_t *data)
 {
     if (command == CC_CMD_CHAIN_SYNC)
     {
-        // handshake cycle is when data[0] == 1
-        if (need_handshake && data[0] == 1)
+        // handshake cycle is when data[0] == 2
+        if (need_handshake && data[0] == 2)
             send_handshake();
         else if (assignment_done)
             send_data_update();

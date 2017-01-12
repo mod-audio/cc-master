@@ -59,7 +59,7 @@
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 #define CC_RESPONSE_TIMEOUT     10      // in ms
 
-#define CC_HANDSHAKE_NUM_CYCLES 10
+#define CC_HANDSHAKE_PERIOD     50      // in sync cycles
 
 
 /*
@@ -79,7 +79,7 @@
 enum {WAITING_SYNCING, WAITING_HEADER, WAITING_DATA, WAITING_CRC};
 
 // sync message cycles definition
-enum {CC_SYNC_REGULAR_CYCLE, CC_SYNC_HANDSHAKE_CYCLE};
+enum {CC_SYNC_SETUP_CYCLE, CC_SYNC_REGULAR_CYCLE, CC_SYNC_HANDSHAKE_CYCLE};
 
 // control chain handle struct
 struct cc_handle_t {
@@ -364,6 +364,12 @@ static void* chain_sync(void *arg)
         .data = 0
     };
 
+    // this is the setup sync cycle message
+    // when a device receive this message it must reset to its initial state
+    // such message can be seen as a software reset
+    chain_sync_msg.data[0] = CC_SYNC_SETUP_CYCLE;
+    send(handle, &chain_sync_msg);
+
     while (running(handle))
     {
         // period between sync messages
@@ -387,7 +393,7 @@ static void* chain_sync(void *arg)
 
         // define the type of the sync message according the number of cycles
         chain_sync_msg.data[0] = CC_SYNC_REGULAR_CYCLE;
-        if (cycles_counter >= CC_HANDSHAKE_NUM_CYCLES)
+        if (cycles_counter >= CC_HANDSHAKE_PERIOD)
         {
             chain_sync_msg.data[0] = CC_SYNC_HANDSHAKE_CYCLE;
             cycles_counter = 0;
