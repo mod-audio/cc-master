@@ -53,12 +53,14 @@
 ****************************************************************************************************
 */
 
+// handshake structure received from device
 typedef struct cc_handshake_dev_t {
     string_t *uri;
     uint16_t random_id;
     version_t protocol, firmware;
 } cc_handshake_dev_t;
 
+// handshake structure sent to device
 typedef struct cc_handshake_mod_t {
     uint16_t random_id;
     int status, device_id, channel;
@@ -71,8 +73,7 @@ typedef struct cc_handshake_mod_t {
 ****************************************************************************************************
 */
 
-cc_handshake_mod_t* cc_handshake_check(cc_handshake_dev_t *received);
-void cc_handshake_destroy(cc_handshake_dev_t *handshake);
+int cc_handshake_check(cc_handshake_dev_t *received);
 
 
 /*

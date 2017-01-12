@@ -75,6 +75,7 @@ typedef struct cc_device_t {
     int id, status;
     cc_dev_descriptor_t *descriptor;
     cc_assignment_t **assignments;
+    unsigned int timeout;
 } cc_device_t;
 
 
@@ -84,8 +85,8 @@ typedef struct cc_device_t {
 ****************************************************************************************************
 */
 
-// create a device using device_id
-void cc_device_create(int device_id);
+// create and return a device, or NULL if fail
+cc_device_t* cc_device_create(void);
 
 // destroy the device
 void cc_device_destroy(int device_id);

@@ -60,6 +60,7 @@
 #define CC_RESPONSE_TIMEOUT     10      // in ms
 
 #define CC_HANDSHAKE_PERIOD     50      // in sync cycles
+#define CC_DEVICE_TIMEOUT       100     // in sync cycles
 
 
 /*
@@ -219,24 +220,29 @@ static void parser(cc_handle_t *handle)
         printf("\n---\n");
 #endif
 
+    // reset device timeout
+    cc_device_t *device = cc_device_get(msg->device_id);
+    if (device)
+        device->timeout = 0;
+
     if (msg->command == CC_CMD_HANDSHAKE)
     {
         cc_handshake_dev_t *handshake = cc_msg_parser(msg);
-        cc_handshake_mod_t *response = cc_handshake_check(handshake);
-
-        if (response)
+        if (cc_handshake_check(handshake))
         {
-            //TODO: check response status
-
             // create a new device
-            cc_device_create(response->device_id);
+            cc_device_t *device = cc_device_create();
+
+            // FIXME: this is hardcoded
+            cc_handshake_mod_t response;
+            response.random_id = handshake->random_id;
+            response.device_id = device->id;
+            response.status = 0;
+            response.channel = 0;
 
             // build and send response message
-            cc_msg_builder(msg->command, response, handle->msg_tx);
+            cc_msg_builder(msg->command, &response, handle->msg_tx);
             send(handle, handle->msg_tx);
-
-            //destroy handshake structure
-            cc_handshake_destroy(handshake);
         }
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
@@ -375,7 +381,7 @@ static void* chain_sync(void *arg)
         // period between sync messages
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
-        // list devices without device descriptor
+        // list devices without device descriptor to request descriptors
         int *device_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
         for (int i = 0; device_list[i]; i++)
         {
@@ -385,6 +391,28 @@ static void* chain_sync(void *arg)
             if (send_and_wait(handle, &dev_desc_msg))
             {
                 cc_device_destroy(device_list[i]);
+            }
+        }
+        free(device_list);
+
+        // list devices in "waiting for request" state to check timeout
+        device_list = cc_device_list(CC_DEVICE_LIST_REGISTERED);
+        for (int i = 0; device_list[i]; i++)
+        {
+            cc_device_t *device = cc_device_get(device_list[i]);
+            if (device)
+            {
+                device->timeout++;
+                if (device->timeout >= CC_DEVICE_TIMEOUT)
+                {
+                    device->status = CC_DEVICE_DISCONNECTED;
+
+                   // proceed to callback if any
+                   if (handle->device_status_cb)
+                       handle->device_status_cb(device);
+
+                    cc_device_destroy(device_list[i]);
+                }
             }
         }
         free(device_list);
@@ -575,4 +603,3 @@ void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg))
 
 
 // TODO: timeout to receive device descriptor (release frame of handshake)
-// TODO: detect if device has disconnected
