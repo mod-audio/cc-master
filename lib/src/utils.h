@@ -35,6 +35,9 @@
 ****************************************************************************************************
 */
 
+#define STR_AUX(s)  #s
+#define STR(s)      STR_AUX(s)
+
 
 /*
 ****************************************************************************************************
@@ -55,7 +58,7 @@ typedef struct string_t {
 } string_t;
 
 typedef struct version_t {
-    uint8_t major, minor, micro;
+    int major, minor, micro;
 } version_t;
 
 
@@ -79,7 +82,6 @@ string_t *string_deserialize(const uint8_t *data, uint32_t *written);
 void string_destroy(string_t *str);
 
 int float_to_bytes(const float value, uint8_t *array);
-
 
 /*
 ****************************************************************************************************

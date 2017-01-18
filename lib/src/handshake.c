@@ -24,6 +24,7 @@
 */
 
 #include <stdlib.h>
+#include "control_chain.h"
 #include "handshake.h"
 
 
@@ -68,14 +69,23 @@
 ****************************************************************************************************
 */
 
-int cc_handshake_check(cc_handshake_dev_t *received)
+int cc_handshake_check(cc_handshake_dev_t *received, cc_handshake_mod_t *response)
 {
-    // TODO: check protocol version
     // TODO: check device firmware version
     // TODO: check if device has this handshake already
     // TODO: calculate channel (based on URI)
 
-    (void) received;
+    int status = CC_HANDSHAKE_OK;
 
-    return 1;
+    if (received->protocol.major < CC_PROTOCOL_MAJOR)
+        status = CC_UPDATE_REQUIRED;
+    else if (received->protocol.minor < CC_PROTOCOL_MINOR)
+        status = CC_UPDATE_AVAILABLE;
+
+    response->random_id = received->random_id;
+    response->status = status;
+    response->device_id = 0;
+    response->channel = 0;
+
+    return status;
 }

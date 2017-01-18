@@ -228,22 +228,18 @@ static void parser(cc_handle_t *handle)
     if (msg->command == CC_CMD_HANDSHAKE)
     {
         cc_handshake_dev_t *handshake = cc_msg_parser(msg);
-        if (cc_handshake_check(handshake))
+        cc_handshake_mod_t response;
+        int status = cc_handshake_check(handshake, &response);
+        if (status != CC_UPDATE_REQUIRED)
         {
             // create a new device
             cc_device_t *device = cc_device_create();
-
-            // FIXME: this is hardcoded
-            cc_handshake_mod_t response;
-            response.random_id = handshake->random_id;
             response.device_id = device->id;
-            response.status = 0;
-            response.channel = 0;
-
-            // build and send response message
-            cc_msg_builder(msg->command, &response, handle->msg_tx);
-            send(handle, handle->msg_tx);
         }
+
+        // build and send response message
+        cc_msg_builder(msg->command, &response, handle->msg_tx);
+        send(handle, handle->msg_tx);
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
     {
