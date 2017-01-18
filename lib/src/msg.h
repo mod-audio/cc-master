@@ -54,7 +54,7 @@
 
 // commands definition
 enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT,
-               CC_CMD_DATA_UPDATE, CC_CMD_UNASSIGNMENT};
+               CC_CMD_DATA_UPDATE, CC_CMD_UNASSIGNMENT, CC_NUM_COMMANDS};
 
 // fields names and sizes in bytes
 // DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA (N), CHECKSUM (1)

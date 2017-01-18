@@ -309,7 +309,10 @@ static void* receiver(void *arg)
                 msg->command = msg->header[1];
                 msg->data_size = *((uint16_t *) &msg->header[2]);
 
-                if (msg->data_size == 0)
+                if (msg->device_id > CC_MAX_DEVICES ||
+                    msg->command > CC_NUM_COMMANDS)
+                    handle->state = WAITING_SYNCING;
+                else if (msg->data_size == 0)
                     handle->state = WAITING_CRC;
                 else
                     handle->state = WAITING_DATA;
