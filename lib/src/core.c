@@ -198,8 +198,9 @@ static void parse_data_update(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg_rx;
 
-    // parse update list message to struct
-    cc_update_list_t *updates = cc_msg_parser(msg);
+    // parse message to update list
+    cc_update_list_t *updates;
+    cc_msg_parser(msg, &updates);
 
     if (handle->data_update_cb)
         handle->data_update_cb(updates);
@@ -227,13 +228,17 @@ static void parser(cc_handle_t *handle)
 
     if (msg->command == CC_CMD_HANDSHAKE)
     {
-        cc_handshake_dev_t *handshake = cc_msg_parser(msg);
+        cc_handshake_dev_t handshake;
         cc_handshake_mod_t response;
-        int status = cc_handshake_check(handshake, &response);
+
+        // parse message to handshake data
+        cc_msg_parser(msg, &handshake);
+
+        int status = cc_handshake_check(&handshake, &response);
         if (status != CC_UPDATE_REQUIRED)
         {
             // create a new device
-            cc_device_t *device = cc_device_create();
+            cc_device_t *device = cc_device_create(&handshake);
             response.device_id = device->id;
         }
 
@@ -248,11 +253,10 @@ static void parser(cc_handle_t *handle)
         cc_device_t *device = cc_device_get(msg->device_id);
         if (device)
         {
-            // parse device descriptor message to struct
-            cc_dev_descriptor_t *descriptor = cc_msg_parser(msg);
+            // parse message to device data
+            cc_msg_parser(msg, device);
 
-            // store device information
-            device->descriptor = descriptor;
+            // set device status
             device->status = CC_DEVICE_CONNECTED;
 
            // proceed to callback if any

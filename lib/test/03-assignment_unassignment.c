@@ -13,8 +13,9 @@ int dev_id = -1;
 void dev_desc(void *arg)
 {
     cc_device_t *device = arg;
+
     dev_id = device->id;
-    printf("device %s connected\n", device->descriptor->label->text);
+    printf("device %s connected\n", device->label->text);
     no_device = 0;
 }
 

@@ -75,7 +75,7 @@
 ****************************************************************************************************
 */
 
-cc_msg_t *cc_msg_new(void)
+cc_msg_t* cc_msg_new(void)
 {
     cc_msg_t *msg = calloc(1, sizeof(cc_msg_t));
     msg->header = calloc(1, DATA_BUFFER_SIZE);
@@ -93,11 +93,11 @@ void cc_msg_delete(cc_msg_t *msg)
     }
 }
 
-void* cc_msg_parser(const cc_msg_t *msg)
+void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
 {
     if (msg->command == CC_CMD_HANDSHAKE)
     {
-        cc_handshake_dev_t *handshake = malloc(sizeof(cc_handshake_dev_t));
+        cc_handshake_dev_t *handshake = data_struct;
         uint8_t *pdata = msg->data;
 
         // URI
@@ -118,44 +118,39 @@ void* cc_msg_parser(const cc_msg_t *msg)
         handshake->firmware.major = *pdata++;
         handshake->firmware.minor = *pdata++;
         handshake->firmware.micro = *pdata++;
-
-        return handshake;
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
     {
-        uint32_t i;
-        cc_dev_descriptor_t *descriptor = malloc(sizeof(cc_dev_descriptor_t));
+        cc_device_t *device = data_struct;
         uint8_t *pdata = msg->data;
+        uint32_t i = 0;
 
         // device label
-        descriptor->label = string_deserialize(pdata, &i);
+        device->label = string_deserialize(pdata, &i);
         pdata += i;
 
         // number of actuators
-        descriptor->actuators = 0;
-        descriptor->actuators_count = *pdata++;
+        device->actuators = 0;
+        device->actuators_count = *pdata++;
 
         // list of actuators
-        if (descriptor->actuators_count > 0)
+        if (device->actuators_count > 0)
         {
-            descriptor->actuators = malloc(sizeof(cc_actuator_t *) * descriptor->actuators_count);
-            for (int j = 0; j < descriptor->actuators_count; j++)
+            device->actuators = malloc(sizeof(cc_actuator_t *) * device->actuators_count);
+            for (int j = 0; j < device->actuators_count; j++)
             {
-                descriptor->actuators[j] = malloc(sizeof(cc_actuator_t));
-                cc_actuator_t *actuator = descriptor->actuators[j];
+                device->actuators[j] = malloc(sizeof(cc_actuator_t));
+                cc_actuator_t *actuator = device->actuators[j];
 
                 actuator->id = *pdata++;
             }
         }
-
-        return descriptor;
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
-        return cc_update_parse(msg->device_id, msg->data);
+        cc_update_list_t **updates = data_struct;
+        *updates = cc_update_parse(msg->device_id, msg->data);
     }
-
-    return 0;
 }
 
 void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)

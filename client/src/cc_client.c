@@ -112,8 +112,6 @@ static void *reader(void *arg)
                 if (strcmp(event_name, "device_status") == 0)
                 {
                     cc_device_t device;
-                    device.descriptor = 0;
-                    device.assignments = 0;
 
                     // unpack json
                     json_unpack(data, CC_DEV_STATUS_EVENT_FORMAT,

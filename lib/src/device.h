@@ -27,6 +27,7 @@
 ****************************************************************************************************
 */
 
+#include "handshake.h"
 #include "assignment.h"
 #include "utils.h"
 
@@ -65,15 +66,11 @@ typedef struct cc_actuator_t {
     int id;
 } cc_actuator_t;
 
-typedef struct cc_dev_descriptor_t {
-    string_t *label;
-    int actuators_count;
-    cc_actuator_t **actuators;
-} cc_dev_descriptor_t;
-
 typedef struct cc_device_t {
     int id, status;
-    cc_dev_descriptor_t *descriptor;
+    string_t *label, *uri;
+    cc_actuator_t **actuators;
+    int actuators_count;
     cc_assignment_t **assignments;
     unsigned int timeout;
 } cc_device_t;
@@ -86,7 +83,7 @@ typedef struct cc_device_t {
 */
 
 // create and return a device, or NULL if fail
-cc_device_t* cc_device_create(void);
+cc_device_t* cc_device_create(cc_handshake_dev_t *handshake);
 
 // destroy the device
 void cc_device_destroy(int device_id);

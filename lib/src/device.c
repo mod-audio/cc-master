@@ -74,7 +74,7 @@ static cc_device_t g_devices[CC_MAX_DEVICES];
 ****************************************************************************************************
 */
 
-cc_device_t* cc_device_create(void)
+cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
 {
     for (int i = 0; i < CC_MAX_DEVICES; i++)
     {
@@ -82,6 +82,13 @@ cc_device_t* cc_device_create(void)
         {
             // device id cannot be zero
             g_devices[i].id = i + 1;
+
+            // set device label to null
+            g_devices[i].label = 0;
+
+            // store handshake info
+            g_devices[i].uri = handshake->uri;
+
             return &g_devices[i];
         }
     }
@@ -103,23 +110,19 @@ void cc_device_destroy(int device_id)
         device->assignments = 0;
     }
 
-    // destroy descriptor
-    if (device->descriptor)
+    // destroy actuators
+    if (device->actuators)
     {
-        cc_dev_descriptor_t *descriptor = device->descriptor;
-        string_destroy(descriptor->label);
+        for (int i = 0; i < device->actuators_count; i++)
+            free(device->actuators[i]);
 
-        if (descriptor->actuators)
-        {
-            for (int i = 0; i < descriptor->actuators_count; i++)
-                free(descriptor->actuators[i]);
-
-            free(descriptor->actuators);
-        }
-
-        free(device->descriptor);
-        device->descriptor = 0;
+        free(device->actuators);
     }
+
+    // destroy URI and label
+    string_destroy(device->uri);
+    string_destroy(device->label);
+    device->label = 0;
 
     // reset status and id
     device->status = CC_DEVICE_DISCONNECTED;
@@ -133,11 +136,10 @@ char* cc_device_descriptor(int device_id)
     if (!device)
         return 0;
 
-    cc_dev_descriptor_t *descriptor = device->descriptor;
     json_t *root = json_object();
 
     // label
-    json_t *label = json_stringn(descriptor->label->text, descriptor->label->size);
+    json_t *label = json_stringn(device->label->text, device->label->size);
     json_object_set_new(root, "label", label);
 
     // actuators
@@ -145,12 +147,12 @@ char* cc_device_descriptor(int device_id)
     json_object_set_new(root, "actuators", actuators);
 
     // populate actuators list
-    for (int i = 0; i < descriptor->actuators_count; i++)
+    for (int i = 0; i < device->actuators_count; i++)
     {
         json_t *actuator = json_object();
 
         // actuator id
-        json_t *id = json_integer(descriptor->actuators[i]->id);
+        json_t *id = json_integer(device->actuators[i]->id);
         json_object_set_new(actuator, "id", id);
 
         // add to list
@@ -176,8 +178,8 @@ int* cc_device_list(int filter)
             continue;
 
         if (filter == CC_DEVICE_LIST_ALL ||
-           (filter == CC_DEVICE_LIST_REGISTERED && g_devices[i].descriptor) ||
-           (filter == CC_DEVICE_LIST_UNREGISTERED && !g_devices[i].descriptor))
+           (filter == CC_DEVICE_LIST_REGISTERED && g_devices[i].label) ||
+           (filter == CC_DEVICE_LIST_UNREGISTERED && !g_devices[i].label))
         {
             devices_list[count++] = g_devices[i].id;
         }

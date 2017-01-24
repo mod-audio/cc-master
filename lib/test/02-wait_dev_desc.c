@@ -13,7 +13,7 @@ void dev_desc(void *arg)
     cc_device_t *device = arg;
     char *descriptor = cc_device_descriptor(device->id);
 
-    printf("%s\n", descriptor);
+    printf("received via callback: %s\n", descriptor);
     free(descriptor);
 
     no_device = 0;
@@ -32,6 +32,17 @@ int main(void)
 
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
+
+    printf("list of devices\n");
+    int *dev_list = cc_device_list(CC_DEVICE_LIST_ALL);
+
+    int i = 0;
+    while (dev_list[i])
+    {
+        printf("  dev id: %i\n", dev_list[i]);
+        i++;
+    }
+    free(dev_list);
 
     cc_finish(handle);
 
