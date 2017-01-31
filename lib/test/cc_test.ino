@@ -6,8 +6,8 @@ int led = 0;
 
 int assignment_done, need_handshake = 1, device_id = 0;
 
-enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_DESCRIPTOR, CC_CMD_ASSIGNMENT, CC_CMD_DATA_UPDATE,
-               CC_CMD_UNASSIGNMENT};
+enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_CONTROL, CC_CMD_DEV_DESCRIPTOR,
+               CC_CMD_ASSIGNMENT, CC_CMD_DATA_UPDATE, CC_CMD_UNASSIGNMENT, CC_NUM_COMMANDS};
 
 static uint8_t crc8_table[] = {
     0x00, 0x3e, 0x7c, 0x42, 0xf8, 0xc6, 0x84, 0xba, 0x95, 0xab, 0xe9, 0xd7,

@@ -70,6 +70,7 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
 void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment);
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
 void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg));
+void cc_device_disable(cc_handle_t *handle, int device_id);
 
 
 /*

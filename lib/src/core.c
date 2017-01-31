@@ -604,5 +604,14 @@ void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg))
     handle->device_status_cb = callback;
 }
 
+void cc_device_disable(cc_handle_t *handle, int device_id)
+{
+    handle->msg_tx->device_id = device_id;
+    int control = CC_DEVICE_DISABLE;
+
+    cc_msg_builder(CC_CMD_DEV_CONTROL, &control, handle->msg_tx);
+    send(handle, handle->msg_tx);
+}
+
 
 // TODO: timeout to receive device descriptor (release frame of handshake)

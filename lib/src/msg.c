@@ -156,11 +156,11 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
 void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
 {
     msg->command = command;
+    uint8_t *pdata = msg->data;
 
     if (command == CC_CMD_HANDSHAKE)
     {
         const cc_handshake_mod_t *handshake = data_struct;
-        uint8_t *pdata = msg->data;
 
         // random id
         uint16_t *random_id = (uint16_t *) pdata;
@@ -171,13 +171,15 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         *pdata++ = handshake->status;
         *pdata++ = handshake->device_id;
         *pdata++ = handshake->channel;
-
-        msg->data_size = (pdata - msg->data);
+    }
+    else if (command == CC_CMD_DEV_CONTROL)
+    {
+        const int *control = data_struct;
+        *pdata++ = *control;
     }
     else if (command == CC_CMD_ASSIGNMENT)
     {
         const cc_assignment_t *assignment = data_struct;
-        uint8_t *pdata = msg->data;
 
         // device id
         msg->device_id = assignment->device_id;
@@ -209,20 +211,17 @@ void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg)
         uint32_t *mode = (uint32_t *) pdata;
         *mode = assignment->mode;
         pdata += 4;
-
-        msg->data_size = (pdata - msg->data);
     }
     else if (command == CC_CMD_UNASSIGNMENT)
     {
         const cc_unassignment_t *unassignment = data_struct;
-        uint8_t *pdata = msg->data;
 
         // device id
         msg->device_id = unassignment->device_id;
 
         // assignment id
         *pdata++ = unassignment->assignment_id;
-
-        msg->data_size = (pdata - msg->data);
     }
+
+    msg->data_size = (pdata - msg->data);
 }
