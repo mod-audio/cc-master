@@ -62,6 +62,9 @@ enum {CC_DEVICE_LIST_ALL, CC_DEVICE_LIST_REGISTERED, CC_DEVICE_LIST_UNREGISTERED
 // device status
 enum {CC_DEVICE_DISCONNECTED, CC_DEVICE_CONNECTED};
 
+// device control
+enum {CC_DEVICE_DISABLE, CC_DEVICE_ENABLE};
+
 typedef struct cc_actuator_t {
     int id;
 } cc_actuator_t;
@@ -73,6 +76,7 @@ typedef struct cc_device_t {
     int actuators_count;
     cc_assignment_t **assignments;
     unsigned int timeout;
+    version_t firmware;
 } cc_device_t;
 
 

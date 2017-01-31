@@ -24,6 +24,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include <jansson.h>
 #include "device.h"
 
@@ -88,6 +89,9 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
 
             // store handshake info
             g_devices[i].uri = handshake->uri;
+            g_devices[i].firmware.major = handshake->firmware.major;
+            g_devices[i].firmware.minor = handshake->firmware.minor;
+            g_devices[i].firmware.micro = handshake->firmware.micro;
 
             return &g_devices[i];
         }
@@ -141,6 +145,13 @@ char* cc_device_descriptor(int device_id)
     // label
     json_t *label = json_stringn(device->label->text, device->label->size);
     json_object_set_new(root, "label", label);
+
+    // firmware version
+    char buffer[16];
+    sprintf(buffer, "%i.%i.%i",
+        device->firmware.major, device->firmware.minor, device->firmware.micro);
+    json_t *version = json_stringn(buffer, strlen(buffer));
+    json_object_set_new(root, "version", version);
 
     // actuators
     json_t *actuators = json_array();
