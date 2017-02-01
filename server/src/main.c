@@ -417,6 +417,18 @@ int main(int argc, char **argv)
 
             free(descriptor);
         }
+        else if (strcmp(request, "device_control") == 0)
+        {
+            int device_id, enable;
+            json_unpack(data, CC_DEV_CONTROL_REQ_FORMAT, "device_id", &device_id,
+                "enable", &enable);
+
+            cc_device_disable(handle, device_id);
+
+            // pack data and send reply
+            json_t *data = json_pack(CC_DEV_CONTROL_REPLY_FORMAT);
+            send_reply(client_fd, request, data);
+        }
         else if (strcmp(request, "device_status") == 0)
         {
             int enable;

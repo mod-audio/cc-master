@@ -325,6 +325,21 @@ char *cc_client_device_descriptor(cc_client_t *client, int device_id)
     return 0;
 }
 
+void cc_client_device_disable(cc_client_t *client, int device_id)
+{
+    int enable = 0;
+    json_t *request_data = json_pack(CC_DEV_CONTROL_REQ_FORMAT, "device_id", device_id,
+        "enable", enable);
+
+    json_t *root = cc_client_request(client, "device_control", request_data);
+    if (root)
+    {
+        // reply is null
+
+        json_decref(root);
+    }
+}
+
 void cc_client_device_status_cb(cc_client_t *client, void (*callback)(void *arg))
 {
     client->device_status_cb = callback;

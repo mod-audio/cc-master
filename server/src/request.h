@@ -40,6 +40,9 @@
 #define CC_DEV_DESCRIPTOR_REQ_FORMAT    "{si}"
 #define CC_DEV_DESCRIPTOR_REPLY_FORMAT  ""
 
+#define CC_DEV_CONTROL_REQ_FORMAT       "{si,sb}"
+#define CC_DEV_CONTROL_REPLY_FORMAT     "n"
+
 #define CC_DEV_STATUS_REQ_FORMAT        "{si}"
 #define CC_DEV_STATUS_REPLY_FORMAT      "n"
 #define CC_DEV_STATUS_EVENT_FORMAT      "{si,si}"

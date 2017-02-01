@@ -85,6 +85,10 @@ class ControlChainClient(object):
         req = {'device_id':device_id}
         return self._send_request('device_descriptor', req)
 
+    def device_disable(self, device_id):
+        req = {'device_id':device_id, 'enable':False}
+        return self._send_request('device_control', req)
+
     def device_status_cb(self, callback):
         self._device_status_cb = callback
         value = 1 if callback else 0
@@ -125,6 +129,9 @@ if __name__ == "__main__":
     print('assignment id:', cc.assignment(assignment))
 
     from time import sleep
+    sleep(0.5)
+
+    cc.device_disable(1)
     sleep(0.5)
 
     unassignment = {'device_id':1, 'assignment_id':0}
