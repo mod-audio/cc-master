@@ -243,6 +243,7 @@ static void parser(cc_handle_t *handle)
         }
 
         // build and send response message
+        handle->msg_tx->device_id = 0;
         cc_msg_builder(msg->command, &response, handle->msg_tx);
         send(handle, handle->msg_tx);
     }
@@ -567,18 +568,22 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     if (id < 0)
         return id;
 
+    cc_msg_t *msg = cc_msg_new();
+    msg->device_id = assignment->device_id;
+
     // build and send assignment message
-    cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, handle->msg_tx);
-    if (send_and_wait(handle, handle->msg_tx))
+    cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, msg);
+    if (send_and_wait(handle, msg))
     {
         // TODO: if timeout, try at least one more time
         cc_unassignment_t unassignment;
         unassignment.device_id = assignment->device_id;
         unassignment.assignment_id = id;
         cc_assignment_remove(&unassignment);
-        return -1;
+        id = -1;
     }
 
+    cc_msg_delete(msg);
     return id;
 }
 
@@ -589,9 +594,24 @@ void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
     if (ret < 0)
         return;
 
+    cc_msg_t *msg = cc_msg_new();
+    msg->device_id = unassignment->device_id;
+
     // build and send unassignment message
-    cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, handle->msg_tx);
-    send_and_wait(handle, handle->msg_tx);
+    cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, msg);
+    send_and_wait(handle, msg);
+    cc_msg_delete(msg);
+}
+
+void cc_device_disable(cc_handle_t *handle, int device_id)
+{
+    cc_msg_t *msg = cc_msg_new();
+    msg->device_id = device_id;
+
+    int control = CC_DEVICE_DISABLE;
+    cc_msg_builder(CC_CMD_DEV_CONTROL, &control, msg);
+    send(handle, msg);
+    cc_msg_delete(msg);
 }
 
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
@@ -602,15 +622,6 @@ void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
 void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg))
 {
     handle->device_status_cb = callback;
-}
-
-void cc_device_disable(cc_handle_t *handle, int device_id)
-{
-    handle->msg_tx->device_id = device_id;
-    int control = CC_DEVICE_DISABLE;
-
-    cc_msg_builder(CC_CMD_DEV_CONTROL, &control, handle->msg_tx);
-    send(handle, handle->msg_tx);
 }
 
 
