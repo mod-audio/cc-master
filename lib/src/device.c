@@ -93,6 +93,8 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
             g_devices[i].firmware.minor = handshake->firmware.minor;
             g_devices[i].firmware.micro = handshake->firmware.micro;
 
+            pthread_mutex_init(&g_devices[i].lock, NULL);
+
             return &g_devices[i];
         }
     }
@@ -131,6 +133,11 @@ void cc_device_destroy(int device_id)
     // reset status and id
     device->status = CC_DEVICE_DISCONNECTED;
     device->id = 0;
+
+    // destroy mutex so it can be reinitialized
+    pthread_mutex_trylock(&device->lock);
+    pthread_mutex_unlock(&device->lock);
+    pthread_mutex_destroy(&device->lock);
 }
 
 char* cc_device_descriptor(int device_id)
@@ -212,4 +219,20 @@ cc_device_t* cc_device_get(int device_id)
     }
 
     return 0;
+}
+
+void cc_device_lock(int device_id)
+{
+    cc_device_t* device = cc_device_get(device_id);
+
+    if (device)
+        pthread_mutex_lock(&device->lock);
+}
+
+void cc_device_unlock(int device_id)
+{
+    cc_device_t* device = cc_device_get(device_id);
+
+    if (device)
+        pthread_mutex_unlock(&device->lock);
 }

@@ -57,7 +57,7 @@
 #define CC_DATA_TIMEOUT         1000      // in ms // FIXME: check if timeout is properly working
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
-#define CC_RESPONSE_TIMEOUT     10      // in ms
+#define CC_RESPONSE_TIMEOUT     100     // in ms
 
 #define CC_HANDSHAKE_PERIOD     50      // in sync cycles
 #define CC_DEVICE_TIMEOUT       100     // in sync cycles
@@ -493,7 +493,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     pthread_mutex_lock(&handle->running);
 
     // semaphores
-    sem_init(&handle->waiting_response, 0, 1);
+    sem_init(&handle->waiting_response, 0, 0);
 
     //////// receiver thread setup
 
@@ -568,6 +568,8 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     if (id < 0)
         return id;
 
+    cc_device_lock(assignment->device_id);
+
     cc_msg_t *msg = cc_msg_new();
     msg->device_id = assignment->device_id;
 
@@ -584,6 +586,8 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     }
 
     cc_msg_delete(msg);
+    cc_device_unlock(assignment->device_id);
+
     return id;
 }
 
@@ -594,6 +598,8 @@ void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
     if (ret < 0)
         return;
 
+    cc_device_lock(unassignment->device_id);
+
     cc_msg_t *msg = cc_msg_new();
     msg->device_id = unassignment->device_id;
 
@@ -601,10 +607,13 @@ void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
     cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, msg);
     send_and_wait(handle, msg);
     cc_msg_delete(msg);
+    cc_device_unlock(unassignment->device_id);
 }
 
 void cc_device_disable(cc_handle_t *handle, int device_id)
 {
+    cc_device_lock(device_id);
+
     cc_msg_t *msg = cc_msg_new();
     msg->device_id = device_id;
 
@@ -612,6 +621,7 @@ void cc_device_disable(cc_handle_t *handle, int device_id)
     cc_msg_builder(CC_CMD_DEV_CONTROL, &control, msg);
     send(handle, msg);
     cc_msg_delete(msg);
+    cc_device_unlock(device_id);
 }
 
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
