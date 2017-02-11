@@ -120,7 +120,13 @@ void cc_device_destroy(int device_id)
     if (device->actuators)
     {
         for (int i = 0; i < device->actuators_count; i++)
-            free(device->actuators[i]);
+        {
+            if (device->actuators[i])
+            {
+                string_destroy(device->actuators[i]->name);
+                free(device->actuators[i]);
+            }
+        }
 
         free(device->actuators);
     }
@@ -153,6 +159,10 @@ char* cc_device_descriptor(int device_id)
     json_t *label = json_stringn(device->label->text, device->label->size);
     json_object_set_new(root, "label", label);
 
+    // uri
+    json_t *uri = json_stringn(device->uri->text, device->uri->size);
+    json_object_set_new(root, "uri", uri);
+
     // firmware version
     char buffer[16];
     sprintf(buffer, "%i.%i.%i",
@@ -161,20 +171,33 @@ char* cc_device_descriptor(int device_id)
     json_object_set_new(root, "version", version);
 
     // actuators
-    json_t *actuators = json_array();
-    json_object_set_new(root, "actuators", actuators);
+    json_t *json_actuators = json_array();
+    json_object_set_new(root, "actuators", json_actuators);
 
     // populate actuators list
     for (int i = 0; i < device->actuators_count; i++)
     {
-        json_t *actuator = json_object();
+        cc_actuator_t *actuator = device->actuators[i];
+        json_t *json_actuator = json_object();
 
         // actuator id
-        json_t *id = json_integer(device->actuators[i]->id);
-        json_object_set_new(actuator, "id", id);
+        json_t *id = json_integer(actuator->id);
+        json_object_set_new(json_actuator, "id", id);
+
+        // actuator name
+        json_t *name = json_stringn(actuator->name->text, actuator->name->size);
+        json_object_set_new(json_actuator, "name", name);
+
+        // // actuator supported modes
+        json_t *supported_modes = json_integer(actuator->supported_modes);
+        json_object_set_new(json_actuator, "supported_modes", supported_modes);
+
+        // actuator maximum assignments
+        json_t *max_assignments = json_integer(actuator->max_assignments);
+        json_object_set_new(json_actuator, "max_assignments", max_assignments);
 
         // add to list
-        json_array_append_new(actuators, actuator);
+        json_array_append_new(json_actuators, json_actuator);
     }
 
     char *str = json_dumps(root, 0);

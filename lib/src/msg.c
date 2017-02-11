@@ -142,7 +142,19 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 device->actuators[j] = malloc(sizeof(cc_actuator_t));
                 cc_actuator_t *actuator = device->actuators[j];
 
+                // actuator id
                 actuator->id = *pdata++;
+
+                // actuator name
+                actuator->name = string_deserialize(pdata, &i);
+                pdata += i;
+
+                // actuator supported modes
+                actuator->supported_modes = *((uint32_t *) pdata);
+                pdata += sizeof(uint32_t);
+
+                // actuator maximum assignments
+                actuator->max_assignments = *pdata++;
             }
         }
     }

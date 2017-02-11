@@ -72,7 +72,7 @@ void loop()
 
 void send_msg(uint8_t command, uint8_t *data, uint16_t data_size)
 {
-    uint8_t i = 0, buffer[32];
+    uint8_t i = 0, buffer[64];
 
     // device id
     buffer[i++] = device_id;
@@ -109,7 +109,11 @@ void send_handshake()
 
 void send_dev_desc()
 {
-    uint8_t data[] = {0x04, 'T', 'E', 'S', 'T', 2, 1, 2};
+    // label, actuator count, actuator list {actuator_id, actuator_name, modes, max_assignments}
+    uint8_t data[] = {4, 'T', 'E', 'S', 'T', 2,
+                      1, 4, 'A', 'C', 'T', '1', 3, 0, 0, 0, 1,
+                      2, 4, 'A', 'C', 'T', '2', 3, 0, 0, 0, 1};
+
     send_msg(CC_CMD_DEV_DESCRIPTOR, data, sizeof(data));
 }
 
