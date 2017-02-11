@@ -91,7 +91,7 @@ struct cc_handle_t {
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
     sem_t waiting_response;
-    cc_msg_t *msg_rx, *msg_tx;
+    cc_msg_t *msg_rx;
 };
 
 
@@ -112,7 +112,7 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
 {
     if (handle && msg)
     {
-        uint8_t *buffer = handle->msg_tx->header;
+        uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
 
         // header
         int i = 0;
@@ -124,15 +124,8 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
         // data
         if (msg->data_size > 0)
         {
-            if (msg != handle->msg_tx)
-            {
-                for (int j = 0; j < msg->data_size; j++)
-                    buffer[i++] = msg->data[j];
-            }
-            else
-            {
-                i += msg->data_size;
-            }
+            memcpy(&buffer[i], msg->data, msg->data_size);
+            i += msg->data_size;
         }
 
         // calculate crc
@@ -198,6 +191,8 @@ static void parse_data_update(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg_rx;
 
+    // TODO: check if assignment id is valid
+
     // parse message to update list
     cc_update_list_t *updates;
     cc_msg_parser(msg, &updates);
@@ -242,10 +237,10 @@ static void parser(cc_handle_t *handle)
             response.device_id = device->id;
         }
 
-        // build and send response message
-        handle->msg_tx->device_id = 0;
-        cc_msg_builder(msg->command, &response, handle->msg_tx);
-        send(handle, handle->msg_tx);
+        // create and send response message
+        cc_msg_t *reply = cc_msg_builder(0, CC_CMD_HANDSHAKE, &response);
+        send(handle, reply);
+        cc_msg_delete(reply);
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
     {
@@ -268,6 +263,7 @@ static void parser(cc_handle_t *handle)
     else if (msg->command == CC_CMD_ASSIGNMENT ||
              msg->command == CC_CMD_UNASSIGNMENT)
     {
+        // TODO: don't post if there is no request
         sem_post(&handle->waiting_response);
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
@@ -456,9 +452,8 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // init handle with null data
     memset(handle, 0, sizeof (cc_handle_t));
 
-    // create a message objects
+    // create a message object for receiving data
     handle->msg_rx = cc_msg_new();
-    handle->msg_tx = cc_msg_new();
 
     //////// serial setup
 
@@ -556,7 +551,6 @@ void cc_finish(cc_handle_t *handle)
         }
 
         cc_msg_delete(handle->msg_rx);
-        cc_msg_delete(handle->msg_tx);
         free(handle);
     }
 }
@@ -570,11 +564,8 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 
     cc_device_lock(assignment->device_id);
 
-    cc_msg_t *msg = cc_msg_new();
-    msg->device_id = assignment->device_id;
-
-    // build and send assignment message
-    cc_msg_builder(CC_CMD_ASSIGNMENT, assignment, msg);
+    // create and send assignment message
+    cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_ASSIGNMENT, assignment);
     if (send_and_wait(handle, msg))
     {
         // TODO: if timeout, try at least one more time
@@ -600,12 +591,10 @@ void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
 
     cc_device_lock(unassignment->device_id);
 
-    cc_msg_t *msg = cc_msg_new();
-    msg->device_id = unassignment->device_id;
-
-    // build and send unassignment message
-    cc_msg_builder(CC_CMD_UNASSIGNMENT, unassignment, msg);
+    // create and send unassignment message
+    cc_msg_t *msg = cc_msg_builder(unassignment->device_id, CC_CMD_UNASSIGNMENT, unassignment);
     send_and_wait(handle, msg);
+
     cc_msg_delete(msg);
     cc_device_unlock(unassignment->device_id);
 }
@@ -614,12 +603,10 @@ void cc_device_disable(cc_handle_t *handle, int device_id)
 {
     cc_device_lock(device_id);
 
-    cc_msg_t *msg = cc_msg_new();
-    msg->device_id = device_id;
-
     int control = CC_DEVICE_DISABLE;
-    cc_msg_builder(CC_CMD_DEV_CONTROL, &control, msg);
+    cc_msg_t *msg = cc_msg_builder(device_id, CC_CMD_DEV_CONTROL, &control);
     send(handle, msg);
+
     cc_msg_delete(msg);
     cc_device_unlock(device_id);
 }

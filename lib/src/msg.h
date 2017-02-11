@@ -76,7 +76,7 @@ typedef struct cc_msg_t {
 cc_msg_t* cc_msg_new(void);
 void cc_msg_delete(cc_msg_t *msg);
 void cc_msg_parser(const cc_msg_t *msg, void *data_struct);
-void cc_msg_builder(int command, const void *data_struct, cc_msg_t *msg);
+cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct);
 
 
 /*
