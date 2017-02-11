@@ -102,11 +102,13 @@ class ControlChainClient(object):
         self._send_request('data_update', enable)
 
 if __name__ == "__main__":
+    from time import sleep
+
     def device_status_cb(device):
-        print(device)
+        print('device_status_cb:', device)
 
     def data_update_cb(updates):
-        print(updates)
+        print('data_update_cb:', updates)
 
     cc = ControlChainClient('/tmp/control-chain.sock')
 
@@ -123,17 +125,20 @@ if __name__ == "__main__":
         descriptor = cc.device_descriptor(dev)
         print('dev: {0}, descriptor: {1}'.format(dev, descriptor))
 
-    assignment = {'device_id':1, 'actuator_id':0, 'label':'gain', 'value':1.0, 'min':0.0,
-                  'max':2.0, 'def':1.5, 'mode':1}
+    print('creating assignment')
+    assignment = {'device_id':1, 'actuator_id':1, 'label':'Gain', 'value':1.0,
+                  'min':0.0, 'max':2.0, 'def':1.5, 'mode':1}
 
-    print('assignment id:', cc.assignment(assignment))
+    assignment_id = cc.assignment(assignment)
+    print('assignment id:', assignment_id)
 
-    from time import sleep
+    if (assignment_id < 0):
+        exit(1)
+
     sleep(0.5)
 
-    cc.device_disable(1)
-    sleep(0.5)
-
-    unassignment = {'device_id':1, 'assignment_id':0}
+    print('removing assignment')
+    unassignment = {'device_id':1, 'assignment_id':assignment_id}
     cc.unassignment(unassignment)
+
     print('done')
