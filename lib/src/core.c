@@ -208,12 +208,15 @@ static void parser(cc_handle_t *handle)
     cc_msg_t *msg = handle->msg_rx;
 
 #ifdef DEBUG
+    if (msg->command != CC_CMD_CHAIN_SYNC)
+    {
         printf("RECV: device: %i, command: %i\n", msg->device_id, msg->command);
         printf("      data size: %i, data:", msg->data_size);
         for (int i = 0; i < msg->data_size; i++)
             printf(" %02X", msg->data[i]);
 
         printf("\n---\n");
+    }
 #endif
 
     // reset device timeout

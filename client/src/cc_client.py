@@ -126,8 +126,8 @@ if __name__ == "__main__":
         print('dev: {0}, descriptor: {1}'.format(dev, descriptor))
 
     print('creating assignment')
-    assignment = {'device_id':1, 'actuator_id':1, 'label':'Gain', 'value':1.0,
-                  'min':0.0, 'max':2.0, 'def':1.5, 'mode':1}
+    assignment = {'device_id':1, 'actuator_id':0, 'label':'Gain', 'value':1.0,
+                  'min':0.0, 'max':2.0, 'def':1.5, 'mode':1, 'steps':32, 'unit':'dB'}
 
     assignment_id = cc.assignment(assignment)
     print('assignment id:', assignment_id)

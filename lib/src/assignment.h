@@ -60,6 +60,8 @@ typedef struct cc_assignment_t {
     const char *label;
     float value, min, max, def;
     uint32_t mode;
+    uint16_t steps;
+    const char *unit;
 } cc_assignment_t;
 
 typedef struct cc_unassignment_t {

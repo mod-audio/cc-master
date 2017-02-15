@@ -249,7 +249,9 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
         "min", assignment->min,
         "max", assignment->max,
         "def", assignment->def,
-        "mode", assignment->mode);
+        "mode", assignment->mode,
+        "steps", assignment->steps,
+        "unit", assignment->unit);
 
     json_t *root = cc_client_request(client, "assignment", request_data);
     if (root)

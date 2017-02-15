@@ -453,7 +453,9 @@ int main(int argc, char **argv)
                 "min", &min,
                 "max", &max,
                 "def", &def,
-                "mode", &assignment.mode);
+                "mode", &assignment.mode,
+                "steps", &assignment.steps,
+                "unit", &assignment.unit);
 
             // double to float
             assignment.value = value;

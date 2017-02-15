@@ -45,10 +45,10 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-    int act_id = 0;
-    cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1};
-    int id = cc_assignment(handle, &ass);
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit
+    cc_assignment_t ass = {-1, dev_id, 0, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB"};
 
+    int id = cc_assignment(handle, &ass);
     if (id >= 0)
     {
         sleep(3);

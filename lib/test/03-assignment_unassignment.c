@@ -35,7 +35,10 @@ int main(void)
 
     int act_id = 0;
     printf("creating assignment: dev %i, act: %i\n", dev_id, act_id);
-    cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1};
+
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit
+    cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB"};
+
     int id = cc_assignment(handle, &ass);
     printf("assignment id: %i\n", id);
 

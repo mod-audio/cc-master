@@ -47,7 +47,7 @@
 #define CC_DEV_STATUS_REPLY_FORMAT      "n"
 #define CC_DEV_STATUS_EVENT_FORMAT      "{si,si}"
 
-#define CC_ASSIGNMENT_REQ_FORMAT        "{si,si,ss,sf,sf,sf,sf,si}"
+#define CC_ASSIGNMENT_REQ_FORMAT        "{si,si,ss,sf,sf,sf,sf,si,si,ss}"
 #define CC_ASSIGNMENT_REPLY_FORMAT      "{si}"
 
 #define CC_UNASSIGNMENT_REQ_FORMAT      "{si,si}"

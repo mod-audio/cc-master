@@ -181,7 +181,7 @@ void parser(int command, uint8_t *data)
  */
 void serialEvent()
 {
-    static uint8_t data[32];
+    static uint8_t data[64];
     static uint8_t state, command, aux;
     static uint16_t data_size, recv_data;
 
