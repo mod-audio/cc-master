@@ -118,10 +118,20 @@ void sockcli_finish(sockcli_t *client)
 int sockcli_read(sockcli_t *client, void *buffer, size_t size)
 {
     bzero(buffer, size);
-    return recv(client->sock_fd, buffer, size, 0);
+    int ret = recv(client->sock_fd, buffer, size, 0);
+
+    if (ret < 0)
+        perror(__func__);
+
+    return ret;
 }
 
 int sockcli_write(sockcli_t *client, const void *buffer, size_t size)
 {
-    return send(client->sock_fd, buffer, size, 0);
+    int ret = send(client->sock_fd, buffer, size, 0);
+
+    if (ret < 0)
+        perror(__func__);
+
+    return ret;
 }

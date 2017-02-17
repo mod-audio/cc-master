@@ -91,8 +91,14 @@ static void *reader(void *arg)
     while (1)
     {
         int n = sockcli_read(client->socket, buffer, READ_BUFFER_SIZE);
+
+        // peer has gracefully disconnected
         if (n == 0)
             continue;
+
+        // error
+        if (n < 0)
+            break;
 
         // check if is an event
         if (strstr(buffer, "\"event\""))
@@ -161,14 +167,14 @@ static json_t* cc_client_request(cc_client_t *client, const char *name, json_t *
 
     // dump json and send request
     char *request_str = json_dumps(root, 0);
-    sockcli_write(client->socket, request_str, strlen(request_str) + 1);
+    int ret = sockcli_write(client->socket, request_str, strlen(request_str) + 1);
 
     // free memory
     json_decref(root);
     json_decref(data);
     free(request_str);
 
-    if (sem_wait(&client->waiting_reply) == 0)
+    if (ret > 0 && sem_wait(&client->waiting_reply) == 0)
     {
         json_error_t error;
         json_t *root = json_loads(client->buffer, 0, &error);

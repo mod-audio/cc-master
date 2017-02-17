@@ -117,7 +117,7 @@ static void* process_client(void *arg)
         }
         else if (n < 0)
         {
-            perror("ERROR reading from socket");
+            perror(__func__);
             return NULL;
         }
         else if (n == 0)
@@ -324,7 +324,12 @@ int sockser_read_string(sockser_t *server, sockser_data_t *data)
 
 int sockser_write(sockser_data_t *data)
 {
-    return send(data->client_fd, data->buffer, data->size, 0);
+    int ret = send(data->client_fd, data->buffer, data->size, 0);
+
+    if (ret < 0)
+        perror(__func__);
+
+    return ret;
 }
 
 void sockser_client_event_cb(sockser_t *server, void (*callback)(void *arg))
