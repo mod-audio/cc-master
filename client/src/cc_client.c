@@ -45,9 +45,6 @@
 // buffer size in kB
 #define READ_BUFFER_SIZE    128*1024
 
-// reply timeout in ms
-#define REPLY_TIMEOUT       10
-
 
 /*
 ****************************************************************************************************
@@ -171,19 +168,7 @@ static json_t* cc_client_request(cc_client_t *client, const char *name, json_t *
     json_decref(data);
     free(request_str);
 
-    // set timeout
-    struct timespec timeout;
-    clock_gettime(CLOCK_REALTIME, &timeout);
-    timeout.tv_sec += ((REPLY_TIMEOUT * 1000000) / 1000000000);
-    timeout.tv_nsec += ((REPLY_TIMEOUT * 1000000) % 1000000000);
-
-    if (timeout.tv_nsec >= 1000000000)
-    {
-        timeout.tv_sec += 1;
-        timeout.tv_nsec -= 1000000000;
-    }
-
-    if (sem_timedwait(&client->waiting_reply, &timeout) == 0)
+    if (sem_wait(&client->waiting_reply) == 0)
     {
         json_error_t error;
         json_t *root = json_loads(client->buffer, 0, &error);
