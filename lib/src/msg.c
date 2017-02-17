@@ -143,7 +143,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 cc_actuator_t *actuator = device->actuators[j];
 
                 // actuator id
-                actuator->id = *pdata++;
+                actuator->id = j;
 
                 // actuator name
                 actuator->name = string_deserialize(pdata, &i);
