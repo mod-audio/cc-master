@@ -70,7 +70,7 @@ typedef struct cc_actuator_t {
     int id;
     string_t *name;
     uint32_t supported_modes;
-    int max_assignments;
+    int max_assignments, assignments_count;
 } cc_actuator_t;
 
 typedef struct cc_device_t {

@@ -153,8 +153,9 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 actuator->supported_modes = *((uint32_t *) pdata);
                 pdata += sizeof(uint32_t);
 
-                // actuator maximum assignments
+                // actuator assignments counter and maximum value
                 actuator->max_assignments = *pdata++;
+                actuator->assignments_count = 0;
             }
         }
     }

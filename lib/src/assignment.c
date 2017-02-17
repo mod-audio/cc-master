@@ -79,8 +79,14 @@ int cc_assignment_add(cc_assignment_t *assignment)
     if (!device)
         return -1;
 
+    // if is the first time, create list of assignments
     if (!device->assignments)
         device->assignments = calloc(CC_MAX_ASSIGNMENTS, sizeof(cc_assignment_t *));
+
+    // check the amount of assignments supported by the actuator
+    cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
+    if (actuator->assignments_count >= actuator->max_assignments)
+        return -1;
 
     // store assignment
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
@@ -94,6 +100,10 @@ int cc_assignment_add(cc_assignment_t *assignment)
             cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
             device->assignments[i] = copy;
             memcpy(copy, assignment, sizeof(cc_assignment_t));
+
+            // increment actuator assignments counter
+            cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
+            actuator->assignments_count++;
 
             return i;
         }
@@ -112,8 +122,16 @@ int cc_assignment_remove(cc_unassignment_t *unassignment)
     int id = unassignment->assignment_id;
     if (device->assignments)
     {
-        free(device->assignments[id]);
+        cc_assignment_t *assignment = device->assignments[id];
+        int actuator_id = assignment->actuator_id;
+
+        // free assignment memory and its list position
+        free(assignment);
         device->assignments[id] = 0;
+
+        // decrement actuator assignments counter
+        cc_actuator_t *actuator = device->actuators[actuator_id];
+        actuator->assignments_count--;
     }
 
     return id;
