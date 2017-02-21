@@ -59,6 +59,7 @@
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 #define CC_RESPONSE_TIMEOUT     100     // in ms
 
+#define CC_REQUESTS_PERIOD      2       // in sync cycles
 #define CC_HANDSHAKE_PERIOD     50      // in sync cycles
 #define CC_DEVICE_TIMEOUT       100     // in sync cycles
 
@@ -91,6 +92,9 @@ struct cc_handle_t {
     pthread_t receiver_thread, chain_sync_thread;
     pthread_mutex_t running, sending;
     sem_t waiting_response;
+    pthread_mutex_t request_lock;
+    pthread_cond_t request_cond;
+    int request_sync;
     cc_msg_t *msg_rx;
 };
 
@@ -170,6 +174,23 @@ static int send_and_wait(cc_handle_t *handle, const cc_msg_t *msg)
     // only one request must be done per time
     // because all devices share the same serial line
     return sem_timedwait(&handle->waiting_response, &timeout);
+}
+
+static int request(cc_handle_t *handle, const cc_msg_t *msg)
+{
+    // lock and wait for request cycle
+    pthread_mutex_lock(&handle->request_lock);
+    while (handle->request_sync == 0)
+        pthread_cond_wait(&handle->request_cond, &handle->request_lock);
+
+    // send message
+    int ret = send_and_wait(handle, msg);
+
+    // unlock for next request
+    handle->request_sync = 0;
+    pthread_mutex_unlock(&handle->request_lock);
+
+    return ret;
 }
 
 static int running(cc_handle_t *handle)
@@ -357,7 +378,7 @@ static void* chain_sync(void *arg)
 {
     cc_handle_t *handle = (cc_handle_t *) arg;
 
-    int cycles_counter = 0;
+    unsigned int cycles_counter = 0;
 
     uint8_t chain_sync_msg_data;
     cc_msg_t chain_sync_msg = {
@@ -384,22 +405,9 @@ static void* chain_sync(void *arg)
         // period between sync messages
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
-        // list devices without device descriptor to request descriptors
-        int *device_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
-        for (int i = 0; device_list[i]; i++)
-        {
-            dev_desc_msg.device_id = device_list[i];
-
-            // request device descriptor
-            if (send_and_wait(handle, &dev_desc_msg))
-            {
-                cc_device_destroy(device_list[i]);
-            }
-        }
-        free(device_list);
-
-        // list devices in "waiting for request" state to check timeout
-        device_list = cc_device_list(CC_DEVICE_LIST_REGISTERED);
+        // device timeout checking
+        // list only devices in "waiting for request" state
+        int *device_list = cc_device_list(CC_DEVICE_LIST_REGISTERED);
         for (int i = 0; device_list[i]; i++)
         {
             cc_device_t *device = cc_device_get(device_list[i]);
@@ -422,12 +430,43 @@ static void* chain_sync(void *arg)
 
         cycles_counter++;
 
-        // define the type of the sync message according the number of cycles
+        // default sync message is regular cycle
         chain_sync_msg.data[0] = CC_SYNC_REGULAR_CYCLE;
-        if (cycles_counter >= CC_HANDSHAKE_PERIOD)
+
+        // handshake cycle
+        if ((cycles_counter % CC_HANDSHAKE_PERIOD) == 0)
         {
             chain_sync_msg.data[0] = CC_SYNC_HANDSHAKE_CYCLE;
-            cycles_counter = 0;
+        }
+        // requests cycle
+        else if ((cycles_counter % CC_REQUESTS_PERIOD) == 0)
+        {
+            // device descriptor request
+            int *device_list = cc_device_list(CC_DEVICE_LIST_UNREGISTERED);
+            if (*device_list)
+            {
+                for (int i = 0; device_list[i]; i++)
+                {
+                    dev_desc_msg.device_id = device_list[i];
+
+                    pthread_mutex_lock(&handle->request_lock);
+
+                    // request device descriptor
+                    if (send_and_wait(handle, &dev_desc_msg))
+                        cc_device_destroy(device_list[i]);
+
+                    pthread_mutex_unlock(&handle->request_lock);
+                }
+                free(device_list);
+            }
+            // other requests (assignment, unassignment, ...)
+            else
+            {
+                pthread_mutex_lock(&handle->request_lock);
+                handle->request_sync = 1;
+                pthread_cond_signal(&handle->request_cond);
+                pthread_mutex_unlock(&handle->request_lock);
+            }
         }
 
         // each control chain frame starts with a sync message
@@ -488,6 +527,9 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // create mutexes
     pthread_mutex_init(&handle->sending, NULL);
     pthread_mutex_init(&handle->running, NULL);
+    pthread_mutex_init(&handle->request_lock, NULL);
+    pthread_cond_init(&handle->request_cond, NULL);
+
     pthread_mutex_lock(&handle->running);
 
     // semaphores
@@ -565,11 +607,9 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     if (id < 0)
         return id;
 
-    cc_device_lock(assignment->device_id);
-
-    // create and send assignment message
+    // request assignment
     cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_ASSIGNMENT, assignment);
-    if (send_and_wait(handle, msg))
+    if (request(handle, msg))
     {
         // TODO: if timeout, try at least one more time
         cc_unassignment_t unassignment;
@@ -580,7 +620,6 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     }
 
     cc_msg_delete(msg);
-    cc_device_unlock(assignment->device_id);
 
     return id;
 }
@@ -592,26 +631,22 @@ void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
     if (ret < 0)
         return;
 
-    cc_device_lock(unassignment->device_id);
-
-    // create and send unassignment message
+    // request unassignment
     cc_msg_t *msg = cc_msg_builder(unassignment->device_id, CC_CMD_UNASSIGNMENT, unassignment);
-    send_and_wait(handle, msg);
+    request(handle, msg);
 
     cc_msg_delete(msg);
-    cc_device_unlock(unassignment->device_id);
 }
 
 void cc_device_disable(cc_handle_t *handle, int device_id)
 {
-    cc_device_lock(device_id);
-
     int control = CC_DEVICE_DISABLE;
+
+    // request device disable
     cc_msg_t *msg = cc_msg_builder(device_id, CC_CMD_DEV_CONTROL, &control);
-    send(handle, msg);
+    request(handle, msg);
 
     cc_msg_delete(msg);
-    cc_device_unlock(device_id);
 }
 
 void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg))
@@ -623,6 +658,3 @@ void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg))
 {
     handle->device_status_cb = callback;
 }
-
-
-// TODO: timeout to receive device descriptor (release frame of handshake)

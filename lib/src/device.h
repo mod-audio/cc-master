@@ -27,7 +27,6 @@
 ****************************************************************************************************
 */
 
-#include <pthread.h>
 #include "handshake.h"
 #include "assignment.h"
 #include "utils.h"
@@ -81,7 +80,6 @@ typedef struct cc_device_t {
     cc_assignment_t **assignments;
     unsigned int timeout;
     version_t firmware;
-    pthread_mutex_t lock;
 } cc_device_t;
 
 
@@ -105,10 +103,6 @@ int* cc_device_list(int filter);
 
 // return the device pointer or NULL if id is invalid
 cc_device_t* cc_device_get(int device_id);
-
-// device must be locked when processing a request and unlocked when done
-void cc_device_lock(int device_id);
-void cc_device_unlock(int device_id);
 
 
 /*
