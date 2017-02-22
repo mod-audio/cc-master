@@ -81,8 +81,8 @@ class ControlChainClient(object):
         reply = self._send_request('assignment', assignment)
         return reply['assignment_id'] if reply else -1
 
-    def unassignment(self, unassignment):
-        self._send_request('unassignment', unassignment)
+    def unassignment(self, assignment):
+        self._send_request('unassignment', assignment)
 
     def device_list(self):
         return self._send_request('device_list')
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     sleep(0.5)
 
     print('removing assignment')
-    unassignment = {'device_id':1, 'assignment_id':assignment_id}
-    cc.unassignment(unassignment)
+    assignment_key = {'device_id':1, 'id':assignment_id}
+    cc.unassignment(assignment_key)
 
     print('done')

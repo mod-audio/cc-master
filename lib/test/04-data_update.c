@@ -53,8 +53,8 @@ int main(void)
     {
         sleep(3);
         printf("removing assignment\n");
-        cc_unassignment_t unass = {dev_id, id};
-        cc_unassignment(handle, &unass);
+        cc_assignment_key_t key = {dev_id, id};
+        cc_unassignment(handle, &key);
         sleep(1);
     }
     else

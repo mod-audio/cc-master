@@ -248,13 +248,13 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
     }
     else if (command == CC_CMD_UNASSIGNMENT)
     {
-        const cc_unassignment_t *unassignment = data_struct;
+        const cc_assignment_key_t *assignment = data_struct;
 
         // device id
-        msg->device_id = unassignment->device_id;
+        msg->device_id = assignment->device_id;
 
         // assignment id
-        *pdata++ = unassignment->assignment_id;
+        *pdata++ = assignment->id;
     }
 
     msg->data_size = (pdata - msg->data);

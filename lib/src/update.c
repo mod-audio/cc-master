@@ -86,16 +86,16 @@ cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data)
     int j = 1, k = 1;
     for (int i = 0; i < count; i++)
     {
-        cc_unassignment_t unassignment;
-        unassignment.device_id = device_id;
-        unassignment.assignment_id = raw_data[j];
+        cc_assignment_key_t assignment;
+        assignment.device_id = device_id;
+        assignment.id = raw_data[j];
 
-        if (cc_assignment_check(&unassignment))
+        if (cc_assignment_check(&assignment))
         {
             cc_update_data_t *data = &updates->list[i];
 
             // update id
-            data->assignment_id = unassignment.assignment_id;
+            data->assignment_id = assignment.id;
 
             // update value
             float *value = (float *) &raw_data[j + 1];

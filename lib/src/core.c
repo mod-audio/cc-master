@@ -628,10 +628,10 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     if (request(handle, msg))
     {
         // TODO: if timeout, try at least one more time
-        cc_unassignment_t unassignment;
-        unassignment.device_id = assignment->device_id;
-        unassignment.assignment_id = id;
-        cc_assignment_remove(&unassignment);
+        cc_assignment_key_t key;
+        key.device_id = assignment->device_id;
+        key.id = id;
+        cc_assignment_remove(&key);
         id = -1;
     }
 
@@ -640,15 +640,15 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
     return id;
 }
 
-void cc_unassignment(cc_handle_t *handle, cc_unassignment_t *unassignment)
+void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment)
 {
-    int ret = cc_assignment_remove(unassignment);
+    int ret = cc_assignment_remove(assignment);
 
     if (ret < 0)
         return;
 
     // request unassignment
-    cc_msg_t *msg = cc_msg_builder(unassignment->device_id, CC_CMD_UNASSIGNMENT, unassignment);
+    cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_UNASSIGNMENT, assignment);
     request(handle, msg);
 
     cc_msg_delete(msg);

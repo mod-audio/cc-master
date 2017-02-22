@@ -63,7 +63,7 @@ cc_client_t *cc_client_new(const char *path);
 void cc_client_delete(cc_client_t *client);
 
 int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment);
-void cc_client_unassignment(cc_client_t *client, cc_unassignment_t *unassignment);
+void cc_client_unassignment(cc_client_t *client, cc_assignment_key_t *assignment);
 
 int* cc_client_device_list(cc_client_t *client);
 char *cc_client_device_descriptor(cc_client_t *client, int device_id);

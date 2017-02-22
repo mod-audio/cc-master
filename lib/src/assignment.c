@@ -112,14 +112,14 @@ int cc_assignment_add(cc_assignment_t *assignment)
     return -1;
 }
 
-int cc_assignment_remove(cc_unassignment_t *unassignment)
+int cc_assignment_remove(cc_assignment_key_t *assignment)
 {
-    cc_device_t *device = cc_device_get(unassignment->device_id);
+    cc_device_t *device = cc_device_get(assignment->device_id);
 
     if (!device)
         return -1;
 
-    int id = unassignment->assignment_id;
+    int id = assignment->id;
     if (device->assignments)
     {
         cc_assignment_t *assignment = device->assignments[id];
@@ -137,9 +137,9 @@ int cc_assignment_remove(cc_unassignment_t *unassignment)
     return id;
 }
 
-int cc_assignment_check(cc_unassignment_t *unassignment)
+int cc_assignment_check(cc_assignment_key_t *assignment)
 {
-    cc_device_t *device = cc_device_get(unassignment->device_id);
+    cc_device_t *device = cc_device_get(assignment->device_id);
 
     if (!device || !device->assignments)
         return 0;
@@ -148,7 +148,7 @@ int cc_assignment_check(cc_unassignment_t *unassignment)
     {
         if (device->assignments[i])
         {
-            if (device->assignments[i]->id == unassignment->assignment_id)
+            if (device->assignments[i]->id == assignment->id)
                 return 1;
         }
     }

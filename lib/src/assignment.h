@@ -64,9 +64,9 @@ typedef struct cc_assignment_t {
     const char *unit;
 } cc_assignment_t;
 
-typedef struct cc_unassignment_t {
-    int device_id, assignment_id;
-} cc_unassignment_t;
+typedef struct cc_assignment_key_t {
+    int id, device_id;
+} cc_assignment_key_t;
 
 
 /*
@@ -76,8 +76,8 @@ typedef struct cc_unassignment_t {
 */
 
 int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_unassignment_t *unassignment);
-int cc_assignment_check(cc_unassignment_t *unassignment);
+int cc_assignment_remove(cc_assignment_key_t *assignment);
+int cc_assignment_check(cc_assignment_key_t *assignment);
 
 
 /*

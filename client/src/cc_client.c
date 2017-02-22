@@ -272,11 +272,11 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
     return -1;
 }
 
-void cc_client_unassignment(cc_client_t *client, cc_unassignment_t *unassignment)
+void cc_client_unassignment(cc_client_t *client, cc_assignment_key_t *assignment)
 {
     json_t *request_data = json_pack(CC_UNASSIGNMENT_REQ_FORMAT,
-        "device_id", unassignment->device_id,
-        "assignment_id", unassignment->assignment_id);
+        "id", assignment->id,
+        "device_id", assignment->device_id);
 
     json_t *root = cc_client_request(client, "unassignment", request_data);
     if (root)

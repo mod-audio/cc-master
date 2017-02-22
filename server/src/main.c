@@ -472,13 +472,13 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "unassignment") == 0)
         {
-            cc_unassignment_t unassignment;
+            cc_assignment_key_t assignment;
 
             json_unpack(data, CC_UNASSIGNMENT_REQ_FORMAT,
-                "device_id", &unassignment.device_id,
-                "assignment_id", &unassignment.assignment_id);
+                "id", &assignment.id,
+                "device_id", &assignment.device_id);
 
-            cc_unassignment(handle, &unassignment);
+            cc_unassignment(handle, &assignment);
 
             // pack data and send reply
             json_t *data = json_pack(CC_UNASSIGNMENT_REPLY_FORMAT);
