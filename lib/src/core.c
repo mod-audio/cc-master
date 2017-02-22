@@ -247,13 +247,11 @@ static void parse_data_update(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg_rx;
 
-    // TODO: check if assignment id is valid
-
     // parse message to update list
     cc_update_list_t *updates;
     cc_msg_parser(msg, &updates);
 
-    if (handle->data_update_cb)
+    if (updates->count > 0 && handle->data_update_cb)
         handle->data_update_cb(updates);
 
     cc_update_free(updates);
@@ -492,7 +490,6 @@ static void* chain_sync(void *arg)
 
                     pthread_mutex_unlock(&handle->request_lock);
                 }
-                free(device_list);
             }
             // other requests (assignment, unassignment, ...)
             else
@@ -502,6 +499,8 @@ static void* chain_sync(void *arg)
                 pthread_cond_signal(&handle->request_cond);
                 pthread_mutex_unlock(&handle->request_lock);
             }
+
+            free(device_list);
         }
 
         // each control chain frame starts with a sync message

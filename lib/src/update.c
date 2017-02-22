@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "update.h"
+#include "assignment.h"
 
 
 /*
@@ -71,26 +72,49 @@
 
 cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data)
 {
+    const int update_data_size = (sizeof(float) + 1);
+    int count = raw_data[0];
+
+    // create and initialize update list
     cc_update_list_t *updates = malloc(sizeof(cc_update_list_t));
+    updates->count = 0;
     updates->device_id = device_id;
-    updates->count = raw_data[0];
-    updates->list = malloc(sizeof(cc_update_data_t) * updates->count);
+    updates->list = malloc(sizeof(cc_update_data_t) * count);
+    updates->raw_data = malloc(update_data_size * count + 1);
 
     // parse data to struct
-    int j = 1;
-    for (int i = 0; i < updates->count; i++)
+    int j = 1, k = 1;
+    for (int i = 0; i < count; i++)
     {
-        cc_update_data_t *data = &updates->list[i];
-        data->assignment_id = raw_data[j++];
-        float *value = (float *) &raw_data[j];
-        data->value = *value;
-        j += sizeof (float);
+        cc_unassignment_t unassignment;
+        unassignment.device_id = device_id;
+        unassignment.assignment_id = raw_data[j];
+
+        if (cc_assignment_check(&unassignment))
+        {
+            cc_update_data_t *data = &updates->list[i];
+
+            // update id
+            data->assignment_id = unassignment.assignment_id;
+
+            // update value
+            float *value = (float *) &raw_data[j + 1];
+            data->value = *value;
+
+            // copy raw data
+            memcpy(&updates->raw_data[k], &raw_data[j], update_data_size);
+            k += update_data_size;
+
+            updates->count++;
+        }
+
+        // increment by update data size
+        j += update_data_size;
     }
 
-    // store raw data
-    updates->raw_data = malloc(j);
-    updates->raw_size = j;
-    memcpy(updates->raw_data, raw_data, j);
+    // update count and size of raw_data
+    updates->raw_data[0] = updates->count;
+    updates->raw_size = k;
 
     return updates;
 }

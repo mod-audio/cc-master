@@ -77,6 +77,7 @@ typedef struct cc_unassignment_t {
 
 int cc_assignment_add(cc_assignment_t *assignment);
 int cc_assignment_remove(cc_unassignment_t *unassignment);
+int cc_assignment_check(cc_unassignment_t *unassignment);
 
 
 /*

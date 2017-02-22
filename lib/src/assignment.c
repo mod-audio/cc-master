@@ -136,3 +136,22 @@ int cc_assignment_remove(cc_unassignment_t *unassignment)
 
     return id;
 }
+
+int cc_assignment_check(cc_unassignment_t *unassignment)
+{
+    cc_device_t *device = cc_device_get(unassignment->device_id);
+
+    if (!device || !device->assignments)
+        return 0;
+
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (device->assignments[i])
+        {
+            if (device->assignments[i]->id == unassignment->assignment_id)
+                return 1;
+        }
+    }
+
+    return 0;
+}
