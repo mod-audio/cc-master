@@ -66,6 +66,7 @@ typedef struct cc_client_t {
     void (*data_update_cb)(void *arg);
     pthread_t read_thread;
     sem_t waiting_reply;
+    pthread_mutex_t request_lock;
 } cc_client_t;
 
 
@@ -165,23 +166,31 @@ static json_t* cc_client_request(cc_client_t *client, const char *name, json_t *
     json_object_set_new(root, "request", json_string(name));
     json_object_set(root, "data", data);
 
-    // dump json and send request
+    // dump json to string
     char *request_str = json_dumps(root, 0);
+
+    // lock to request
+    pthread_mutex_lock(&client->request_lock);
+
+    json_t *reply = NULL;
+
+    // send request and wait for reply
     int ret = sockcli_write(client->socket, request_str, strlen(request_str) + 1);
+    if (ret > 0 && sem_wait(&client->waiting_reply) == 0)
+    {
+        json_error_t error;
+        reply = json_loads(client->buffer, 0, &error);
+    }
+
+    // unlock
+    pthread_mutex_unlock(&client->request_lock);
 
     // free memory
     json_decref(root);
     json_decref(data);
     free(request_str);
 
-    if (ret > 0 && sem_wait(&client->waiting_reply) == 0)
-    {
-        json_error_t error;
-        json_t *root = json_loads(client->buffer, 0, &error);
-        return root;
-    }
-
-    return 0;
+    return reply;
 }
 
 
@@ -205,8 +214,9 @@ cc_client_t *cc_client_new(const char *path)
     // allocate read buffer
     client->buffer = malloc(READ_BUFFER_SIZE);
 
-    // semaphore
+    // semaphore and mutex
     sem_init(&client->waiting_reply, 0, 0);
+    pthread_mutex_init(&client->request_lock, NULL);
 
     // set thread attributes
     pthread_attr_t attributes;
@@ -226,6 +236,8 @@ void cc_client_delete(cc_client_t *client)
     pthread_cancel(client->read_thread);
     pthread_join(client->read_thread, NULL);
     sockcli_finish(client->socket);
+    pthread_mutex_destroy(&client->request_lock);
+    sem_destroy(&client->waiting_reply);
     free(client->buffer);
     free(client);
 }
