@@ -86,6 +86,8 @@ enum {CC_SYNC_SETUP_CYCLE, CC_SYNC_REGULAR_CYCLE, CC_SYNC_HANDSHAKE_CYCLE};
 // control chain handle struct
 struct cc_handle_t {
     int state;
+    const char *port_name;
+    int baudrate;
     struct sp_port *sp;
     void (*data_update_cb)(void *arg);
     void (*device_status_cb)(void *arg);
@@ -112,14 +114,49 @@ struct cc_handle_t {
 ****************************************************************************************************
 */
 
+static int serial_setup(cc_handle_t *handle)
+{
+    enum sp_return ret;
+
+    // wait until serial port show up
+    while (1)
+    {
+        ret = sp_get_port_by_name(handle->port_name, &handle->sp);
+        if (ret == SP_ERR_ARG && errno == ENOENT)
+            sleep(1);
+        else if (ret == SP_OK)
+            break;
+        else
+            return ret;
+    }
+
+    // open serial port
+    ret = sp_open(handle->sp, SP_MODE_READ_WRITE);
+    if (ret != SP_OK)
+        return ret;
+
+    // configure serial port
+    sp_set_baudrate(handle->sp, handle->baudrate);
+
+    // sleeps some seconds if it's an Arduino connected (initialization)
+    char *manufacturer = sp_get_port_usb_manufacturer(handle->sp);
+    if (manufacturer && strstr(manufacturer, "Arduino"))
+        sleep(3);
+
+    return 0;
+}
+
 static void send(cc_handle_t *handle, const cc_msg_t *msg)
 {
     if (handle && msg)
     {
         uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
 
+        // sync byte
+        buffer[0] = CC_SYNC_BYTE;
+
         // header
-        int i = 0;
+        int i = 1;
         buffer[i++] = msg->device_id;
         buffer[i++] = msg->command;
         buffer[i++] = (msg->data_size >> 0) & 0xFF;
@@ -132,12 +169,10 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
             i += msg->data_size;
         }
 
-        // calculate crc
-        buffer[i++] = crc8(buffer, CC_MSG_HEADER_SIZE + msg->data_size);
+        // calculate crc (skip sync byte)
+        buffer[i++] = crc8(&buffer[1], CC_MSG_HEADER_SIZE + msg->data_size);
 
-        const uint8_t sync_byte = CC_SYNC_BYTE;
         pthread_mutex_lock(&handle->sending);
-        sp_nonblocking_write(handle->sp, &sync_byte, 1);
         sp_nonblocking_write(handle->sp, buffer, i);
         pthread_mutex_unlock(&handle->sending);
 
@@ -497,32 +532,14 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     // create a message object for receiving data
     handle->msg_rx = cc_msg_new();
 
-    //////// serial setup
-
-    // get serial port
-    enum sp_return ret;
-    ret = sp_get_port_by_name(port_name, &handle->sp);
-    if (ret != SP_OK)
+    // serial setup
+    handle->baudrate = baudrate;
+    handle->port_name = port_name;
+    if (serial_setup(handle))
     {
         cc_finish(handle);
         return NULL;
     }
-
-    // open serial port
-    ret = sp_open(handle->sp, SP_MODE_READ_WRITE);
-    if (ret != SP_OK)
-    {
-        cc_finish(handle);
-        return NULL;
-    }
-
-    // configure serial port
-    sp_set_baudrate(handle->sp, baudrate);
-
-    // if it's an Arduino connected sleeps some seconds for initialization
-    char *manufacturer = sp_get_port_usb_manufacturer(handle->sp);
-    if (manufacturer && strstr(manufacturer, "Arduino"))
-        sleep(3);
 
     // create mutexes
     pthread_mutex_init(&handle->sending, NULL);
