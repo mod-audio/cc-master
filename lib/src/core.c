@@ -28,6 +28,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <semaphore.h>
 #include <libserialport.h>
 
@@ -87,7 +88,7 @@ enum {CC_SYNC_SETUP_CYCLE, CC_SYNC_REGULAR_CYCLE, CC_SYNC_HANDSHAKE_CYCLE};
 struct cc_handle_t {
     int state;
     const char *port_name;
-    int baudrate;
+    int baudrate, serial_enabled;
     struct sp_port *sp;
     void (*data_update_cb)(void *arg);
     void (*device_status_cb)(void *arg);
@@ -116,19 +117,60 @@ struct cc_handle_t {
 
 static int serial_setup(cc_handle_t *handle)
 {
-    enum sp_return ret;
-
-    // wait until serial port show up
+    // wait until path show up
+    struct stat stbuf;
     while (1)
     {
-        ret = sp_get_port_by_name(handle->port_name, &handle->sp);
-        if (ret == SP_ERR_ARG && errno == ENOENT)
-            sleep(1);
-        else if (ret == SP_OK)
-            break;
+        if (lstat(handle->port_name, &stbuf))
+        {
+            // check for "no such file or directory" error
+            if (errno == ENOENT)
+                sleep(1);
+            else
+                return -1;
+        }
         else
-            return ret;
+            break;
     }
+
+    // set default port path
+    char port_path[64];
+    strcpy(port_path, handle->port_name);
+
+    // check for symbolic link
+    if (S_ISLNK(stbuf.st_mode))
+    {
+        // try to access file
+        for (int i = 0; i < 10; i++)
+        {
+            // read link and add its content after "/dev/"
+            int len = readlink(handle->port_name, &port_path[5], sizeof(port_path));
+            port_path[len+5] = 0;
+
+            // check for "permission denied" error
+            // after the usb-serial is plugged in, the system might take
+            // some time until it set the correct permissions to the file
+            if (access(port_path, R_OK | W_OK))
+            {
+                if (errno == EACCES)
+                    usleep(100000);
+                else
+                    return -1;
+            }
+            else
+            {
+                // user has access to the file
+                break;
+            }
+        }
+    }
+
+    enum sp_return ret;
+
+    // get serial port
+    ret = sp_get_port_by_name(port_path, &handle->sp);
+    if (ret != SP_OK)
+        return ret;
 
     // open serial port
     ret = sp_open(handle->sp, SP_MODE_READ_WRITE);
@@ -143,12 +185,14 @@ static int serial_setup(cc_handle_t *handle)
     if (manufacturer && strstr(manufacturer, "Arduino"))
         sleep(3);
 
+    handle->serial_enabled = 1;
+
     return 0;
 }
 
 static void send(cc_handle_t *handle, const cc_msg_t *msg)
 {
-    if (handle && msg)
+    if (handle && msg && handle->serial_enabled)
     {
         uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
 
@@ -173,7 +217,18 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
         buffer[i++] = crc8(&buffer[1], CC_MSG_HEADER_SIZE + msg->data_size);
 
         pthread_mutex_lock(&handle->sending);
-        sp_nonblocking_write(handle->sp, buffer, i);
+        int ret = sp_nonblocking_write(handle->sp, buffer, i);
+
+        // check for input/output error
+        // this error may happen when the serial file descriptor isn't
+        // valid anymore (e.g.: usb-serial device was been removed)
+        if (ret == SP_ERR_FAIL && errno == EIO)
+        {
+            handle->serial_enabled = 0;
+            sp_close(handle->sp);
+            sp_free_port(handle->sp);
+        }
+
         pthread_mutex_unlock(&handle->sending);
 
 #ifdef DEBUG
@@ -338,6 +393,9 @@ static void* receiver(void *arg)
 
     while (running(handle))
     {
+        if (handle->serial_enabled == 0)
+            serial_setup(handle);
+
         // waiting sync byte
         if (handle->state == WAITING_SYNCING)
         {
