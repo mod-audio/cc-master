@@ -70,7 +70,7 @@
 ****************************************************************************************************
 */
 
-cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data)
+cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_assignments)
 {
     const int update_data_size = (sizeof(float) + 1);
     int count = raw_data[0];
@@ -90,7 +90,7 @@ cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data)
         assignment.device_id = device_id;
         assignment.id = raw_data[j];
 
-        if (cc_assignment_check(&assignment))
+        if (check_assignments == 0 || cc_assignment_check(&assignment))
         {
             cc_update_data_t *data = &updates->list[i];
 

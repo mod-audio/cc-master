@@ -162,7 +162,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
         cc_update_list_t **updates = data_struct;
-        *updates = cc_update_parse(msg->device_id, msg->data);
+        *updates = cc_update_parse(msg->device_id, msg->data, 1);
     }
 }
 
