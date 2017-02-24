@@ -475,7 +475,7 @@ int main(int argc, char **argv)
             cc_assignment_key_t assignment;
 
             json_unpack(data, CC_UNASSIGNMENT_REQ_FORMAT,
-                "id", &assignment.id,
+                "assignment_id", &assignment.id,
                 "device_id", &assignment.device_id);
 
             cc_unassignment(handle, &assignment);

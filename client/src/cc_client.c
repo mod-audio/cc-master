@@ -275,7 +275,7 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
 void cc_client_unassignment(cc_client_t *client, cc_assignment_key_t *assignment)
 {
     json_t *request_data = json_pack(CC_UNASSIGNMENT_REQ_FORMAT,
-        "id", assignment->id,
+        "assignment_id", assignment->id,
         "device_id", assignment->device_id);
 
     json_t *root = cc_client_request(client, "unassignment", request_data);
