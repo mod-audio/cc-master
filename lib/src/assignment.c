@@ -114,10 +114,10 @@ int cc_assignment_add(cc_assignment_t *assignment)
 
 int cc_assignment_remove(cc_assignment_key_t *assignment)
 {
-    cc_device_t *device = cc_device_get(assignment->device_id);
-
-    if (!device)
+    if (!cc_assignment_check(assignment))
         return -1;
+
+    cc_device_t *device = cc_device_get(assignment->device_id);
 
     int id = assignment->id;
     if (device->assignments)
