@@ -141,10 +141,10 @@ if __name__ == "__main__":
     if (assignment_id < 0):
         exit(1)
 
-    sleep(0.5)
+    sleep(1)
 
     print('removing assignment')
-    assignment_key = {'device_id':1, 'id':assignment_id}
+    assignment_key = {'device_id':1, 'assignment_id':assignment_id}
     cc.unassignment(assignment_key)
 
     print('done')
