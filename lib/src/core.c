@@ -32,10 +32,6 @@
 #include <semaphore.h>
 #include <libserialport.h>
 
-#ifdef DEBUG
-#include <stdio.h>
-#endif
-
 #include "core.h"
 #include "utils.h"
 #include "msg.h"
@@ -231,17 +227,8 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
 
         pthread_mutex_unlock(&handle->sending);
 
-#ifdef DEBUG
-        if (msg->command == CC_CMD_CHAIN_SYNC)
-            return;
-
-        printf("SEND: device: %i, command: %i\n", msg->device_id, msg->command);
-        printf("      data size: %i, data:", msg->data_size);
-        for (int i = 0; i < msg->data_size; i++)
-            printf(" %02X", msg->data[i]);
-
-        printf("\n---\n");
-#endif
+        // print message if debug is enabled
+        cc_msg_print("SEND", msg);
     }
 }
 
@@ -316,17 +303,7 @@ static void parser(cc_handle_t *handle)
 {
     cc_msg_t *msg = handle->msg_rx;
 
-#ifdef DEBUG
-    if (msg->command != CC_CMD_CHAIN_SYNC)
-    {
-        printf("RECV: device: %i, command: %i\n", msg->device_id, msg->command);
-        printf("      data size: %i, data:", msg->data_size);
-        for (int i = 0; i < msg->data_size; i++)
-            printf(" %02X", msg->data[i]);
-
-        printf("\n---\n");
-    }
-#endif
+    cc_msg_print("RECV", msg);
 
     // reset device timeout
     cc_device_t *device = cc_device_get(msg->device_id);

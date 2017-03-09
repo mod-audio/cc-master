@@ -23,6 +23,7 @@
 ****************************************************************************************************
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "msg.h"
@@ -261,3 +262,48 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
     return msg;
 }
+
+#ifdef DEBUG
+void cc_msg_print(const char *header, const cc_msg_t *msg)
+{
+    static const char *commands[] = {"sync", "handshake", "device control", "device descriptor",
+        "assignment", "data update", "unassignment"};
+
+    if (msg->command == CC_CMD_CHAIN_SYNC)
+        return;
+
+    // print header information
+    printf("%s: device: %i, command: %s, data size: %i\n",
+        header, msg->device_id, commands[msg->command], msg->data_size);
+
+    // print data in hexadecimal
+    printf("      data:");
+    for (int i = 0, j = 0; i < msg->data_size; i++)
+    {
+        printf(" %02X", msg->data[i]);
+        if (++j == 32 && (i != msg->data_size - 1))
+        {
+            printf("\n           ");
+            j = 0;
+        }
+    }
+
+    // print data in ASCII
+    printf("\n      text: ");
+    for (int i = 0; i < msg->data_size; i++)
+    {
+        if (msg->data[i] < 32 || msg->data[i] > 126)
+            continue;
+
+        printf("%c", msg->data[i]);
+    }
+
+    printf("\n---\n");
+}
+#else
+void cc_msg_print(const char *header, const cc_msg_t *msg)
+{
+    (void) header;
+    (void) msg;
+}
+#endif
