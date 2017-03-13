@@ -44,8 +44,8 @@ int main(void)
 
     if (id >= 0)
     {
-        printf("removing assignment\n");
-        cc_assignment_key_t unass = {dev_id, id};
+        printf("removing assignment %i\n", id);
+        cc_assignment_key_t unass = {id, dev_id};
         cc_unassignment(handle, &unass);
     }
     else
