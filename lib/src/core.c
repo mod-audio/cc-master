@@ -50,8 +50,8 @@
 #define CC_SERIAL_BUFFER_SIZE   2048
 #define CC_SYNC_BYTE            0xA7
 #define CC_SYNC_TIMEOUT         500     // in ms
-#define CC_HEADER_TIMEOUT       1000      // in ms // FIXME: check if timeout is properly working
-#define CC_DATA_TIMEOUT         1000      // in ms // FIXME: check if timeout is properly working
+#define CC_HEADER_TIMEOUT       10      // in ms
+#define CC_DATA_TIMEOUT         1000    // in ms
 
 #define CC_CHAIN_SYNC_INTERVAL  10000   // in us
 #define CC_RESPONSE_TIMEOUT     100     // in ms
