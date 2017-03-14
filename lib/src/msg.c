@@ -246,6 +246,24 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         {
             *pdata++ = 0;
         }
+
+        // list count
+        *pdata++ = assignment->list_count;
+
+        // list items
+        for (int i = 0; i < assignment->list_count; i++)
+        {
+            cc_item_t *item = assignment->list_items[i];
+
+            // item label
+            int size = strlen(item->label);
+            *pdata++ = size;
+            memcpy(pdata, item->label, size);
+            pdata += size;
+
+            // item value
+            pdata += float_to_bytes(item->value, pdata);
+        }
     }
     else if (command == CC_CMD_UNASSIGNMENT)
     {

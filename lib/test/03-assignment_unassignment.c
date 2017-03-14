@@ -36,8 +36,17 @@ int main(void)
     int act_id = 0;
     printf("creating assignment: dev %i, act: %i\n", dev_id, act_id);
 
-    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit
-    cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB"};
+    int list_count = 0;
+    cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
+    cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
+
+    for (int i = 0; i < list_count; ++i)
+        list_items[i] = &items[i];
+
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
+    // list_count, list_items
+    cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB",
+        list_count, list_items};
 
     int id = cc_assignment(handle, &ass);
     printf("assignment id: %i\n", id);
@@ -52,6 +61,8 @@ int main(void)
     {
         printf("assignment fail\n");
     }
+
+    free(list_items);
 
     cc_finish(handle);
 

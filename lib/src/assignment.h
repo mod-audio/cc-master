@@ -55,6 +55,11 @@
 ****************************************************************************************************
 */
 
+typedef struct cc_item_t {
+    const char *label;
+    float value;
+} cc_item_t;
+
 typedef struct cc_assignment_t {
     int id, device_id, actuator_id;
     const char *label;
@@ -62,6 +67,8 @@ typedef struct cc_assignment_t {
     uint32_t mode;
     uint16_t steps;
     const char *unit;
+    int list_count;
+    cc_item_t **list_items;
 } cc_assignment_t;
 
 typedef struct cc_assignment_key_t {
