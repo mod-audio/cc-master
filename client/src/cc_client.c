@@ -244,6 +244,21 @@ void cc_client_delete(cc_client_t *client)
 
 int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
 {
+    json_t *options = json_array();
+
+    // populate options list
+    for (int i = 0; i < assignment->list_count; i++)
+    {
+        cc_item_t *item = assignment->list_items[i];
+        json_t *option = json_object();
+
+        // create item
+        json_object_set_new(option, item->label, json_real(item->value));
+
+        // add item to list
+        json_array_append_new(options, option);
+    }
+
     json_t *request_data = json_pack(CC_ASSIGNMENT_REQ_FORMAT,
         "device_id", assignment->device_id,
         "actuator_id", assignment->actuator_id,
@@ -254,7 +269,8 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
         "def", assignment->def,
         "mode", assignment->mode,
         "steps", assignment->steps,
-        "unit", assignment->unit);
+        "unit", assignment->unit,
+        "options", options);
 
     json_t *root = cc_client_request(client, "assignment", request_data);
     if (root)
@@ -264,6 +280,11 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
         // unpack reply
         int assignment_id;
         json_unpack(data, CC_ASSIGNMENT_REPLY_FORMAT, "assignment_id", &assignment_id);
+
+        // set assignment id
+        assignment->id = assignment_id;
+
+        // free memory
         json_decref(root);
 
         return assignment_id;

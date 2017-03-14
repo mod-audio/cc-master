@@ -444,6 +444,7 @@ int main(int argc, char **argv)
         {
             cc_assignment_t assignment;
             double value, min, max, def;
+            json_t *options;
 
             json_unpack(data, CC_ASSIGNMENT_REQ_FORMAT,
                 "device_id", &assignment.device_id,
@@ -455,7 +456,8 @@ int main(int argc, char **argv)
                 "def", &def,
                 "mode", &assignment.mode,
                 "steps", &assignment.steps,
-                "unit", &assignment.unit);
+                "unit", &assignment.unit,
+                "options", &options);
 
             // double to float
             assignment.value = value;
@@ -463,12 +465,41 @@ int main(int argc, char **argv)
             assignment.max = max;
             assignment.def = def;
 
+            // options list
+            assignment.list_count = json_array_size(options);
+            assignment.list_items = 0;
+            if (assignment.list_count > 0)
+            {
+                assignment.list_items = malloc(assignment.list_count * sizeof(cc_item_t *));
+
+                for (int i = 0; i < assignment.list_count; i++)
+                {
+                    cc_item_t *item = malloc(sizeof(cc_item_t));
+                    assignment.list_items[i] = item;
+
+                    const char *key;
+                    json_t *value;
+
+                    json_object_foreach(json_array_get(options, i), key, value)
+                    {
+                        item->label = key;
+                        item->value = json_real_value(value);
+                    }
+                }
+            }
+
             int assignment_id = cc_assignment(handle, &assignment);
 
             // pack data and send reply
             json_t *data = json_pack(CC_ASSIGNMENT_REPLY_FORMAT,
                 "assignment_id", assignment_id);
             send_reply(client_fd, request, data);
+
+            // free memory
+            for (int i = 0; i < assignment.list_count; i++)
+                free(assignment.list_items[i]);
+
+            free(assignment.list_items);
         }
         else if (strcmp(request, "unassignment") == 0)
         {
