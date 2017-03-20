@@ -38,6 +38,7 @@
 
 #define CC_MODE_TOGGLE  0x01
 #define CC_MODE_TRIGGER 0x02
+#define CC_MODE_OPTIONS 0x04
 
 
 /*
