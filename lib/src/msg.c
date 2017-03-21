@@ -39,8 +39,6 @@
 ****************************************************************************************************
 */
 
-#define DATA_BUFFER_SIZE    256
-
 
 /*
 ****************************************************************************************************
@@ -79,7 +77,7 @@
 cc_msg_t* cc_msg_new(void)
 {
     cc_msg_t *msg = calloc(1, sizeof(cc_msg_t));
-    msg->header = calloc(1, DATA_BUFFER_SIZE);
+    msg->header = calloc(1, CC_DATA_BUFFER_SIZE);
     msg->data = &msg->header[CC_MSG_HEADER_SIZE];
 
     return msg;

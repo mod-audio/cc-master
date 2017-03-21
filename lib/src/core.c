@@ -47,7 +47,6 @@
 ****************************************************************************************************
 */
 
-#define CC_SERIAL_BUFFER_SIZE   2048
 #define CC_SYNC_BYTE            0xA7
 #define CC_SYNC_TIMEOUT         500     // in ms
 #define CC_HEADER_TIMEOUT       10      // in ms
@@ -190,7 +189,7 @@ static void send(cc_handle_t *handle, const cc_msg_t *msg)
 {
     if (handle && msg && handle->serial_enabled)
     {
-        uint8_t buffer[CC_SERIAL_BUFFER_SIZE];
+        uint8_t buffer[CC_DATA_BUFFER_SIZE];
 
         // sync byte
         buffer[0] = CC_SYNC_BYTE;

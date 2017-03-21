@@ -36,7 +36,8 @@
 ****************************************************************************************************
 */
 
-#define CC_MSG_HEADER_SIZE  4
+#define CC_MSG_HEADER_SIZE      4
+#define CC_DATA_BUFFER_SIZE     8*1024
 
 
 /*
