@@ -172,6 +172,9 @@ static int serial_setup(cc_handle_t *handle)
     if (ret != SP_OK)
         return ret;
 
+    // disable XON/XOFF flow control
+    sp_set_xon_xoff(handle->sp, SP_XONXOFF_DISABLED);
+
     // configure serial port
     sp_set_baudrate(handle->sp, handle->baudrate);
 
