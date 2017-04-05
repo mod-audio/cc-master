@@ -279,9 +279,13 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
     return msg;
 }
 
-#ifdef DEBUG
 void cc_msg_print(const char *header, const cc_msg_t *msg)
 {
+    // enable msg debug print if debug level is greater than 1
+    char *dbg = getenv("LIBCONTROLCHAIN_DEBUG");
+    if (!dbg || atoi(dbg) <= 1)
+        return;
+
     static const char *commands[] = {"sync", "handshake", "device control", "device descriptor",
         "assignment", "data update", "unassignment"};
 
@@ -316,10 +320,3 @@ void cc_msg_print(const char *header, const cc_msg_t *msg)
 
     printf("\n---\n");
 }
-#else
-void cc_msg_print(const char *header, const cc_msg_t *msg)
-{
-    (void) header;
-    (void) msg;
-}
-#endif

@@ -23,6 +23,7 @@
 ****************************************************************************************************
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -58,6 +59,9 @@
 #define CC_REQUESTS_PERIOD      2       // in sync cycles
 #define CC_HANDSHAKE_PERIOD     50      // in sync cycles
 #define CC_DEVICE_TIMEOUT       100     // in sync cycles
+
+// debug macro
+#define DEBUG_MSG(...)      do { if (g_debug) fprintf(stderr, "[cc-lib] " __VA_ARGS__); } while (0)
 
 
 /*
@@ -102,6 +106,8 @@ struct cc_handle_t {
 *       INTERNAL GLOBAL VARIABLES
 ****************************************************************************************************
 */
+
+static int g_debug;
 
 
 /*
@@ -295,6 +301,8 @@ static void parse_data_update(cc_handle_t *handle)
     cc_update_list_t *updates;
     cc_msg_parser(msg, &updates);
 
+    DEBUG_MSG("updates received (device_id: %i, count: %i)\n", updates->device_id, updates->count);
+
     if (updates->count > 0 && handle->data_update_cb)
         handle->data_update_cb(updates);
 
@@ -320,6 +328,10 @@ static void parser(cc_handle_t *handle)
         // parse message to handshake data
         cc_msg_parser(msg, &handshake);
 
+        DEBUG_MSG("handshake received\n");
+        DEBUG_MSG("  uri: %s\n", handshake.uri->text);
+        DEBUG_MSG("  random id: %i\n", handshake.random_id);
+
         int status = cc_handshake_check(&handshake, &response);
         if (status != CC_UPDATE_REQUIRED)
         {
@@ -342,6 +354,11 @@ static void parser(cc_handle_t *handle)
         {
             // parse message to device data
             cc_msg_parser(msg, device);
+
+            DEBUG_MSG("device descriptor received\n");
+            DEBUG_MSG("  device id: %i\n", device->id);
+            DEBUG_MSG("  label: %s\n", device->label->text);
+            DEBUG_MSG("  actuators count: %i\n", device->actuators_count);
 
             // set device status
             device->status = CC_DEVICE_CONNECTED;
@@ -486,6 +503,8 @@ static void* chain_sync(void *arg)
                 device->timeout++;
                 if (device->timeout >= CC_DEVICE_TIMEOUT)
                 {
+                    DEBUG_MSG("device timeout (device id: %i)\n", device->id);
+
                     device->status = CC_DEVICE_DISCONNECTED;
 
                    // proceed to callback if any
@@ -562,6 +581,10 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     if (handle == NULL)
         return NULL;
 
+    // enable debug prints if required
+    if (getenv("LIBCONTROLCHAIN_DEBUG"))
+        g_debug = 1;
+
     // init handle with null data
     memset(handle, 0, sizeof (cc_handle_t));
 
@@ -620,6 +643,8 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
         return NULL;
     }
 
+    DEBUG_MSG("control chain started (port: %s, baud rate: %i)\n", port_name, baudrate);
+
     return handle;
 }
 
@@ -650,6 +675,8 @@ void cc_finish(cc_handle_t *handle)
 
         cc_msg_delete(handle->msg_rx);
         free(handle);
+
+        DEBUG_MSG("control chain finished\n");
     }
 }
 
@@ -657,19 +684,29 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
 {
     int id = cc_assignment_add(assignment);
 
+    DEBUG_MSG("assignment received (id: %i)\n", id);
+
     if (id < 0)
         return id;
+
+    DEBUG_MSG("  requesting assignment to device (id: %i)\n", id);
 
     // request assignment
     cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_ASSIGNMENT, assignment);
     if (request(handle, msg))
     {
         // TODO: if timeout, try at least one more time
-        cc_assignment_key_t key;
-        key.device_id = assignment->device_id;
-        key.id = id;
+        DEBUG_MSG("  assignment timeout (id: %i)\n", id);
+
+        // remove assignment
+        cc_assignment_key_t key = {assignment->device_id, id};
         cc_assignment_remove(&key);
+
         id = -1;
+    }
+    else
+    {
+        DEBUG_MSG("  assignment done (id: %i)\n", id);
     }
 
     cc_msg_delete(msg);
@@ -681,12 +718,24 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment)
 {
     int ret = cc_assignment_remove(assignment);
 
+    DEBUG_MSG("unassignment received (id: %i, ret: %i)\n", assignment->id, ret);
+
     if (ret < 0)
         return;
 
+    DEBUG_MSG("  requesting unassignment to device (id: %i)\n", assignment->id);
+
     // request unassignment
     cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_UNASSIGNMENT, assignment);
-    request(handle, msg);
+    if (request(handle, msg))
+    {
+        // TODO: unassignment failed. try again?
+        DEBUG_MSG("  unassignment timeout (id: %i)\n", assignment->id);
+    }
+    else
+    {
+        DEBUG_MSG("  unassignment done (id: %i)\n", assignment->id);
+    }
 
     cc_msg_delete(msg);
 }
@@ -695,9 +744,15 @@ void cc_device_disable(cc_handle_t *handle, int device_id)
 {
     int control = CC_DEVICE_DISABLE;
 
+    DEBUG_MSG("device disable received (device id: %i)\n", device_id);
+    DEBUG_MSG("  requesting device to disable (device id: %i)\n", device_id);
+
     // request device disable
     cc_msg_t *msg = cc_msg_builder(device_id, CC_CMD_DEV_CONTROL, &control);
-    request(handle, msg);
+    if (request(handle, msg))
+        DEBUG_MSG("  request timeout (device id: %i)\n", device_id);
+    else
+        DEBUG_MSG("  request done (device id: %i)\n", device_id);
 
     cc_msg_delete(msg);
 }
