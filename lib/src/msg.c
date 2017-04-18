@@ -289,10 +289,9 @@ void cc_msg_print(const char *header, const cc_msg_t *msg)
         char *dbg = getenv("LIBCONTROLCHAIN_DEBUG");
         debug = (!dbg || atoi(dbg) <= 1) ? 0 : 1;
     }
-    else if (debug == 0)
-    {
+
+    if (debug == 0)
         return;
-    }
 
     static const char *commands[] = {"sync", "handshake", "device control", "device descriptor",
         "assignment", "data update", "unassignment"};
