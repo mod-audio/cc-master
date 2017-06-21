@@ -57,7 +57,7 @@
 #define CC_RESPONSE_TIMEOUT     100     // in ms
 
 #define CC_REQUESTS_PERIOD      2       // in sync cycles
-#define CC_HANDSHAKE_PERIOD     50      // in sync cycles
+#define CC_HANDSHAKE_PERIOD     20      // in sync cycles
 #define CC_DEVICE_TIMEOUT       100     // in sync cycles
 
 // debug macro
@@ -347,8 +347,6 @@ static void parser(cc_handle_t *handle)
     }
     else if (msg->command == CC_CMD_DEV_DESCRIPTOR)
     {
-        sem_post(&handle->waiting_response);
-
         cc_device_t *device = cc_device_get(msg->device_id);
         if (device)
         {
@@ -363,9 +361,16 @@ static void parser(cc_handle_t *handle)
             // set device status
             device->status = CC_DEVICE_CONNECTED;
 
-           // proceed to callback if any
-           if (handle->device_status_cb)
+            // message received and parsed
+            sem_post(&handle->waiting_response);
+
+            // proceed to callback if any
+            if (handle->device_status_cb)
                handle->device_status_cb(device);
+        }
+        else
+        {
+            sem_post(&handle->waiting_response);
         }
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
