@@ -81,11 +81,11 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
     {
         if (g_devices[i].id == 0)
         {
+            // delete possible old data
+            memset(&g_devices[i], 0, sizeof(cc_device_t));
+
             // device id cannot be zero
             g_devices[i].id = i + 1;
-
-            // set device label to null
-            g_devices[i].label = 0;
 
             // store handshake info
             g_devices[i].uri = handshake->uri;
