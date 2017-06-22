@@ -337,9 +337,10 @@ static void parser(cc_handle_t *handle)
         }
 
         DEBUG_MSG("handshake received\n");
-        DEBUG_MSG("  uri: %s\n", handshake.uri->text);
         DEBUG_MSG("  random id: %i\n", handshake.random_id);
-        DEBUG_MSG("  channel: %i\n", response.channel);
+        DEBUG_MSG("  protocol: v%i.%i\n", handshake.protocol.major, handshake.protocol.minor);
+        DEBUG_MSG("  firmware: v%i.%i.%i\n",
+            handshake.protocol.major, handshake.protocol.minor, handshake.protocol.micro);
 
         // create and send response message
         cc_msg_t *reply = cc_msg_builder(0, CC_CMD_HANDSHAKE, &response);
@@ -355,11 +356,12 @@ static void parser(cc_handle_t *handle)
             cc_msg_parser(msg, device);
 
             DEBUG_MSG("device descriptor received\n");
-            DEBUG_MSG("  device id: %i\n", device->id);
+            DEBUG_MSG("  id: %i, uri: %s\n", device->id, device->uri->text);
             DEBUG_MSG("  label: %s\n", device->label->text);
+            DEBUG_MSG("  channel: %i\n", device->channel);
             DEBUG_MSG("  actuators count: %i\n", device->actuators_count);
 
-            // set device status
+            // device is ready to operate
             device->status = CC_DEVICE_CONNECTED;
 
             // message received and parsed

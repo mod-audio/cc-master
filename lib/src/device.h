@@ -73,7 +73,7 @@ typedef struct cc_actuator_t {
 } cc_actuator_t;
 
 typedef struct cc_device_t {
-    int id, status;
+    int id, status, channel;
     string_t *label, *uri;
     cc_actuator_t **actuators;
     int actuators_count;
@@ -101,7 +101,7 @@ char* cc_device_descriptor(int device_id);
 // return a NULL terminated list containing the filtered devices id
 int* cc_device_list(int filter);
 
-// return the amount of devices according a given uri
+// return the amount of connected devices according a given uri
 int cc_device_count(const char *uri);
 
 // return the device pointer or NULL if id is invalid

@@ -88,7 +88,6 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
             g_devices[i].id = i + 1;
 
             // store handshake info
-            g_devices[i].uri = handshake->uri;
             g_devices[i].firmware.major = handshake->firmware.major;
             g_devices[i].firmware.minor = handshake->firmware.minor;
             g_devices[i].firmware.micro = handshake->firmware.micro;
@@ -229,7 +228,7 @@ int cc_device_count(const char *uri)
 
     for (int i = 0; i < CC_MAX_DEVICES; i++)
     {
-        if (!g_devices[i].id)
+        if (!g_devices[i].id || g_devices[i].status == CC_DEVICE_DISCONNECTED)
             continue;
 
         if (strcmp(uri, g_devices[i].uri->text) == 0)

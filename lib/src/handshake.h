@@ -55,7 +55,6 @@ enum {CC_HANDSHAKE_OK, CC_UPDATE_AVAILABLE, CC_UPDATE_REQUIRED};
 
 // handshake structure received from device
 typedef struct cc_handshake_dev_t {
-    string_t *uri;
     uint16_t random_id;
     version_t protocol, firmware;
 } cc_handshake_dev_t;
@@ -63,7 +62,7 @@ typedef struct cc_handshake_dev_t {
 // handshake structure sent to device
 typedef struct cc_handshake_mod_t {
     uint16_t random_id;
-    int status, device_id, channel;
+    int status, device_id;
 } cc_handshake_mod_t;
 
 

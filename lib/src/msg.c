@@ -99,11 +99,6 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         cc_handshake_dev_t *handshake = data_struct;
         uint8_t *pdata = msg->data;
 
-        // URI
-        uint32_t size;
-        handshake->uri = string_deserialize(pdata, &size);
-        pdata += size;
-
         // random id
         handshake->random_id = *((uint16_t *) pdata);
         pdata += sizeof(uint16_t);
@@ -124,9 +119,16 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         uint8_t *pdata = msg->data;
         uint32_t i = 0;
 
+        // URI
+        device->uri = string_deserialize(pdata, &i);
+        pdata += i;
+
         // device label
         device->label = string_deserialize(pdata, &i);
         pdata += i;
+
+        // device channel
+        device->channel = cc_device_count(device->uri->text);
 
         // number of actuators
         device->actuators = 0;
@@ -182,10 +184,9 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         *random_id = handshake->random_id;
         pdata += 2;
 
-        // status, frame, channel
+        // status, device id
         *pdata++ = handshake->status;
         *pdata++ = handshake->device_id;
-        *pdata++ = handshake->channel;
     }
     else if (command == CC_CMD_DEV_CONTROL)
     {
