@@ -72,8 +72,6 @@
 int cc_handshake_check(cc_handshake_dev_t *received, cc_handshake_mod_t *response)
 {
     // TODO: check device firmware version
-    // TODO: check if device has this handshake already
-    // TODO: calculate channel (based on URI)
 
     int status = CC_HANDSHAKE_OK;
 
@@ -85,7 +83,7 @@ int cc_handshake_check(cc_handshake_dev_t *received, cc_handshake_mod_t *respons
     response->random_id = received->random_id;
     response->status = status;
     response->device_id = 0;
-    response->channel = 0;
+    response->channel = cc_device_count(received->uri->text);
 
     return status;
 }

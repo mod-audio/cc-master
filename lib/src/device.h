@@ -101,6 +101,9 @@ char* cc_device_descriptor(int device_id);
 // return a NULL terminated list containing the filtered devices id
 int* cc_device_list(int filter);
 
+// return the amount of devices according a given uri
+int cc_device_count(const char *uri);
+
 // return the device pointer or NULL if id is invalid
 cc_device_t* cc_device_get(int device_id);
 

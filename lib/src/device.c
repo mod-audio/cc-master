@@ -223,6 +223,22 @@ int* cc_device_list(int filter)
     return devices_list;
 }
 
+int cc_device_count(const char *uri)
+{
+    int count = 0;
+
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        if (!g_devices[i].id)
+            continue;
+
+        if (strcmp(uri, g_devices[i].uri->text) == 0)
+            count++;
+    }
+
+    return count;
+}
+
 cc_device_t* cc_device_get(int device_id)
 {
     if (device_id)

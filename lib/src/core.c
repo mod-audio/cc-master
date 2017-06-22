@@ -328,10 +328,6 @@ static void parser(cc_handle_t *handle)
         // parse message to handshake data
         cc_msg_parser(msg, &handshake);
 
-        DEBUG_MSG("handshake received\n");
-        DEBUG_MSG("  uri: %s\n", handshake.uri->text);
-        DEBUG_MSG("  random id: %i\n", handshake.random_id);
-
         int status = cc_handshake_check(&handshake, &response);
         if (status != CC_UPDATE_REQUIRED)
         {
@@ -339,6 +335,11 @@ static void parser(cc_handle_t *handle)
             cc_device_t *device = cc_device_create(&handshake);
             response.device_id = device->id;
         }
+
+        DEBUG_MSG("handshake received\n");
+        DEBUG_MSG("  uri: %s\n", handshake.uri->text);
+        DEBUG_MSG("  random id: %i\n", handshake.random_id);
+        DEBUG_MSG("  channel: %i\n", response.channel);
 
         // create and send response message
         cc_msg_t *reply = cc_msg_builder(0, CC_CMD_HANDSHAKE, &response);
