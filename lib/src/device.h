@@ -65,6 +65,9 @@ enum {CC_DEVICE_DISCONNECTED, CC_DEVICE_CONNECTED};
 // device control
 enum {CC_DEVICE_DISABLE, CC_DEVICE_ENABLE};
 
+// device descriptor actions
+enum {CC_DEVICE_DESC_REQ, CC_DEVICE_DESC_ACK};
+
 typedef struct cc_actuator_t {
     int id;
     string_t *name;

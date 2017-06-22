@@ -364,6 +364,16 @@ static void parser(cc_handle_t *handle)
             // device is ready to operate
             device->status = CC_DEVICE_CONNECTED;
 
+            // inform device that the device descriptor was received
+            uint8_t dev_desc_msg_data = CC_DEVICE_DESC_ACK;
+            cc_msg_t dev_desc_msg = {
+                .device_id = device->id,
+                .command = CC_CMD_DEV_DESCRIPTOR,
+                .data_size = sizeof (dev_desc_msg_data),
+                .data = &dev_desc_msg_data
+            };
+            send(handle, &dev_desc_msg);
+
             // message received and parsed
             sem_post(&handle->waiting_response);
 
@@ -483,10 +493,11 @@ static void* chain_sync(void *arg)
         .data = &chain_sync_msg_data
     };
 
+    uint8_t dev_desc_msg_data = CC_DEVICE_DESC_REQ;
     cc_msg_t dev_desc_msg = {
         .command = CC_CMD_DEV_DESCRIPTOR,
-        .data_size = 0,
-        .data = 0
+        .data_size = sizeof (dev_desc_msg_data),
+        .data = &dev_desc_msg_data
     };
 
     // this is the setup sync cycle message
