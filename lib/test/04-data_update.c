@@ -32,7 +32,7 @@ void data_update(void *arg)
 
 int main(void)
 {
-    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
+    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE, 0);
     if (!handle)
     {
         printf("can't initiate control chain using %s\n", SERIAL_PORT);
