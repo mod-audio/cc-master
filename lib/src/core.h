@@ -56,7 +56,7 @@ typedef struct cc_handle_t cc_handle_t;
 ****************************************************************************************************
 */
 
-cc_handle_t* cc_init(const char *port_name, int baudrate, int priority);
+cc_handle_t* cc_init(const char *port_name, int baudrate);
 void cc_finish(cc_handle_t *handle);
 
 

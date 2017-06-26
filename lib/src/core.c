@@ -593,7 +593,7 @@ static void* chain_sync(void *arg)
 ****************************************************************************************************
 */
 
-cc_handle_t* cc_init(const char *port_name, int baudrate, int priority)
+cc_handle_t* cc_init(const char *port_name, int baudrate)
 {
     cc_handle_t *handle = (cc_handle_t *) malloc(sizeof (cc_handle_t));
 
@@ -649,21 +649,17 @@ cc_handle_t* cc_init(const char *port_name, int baudrate, int priority)
 
     //////// chain sync thread setup
 
-    // use same attributes as before
+    // use same attributes as before, but add RT prio
 
-    if (priority > 0)
-    {
-        // configure RT prio
-        pthread_attr_setscope(&attributes, PTHREAD_SCOPE_SYSTEM);
-        pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
+    pthread_attr_setscope(&attributes, PTHREAD_SCOPE_SYSTEM);
+    pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
 
-        struct sched_param rt_param;
-        memset(&rt_param, 0, sizeof(rt_param));
+    struct sched_param rt_param;
+    memset(&rt_param, 0, sizeof(rt_param));
 
-        pthread_attr_getschedparam(&attributes, &rt_param);
-        rt_param.sched_priority = priority;
-        pthread_attr_setschedparam(&attributes, &rt_param);
-    }
+    pthread_attr_getschedparam(&attributes, &rt_param);
+    rt_param.sched_priority = 84;
+    pthread_attr_setschedparam(&attributes, &rt_param);
 
     // create thread
     ret_val = pthread_create(&handle->chain_sync_thread, &attributes, chain_sync, (void*) handle);

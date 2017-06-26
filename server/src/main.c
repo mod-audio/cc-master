@@ -83,7 +83,7 @@ typedef struct clients_events_t {
 static sockser_t *g_server;
 static clients_events_t g_client_events[MAX_CLIENTS_EVENTS];
 static char *g_serial;
-static int g_baudrate, g_foreground, g_priority;
+static int g_baudrate, g_foreground;
 
 
 /*
@@ -235,7 +235,6 @@ static void print_usage(int status)
     printf("Usage: " SERVER_NAME " <serial> [-bVh]\n");
     printf("  -b    define baud rate\n");
     printf("  -f    run server on foreground\n");
-    printf("  -P    set the scheduler priority\n");
     printf("  -V,   display version information and exit\n");
     printf("  -h,   display this help and exit\n");
 
@@ -259,7 +258,6 @@ static void parse_cmd_line(int argc, char **argv)
 
     g_serial = argv[1];
     g_baudrate = SERIAL_BAUDRATE;
-    g_priority = 0;
 
     int opt;
     while ((opt = getopt(argc, argv, "bfVh")) != -1)
@@ -272,10 +270,6 @@ static void parse_cmd_line(int argc, char **argv)
 
             case 'f':
                 g_foreground = 1;
-                break;
-
-            case 'P':
-                g_priority = atoi(argv[optind]);
                 break;
 
             case 'V':
@@ -358,7 +352,7 @@ int main(int argc, char **argv)
     sockser_client_event_cb(g_server, client_event_cb);
 
     // init control chain
-    cc_handle_t *handle = cc_init(g_serial, g_baudrate, g_priority);
+    cc_handle_t *handle = cc_init(g_serial, g_baudrate);
     if (!handle)
     {
         syslog(LOG_ERR, "error starting control chain using serial '%s'", g_serial);
