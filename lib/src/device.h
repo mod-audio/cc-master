@@ -82,7 +82,7 @@ typedef struct cc_device_t {
     int actuators_count;
     cc_assignment_t **assignments;
     unsigned int timeout;
-    version_t firmware;
+    version_t protocol, firmware;
 } cc_device_t;
 
 

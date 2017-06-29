@@ -88,6 +88,8 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
             g_devices[i].id = i + 1;
 
             // store handshake info
+            g_devices[i].protocol.major = handshake->protocol.major;
+            g_devices[i].protocol.minor = handshake->protocol.minor;
             g_devices[i].firmware.major = handshake->firmware.major;
             g_devices[i].firmware.minor = handshake->firmware.minor;
             g_devices[i].firmware.micro = handshake->firmware.micro;
