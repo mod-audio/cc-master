@@ -99,6 +99,19 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         cc_handshake_dev_t *handshake = data_struct;
         uint8_t *pdata = msg->data;
 
+        // old versions of protocol (before v0.4) used to sent the URI during the handshake
+        // assume the URI is within the hanshake if data size > 7 bytes
+        if (msg->data_size > 7)
+        {
+            uint32_t size;
+            handshake->uri = string_deserialize(pdata, &size);
+            pdata += size;
+        }
+        else
+        {
+            handshake->uri = 0;
+        }
+
         // random id
         handshake->random_id = *((uint16_t *) pdata);
         pdata += sizeof(uint16_t);
@@ -119,9 +132,13 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         uint8_t *pdata = msg->data;
         uint32_t i = 0;
 
-        // URI
-        device->uri = string_deserialize(pdata, &i);
-        pdata += i;
+        // URI was added to device descriptor starting from v0.4
+        if (device->protocol.major > 0 || device->protocol.minor >= 4)
+        {
+            // URI
+            device->uri = string_deserialize(pdata, &i);
+            pdata += i;
+        }
 
         // device label
         device->label = string_deserialize(pdata, &i);

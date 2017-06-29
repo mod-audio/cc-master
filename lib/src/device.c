@@ -94,6 +94,10 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
             g_devices[i].firmware.minor = handshake->firmware.minor;
             g_devices[i].firmware.micro = handshake->firmware.micro;
 
+            // only for version before v0.4
+            if (handshake->uri)
+                g_devices[i].uri = handshake->uri;
+
             return &g_devices[i];
         }
     }
