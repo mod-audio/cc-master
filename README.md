@@ -1,41 +1,45 @@
 cc-master
 =========
 
-This is the master implementation of the Control Chain protocol.
+This is the master implementation of the Control Chain protocol. It is a socket server software
+which communicates with devices connected to a specific serial port and convert the Control Chain
+protocol to JSON data.
 
-Running the control chain daemon on the MOD Duo
------------------------------------------------
+Installation
+------------
 
-In order to debug control chain communication, you can enable debug messages in the control chain daemon running on the MOD duo:
+cc-master uses waf to build and install the files. The usual steps to build and install are:
+
+    ./waf configure
+    ./waf build
+    ./waf install
+
+You can change the base installation path passing `--prefix` argument to the configure command.
+
+    ./waf configure --prefix=/usr
+
+
+Dependencies:
+
+    - jansson
+    - libserialport
+
+
+Running
+-------
+
+The cc-master is daemon program, which means that once you start it, it'll fork and run as a
+background software. The execution syntax is below.
 
 ```bash
-ssh root@192.168.51.1
-systemctl stop controlchaind
-export LIBCONTROLCHAIN_DEBUG=1 # use 2 for verbose debug
-controlchaind.run
+controlchaind <serialport> [-b baudrate]
 ```
 
-Local installation
-------------------
-
-Instead of using a MOD Duo, you can also run a control chain daemon on your local machine. Before installation, make sure you have Python 3, [libserialport](https://sigrok.org/wiki/Libserialport) and the [jansson](http://www.digip.org/jansson/) library installed.
-
-Then, follow these steps to install cc-master:
+For sake of debugging you want to run it on the foreground and display the debug messages.
 
 ```bash
-git clone https://github.com/moddevices/cc-master.git
-cd cc-master
-./waf configure --prefix=/usr
-./waf build
-./waf install
+export LIBCONTROLCHAIN_DEBUG=1
+controlchaind <serialport> -f
 ```
 
-Running the control chain daemon
---------------------------------
-
-After installation, follow these steps to run the control chain daemon in verbose debug message mode. Adapt the serial port device name as needed:
-
-```
-export LIBCONTROLCHAIN_DEBUG=2
-controlchaind /dev/ttyACM0 -f
-```
+You can also set the variable `LIBCONTROLCHAIN_DEBUG` to 2 to have more verbose messages.
