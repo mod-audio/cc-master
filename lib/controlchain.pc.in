@@ -7,4 +7,4 @@ Name: Control Chain
 Description: Control Chain protocol library
 Version: @VERSION@
 Libs: -L${libdir} -lcontrolchain
-Cflags: -I${includedir}
+Cflags: -I${includedir}/cc
