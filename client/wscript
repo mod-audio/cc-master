@@ -37,4 +37,4 @@ def build(bld):
     bld(source="cc_client.pc.in")
 
     source_files = bld.path.ant_glob('src/*.c')
-    bld.shlib(source=source_files, target=APPNAME, use='CC CONTROLCHAIN JANSSON')
+    bld.shlib(source=source_files, target=APPNAME, use='CC CCLIB JANSSON')
