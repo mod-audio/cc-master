@@ -87,6 +87,9 @@ class ControlChainClient(object):
     def unassignment(self, assignment):
         self._send_request('unassignment', assignment)
 
+    def value_set(self, assignment):
+        self._send_request('value_set', assignment)
+
     def device_list(self):
         return self._send_request('device_list')
 

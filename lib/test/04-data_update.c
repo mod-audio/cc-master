@@ -4,7 +4,10 @@
 #include "control_chain.h"
 #include "assignment.h"
 
-#define SERIAL_PORT         "/dev/ttyACM0"
+//Duo
+#define SERIAL_PORT            "/dev/ttyS3"
+//DuoX
+//#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
@@ -32,7 +35,7 @@ void data_update(void *arg)
 
 int main(void)
 {
-    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE, 0);
+    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
     if (!handle)
     {
         printf("can't initiate control chain using %s\n", SERIAL_PORT);
@@ -54,13 +57,16 @@ int main(void)
 
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
     // list_count, list_items
-    cc_assignment_t ass = {-1, dev_id, 0, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB",
-        list_count, list_items};
+    int assign_id = 1;
+    cc_assignment_t ass = {assign_id, dev_id, 0, "Tap", 50.0, 10.0, 5000.0, 10.0, 80, 0, "ms",
+        0, NULL};
+
+    printf("assigning %i\n", assign_id);
 
     int id = cc_assignment(handle, &ass);
     if (id >= 0)
     {
-        sleep(3);
+        sleep(60);
         printf("removing assignment %i\n", id);
         cc_assignment_key_t key = {id, dev_id};
         cc_unassignment(handle, &key);

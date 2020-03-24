@@ -515,6 +515,29 @@ int main(int argc, char **argv)
             json_t *data = json_pack(CC_UNASSIGNMENT_REPLY_FORMAT);
             send_reply(client_fd, request, data);
         }
+        else if (strcmp(request, "value_set") == 0)
+        {
+            cc_ui_update_t update;
+            double value;
+            json_t *options;
+
+            json_unpack(data, CC_UI_UPDATE_REQ_FORMAT,
+                "device_id", &update.device_id,
+                "actuator_id", &update.actuator_id,
+                "assignment_id", &update.id,
+                "value", &value);
+
+            // double to float
+            update.value = value;
+
+            int assignment_id = cc_value_set(handle, &update);
+
+            // pack data and send reply
+            json_t *data = json_pack(CC_UI_UPDATE_REPLY_FORMAT,
+                "assignment_id", assignment_id);
+            send_reply(client_fd, request, data);
+
+        }
         else if (strcmp(request, "data_update") == 0)
         {
             int enable;

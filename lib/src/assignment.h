@@ -36,12 +36,12 @@
 ****************************************************************************************************
 */
 
-#define CC_MODE_TOGGLE   0x01
-#define CC_MODE_TRIGGER  0x02
-#define CC_MODE_OPTIONS  0x04
-#define CC_MODE_REAL     0x10
-#define CC_MODE_INTEGER  0x20
-#define CC_MODE_FEEDBACK 0x40
+#define CC_MODE_TOGGLE      0x01
+#define CC_MODE_TRIGGER     0x02
+#define CC_MODE_OPTIONS     0x04
+#define CC_MODE_REAL        0x10
+#define CC_MODE_INTEGER     0x20
+#define CC_MODE_TAP_TEMPO   0x50
 
 /*
 ****************************************************************************************************

@@ -291,6 +291,20 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // assignment id
         *pdata++ = assignment->id;
     }
+    else if (msg->command == CC_CMD_SET_VALUE)
+    {
+        const cc_ui_update_t *update = data_struct;
+
+        // device id
+        msg->device_id = update->device_id;
+
+        // assignment id, actuator id
+        *pdata++ = update->assignment_id;
+        *pdata++ = update->actuator_id;
+        
+        // value
+        pdata += float_to_bytes(update->value, pdata);
+    }
 
     msg->data_size = (pdata - msg->data);
 

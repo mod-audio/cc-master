@@ -46,4 +46,4 @@ You can also set the variable `LIBCONTROLCHAIN_DEBUG` to 2 to have more verbose 
 
 The serial ports used in MOD Devices: 
 MOD DUO: /dev/ttyS3
-MOD DuoX: /dev/ttymxc3
+MOD DuoX: /dev/ttymxc0
