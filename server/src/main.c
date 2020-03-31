@@ -517,14 +517,14 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "value_set") == 0)
         {
-            cc_ui_update_t update;
+            cc_set_value_t update;
             double value;
             json_t *options;
 
-            json_unpack(data, CC_UI_UPDATE_REQ_FORMAT,
+            json_unpack(data, CC_VALUE_SET_REQ_FORMAT,
                 "device_id", &update.device_id,
                 "actuator_id", &update.actuator_id,
-                "assignment_id", &update.id,
+                "assignment_id", &update.assignment_id,
                 "value", &value);
 
             // double to float
@@ -533,7 +533,7 @@ int main(int argc, char **argv)
             int assignment_id = cc_value_set(handle, &update);
 
             // pack data and send reply
-            json_t *data = json_pack(CC_UI_UPDATE_REPLY_FORMAT,
+            json_t *data = json_pack(CC_VALUE_SET_REPLY_FORMAT,
                 "assignment_id", assignment_id);
             send_reply(client_fd, request, data);
 

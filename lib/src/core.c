@@ -759,7 +759,7 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment)
     cc_msg_delete(msg);
 }
 
-int cc_value_set(cc_handle_t *handle, cc_ui_update_t *update)
+int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
 {
     int id = update->assignment_id;
 

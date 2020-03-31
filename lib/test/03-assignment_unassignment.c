@@ -58,7 +58,7 @@ int main(void)
     {   
         sleep(1);
         float update_value = 0.0f;
-        cc_ui_update_t update_data = {dev_id, id, act_id, update_value};
+        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
         id = cc_value_set(handle, &update_data);
         printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
         sleep(1);

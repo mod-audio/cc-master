@@ -293,7 +293,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
     }
     else if (msg->command == CC_CMD_SET_VALUE)
     {
-        const cc_ui_update_t *update = data_struct;
+        const cc_set_value_t *update = data_struct;
 
         // device id
         msg->device_id = update->device_id;

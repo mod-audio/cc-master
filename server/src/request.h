@@ -53,8 +53,8 @@
 #define CC_UNASSIGNMENT_REQ_FORMAT      "{si,si}"
 #define CC_UNASSIGNMENT_REPLY_FORMAT    "n"
 
-#define CC_UI_UPDATE_REQ_FORMAT      	"{si,si,si,sf}"
-#define CC_UI_UPDATE_REPLY_FORMAT    	"{si}"
+#define CC_VALUE_SET_REQ_FORMAT      	"{si,si,si,sf}"
+#define CC_VALUE_SET_REPLY_FORMAT    	"{si}"
 
 #define CC_DATA_UPDATE_REQ_FORMAT       "{si}"
 #define CC_DATA_UPDATE_REPLY_FORMAT     "n"
