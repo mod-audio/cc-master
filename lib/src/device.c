@@ -168,6 +168,12 @@ char* cc_device_descriptor(int device_id)
     json_t *version = json_stringn(buffer, strlen(buffer));
     json_object_set_new(root, "version", version);
 
+    // protocol version
+    sprintf(buffer, "%i.%i",
+        device->protocol.major, device->protocol.minor);
+    json_t *protocol = json_stringn(buffer, strlen(buffer));
+    json_object_set_new(root, "protocol", protocol);
+
     // actuators
     json_t *json_actuators = json_array();
     json_object_set_new(root, "actuators", json_actuators);
