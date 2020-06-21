@@ -160,10 +160,10 @@ static void send_reply(int client_fd,  const char *reply, json_t *data)
 static void send_event(int client_fd, const char *event, const char *data)
 {
     sockser_data_t output;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE+64];
 
     // build json event
-    sprintf(buffer, "{\"event\":\"%s\",\"data\":%s}", event, data);
+    snprintf(buffer, sizeof(buffer), "{\"event\":\"%s\",\"data\":%s}", event, data);
 
     output.client_fd = client_fd;
     output.buffer = buffer;
@@ -184,7 +184,7 @@ static void device_status_cb(void *arg)
         if (g_client_events[i].event_id == CC_DEVICE_STATUS_EV)
         {
             // build json event data
-            sprintf(buffer, "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
+            snprintf(buffer, sizeof(buffer), "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
 
             // send event
             int client_fd = g_client_events[i].client_fd;
@@ -196,7 +196,7 @@ static void device_status_cb(void *arg)
 static void data_update_cb(void *arg)
 {
     cc_update_list_t *updates = arg;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE+32];
     char encoded[BUFFER_SIZE];
 
     for (int i = 0; i < MAX_CLIENTS_EVENTS; i++)
@@ -210,7 +210,7 @@ static void data_update_cb(void *arg)
             base64_encode(updates->raw_data, updates->raw_size, encoded);
 
             // build json event data
-            sprintf(buffer, "{\"device_id\":%i,\"raw_data\":\"%s\"}",
+            snprintf(buffer, sizeof(buffer), "{\"device_id\":%i,\"raw_data\":\"%s\"}",
                 updates->device_id, encoded);
 
             // send event
@@ -484,6 +484,13 @@ int main(int argc, char **argv)
                     {
                         item->label = key;
                         item->value = json_real_value(value);
+
+                        // labels are limited to 16 characters on device-side
+                        if (strlen(key) > 16)
+                        {
+                            char* mkey = (char*)key;
+                            mkey[16] = 0;
+                        }
                     }
                 }
             }
