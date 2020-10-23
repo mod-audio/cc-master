@@ -42,6 +42,7 @@
 #define CC_MODE_REAL        0x10
 #define CC_MODE_INTEGER     0x20
 #define CC_MODE_TAP_TEMPO   0x40
+#define CC_MODE_MOMENTARY   0x80
 
 /*
 ****************************************************************************************************
