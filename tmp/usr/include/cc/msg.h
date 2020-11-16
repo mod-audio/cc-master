@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CC_ASSIGNMENT_H
-#define CC_ASSIGNMENT_H
+#ifndef CC_MSG_H
+#define CC_MSG_H
 
 
 /*
@@ -36,26 +36,15 @@
 ****************************************************************************************************
 */
 
-#define CC_MODE_TOGGLE      0x01
-#define CC_MODE_TRIGGER     0x02
-#define CC_MODE_OPTIONS     0x04
-#define CC_MODE_REAL        0x10
-#define CC_MODE_INTEGER     0x20
-#define CC_MODE_TAP_TEMPO   0x40
-#define CC_MODE_MOMENTARY   0x80
+#define CC_MSG_HEADER_SIZE      4
+#define CC_DATA_BUFFER_SIZE     8*1024
 
-//list defines
-#define LIST_MODE_LED_CYCLING   0x01
-#define LIST_MODE_SCROLL_DIR    0x02
-#define LIST_MODE_GROUPED       0x04
 
 /*
 ****************************************************************************************************
 *       CONFIGURATION
 ****************************************************************************************************
 */
-
-#define CC_MAX_ASSIGNMENTS  256
 
 
 /*
@@ -64,26 +53,19 @@
 ****************************************************************************************************
 */
 
-typedef struct cc_item_t {
-    const char *label;
-    float value;
-} cc_item_t;
+// commands definition
+enum cc_cmd_t {CC_CMD_CHAIN_SYNC, CC_CMD_HANDSHAKE, CC_CMD_DEV_CONTROL, CC_CMD_DEV_DESCRIPTOR,
+               CC_CMD_ASSIGNMENT, CC_CMD_DATA_UPDATE, CC_CMD_UNASSIGNMENT, CC_CMD_SET_VALUE, CC_NUM_COMMANDS};
 
-typedef struct cc_assignment_t {
-    int id, device_id, actuator_id; 
-    const char *label;
-    float value, min, max, def;
-    uint32_t mode;
-    uint16_t steps;
-    const char *unit;
-    int list_count;
-    uint8_t list_bitmask;
-    cc_item_t **list_items;
-} cc_assignment_t;
+// fields names and sizes in bytes
+// DEV_ADDRESS (1), COMMAND (1), DATA_SIZE (2), DATA (N), CHECKSUM (1)
 
-typedef struct cc_assignment_key_t {
-    int id, device_id;
-} cc_assignment_key_t;
+typedef struct cc_msg_t {
+    uint8_t device_id;
+    uint8_t command;
+    uint16_t data_size;
+    uint8_t *header, *data;
+} cc_msg_t;
 
 
 /*
@@ -92,9 +74,11 @@ typedef struct cc_assignment_key_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_assignment_key_t *assignment);
-int cc_assignment_check(cc_assignment_key_t *assignment);
+cc_msg_t* cc_msg_new(void);
+void cc_msg_delete(cc_msg_t *msg);
+void cc_msg_parser(const cc_msg_t *msg, void *data_struct);
+cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct);
+void cc_msg_print(const char *header, const cc_msg_t *msg);
 
 
 /*

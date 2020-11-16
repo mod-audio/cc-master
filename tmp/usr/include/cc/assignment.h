@@ -70,7 +70,7 @@ typedef struct cc_item_t {
 } cc_item_t;
 
 typedef struct cc_assignment_t {
-    int id, device_id, actuator_id; 
+    int id, device_id, actuator_id;
     const char *label;
     float value, min, max, def;
     uint32_t mode;

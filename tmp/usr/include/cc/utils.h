@@ -17,9 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CC_ASSIGNMENT_H
-#define CC_ASSIGNMENT_H
-
+#ifndef CC_UTILS_H
+#define CC_UTILS_H
 
 /*
 ****************************************************************************************************
@@ -36,26 +35,15 @@
 ****************************************************************************************************
 */
 
-#define CC_MODE_TOGGLE      0x01
-#define CC_MODE_TRIGGER     0x02
-#define CC_MODE_OPTIONS     0x04
-#define CC_MODE_REAL        0x10
-#define CC_MODE_INTEGER     0x20
-#define CC_MODE_TAP_TEMPO   0x40
-#define CC_MODE_MOMENTARY   0x80
+#define STR_AUX(s)  #s
+#define STR(s)      STR_AUX(s)
 
-//list defines
-#define LIST_MODE_LED_CYCLING   0x01
-#define LIST_MODE_SCROLL_DIR    0x02
-#define LIST_MODE_GROUPED       0x04
 
 /*
 ****************************************************************************************************
 *       CONFIGURATION
 ****************************************************************************************************
 */
-
-#define CC_MAX_ASSIGNMENTS  256
 
 
 /*
@@ -64,26 +52,14 @@
 ****************************************************************************************************
 */
 
-typedef struct cc_item_t {
-    const char *label;
-    float value;
-} cc_item_t;
+typedef struct string_t {
+    uint8_t size;
+    char *text;
+} string_t;
 
-typedef struct cc_assignment_t {
-    int id, device_id, actuator_id; 
-    const char *label;
-    float value, min, max, def;
-    uint32_t mode;
-    uint16_t steps;
-    const char *unit;
-    int list_count;
-    uint8_t list_bitmask;
-    cc_item_t **list_items;
-} cc_assignment_t;
-
-typedef struct cc_assignment_key_t {
-    int id, device_id;
-} cc_assignment_key_t;
+typedef struct version_t {
+    int major, minor, micro;
+} version_t;
 
 
 /*
@@ -92,10 +68,20 @@ typedef struct cc_assignment_key_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_assignment_key_t *assignment);
-int cc_assignment_check(cc_assignment_key_t *assignment);
+/*
+ http://stackoverflow.com/a/15171925/1283578
+ 8-bit CRC with polynomial x^8+x^6+x^3+x^2+1, 0x14D.
+ Chosen based on Koopman, et al. (0xA6 in his notation = 0x14D >> 1):
+ http://www.ece.cmu.edu/~koopman/roses/dsn04/koopman04_crc_poly_embedded.pdf
+*/
+uint8_t crc8(const uint8_t *data, uint32_t len);
 
+string_t *string_create(const char *str);
+uint8_t string_serialize(const string_t *str, uint8_t *buffer);
+string_t *string_deserialize(const uint8_t *data, uint32_t *written);
+void string_destroy(string_t *str);
+
+int float_to_bytes(const float value, uint8_t *array);
 
 /*
 ****************************************************************************************************

@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CC_ASSIGNMENT_H
-#define CC_ASSIGNMENT_H
+#ifndef CC_UPDATE_H
+#define CC_UPDATE_H
 
 
 /*
@@ -36,26 +36,12 @@
 ****************************************************************************************************
 */
 
-#define CC_MODE_TOGGLE      0x01
-#define CC_MODE_TRIGGER     0x02
-#define CC_MODE_OPTIONS     0x04
-#define CC_MODE_REAL        0x10
-#define CC_MODE_INTEGER     0x20
-#define CC_MODE_TAP_TEMPO   0x40
-#define CC_MODE_MOMENTARY   0x80
-
-//list defines
-#define LIST_MODE_LED_CYCLING   0x01
-#define LIST_MODE_SCROLL_DIR    0x02
-#define LIST_MODE_GROUPED       0x04
 
 /*
 ****************************************************************************************************
 *       CONFIGURATION
 ****************************************************************************************************
 */
-
-#define CC_MAX_ASSIGNMENTS  256
 
 
 /*
@@ -64,26 +50,24 @@
 ****************************************************************************************************
 */
 
-typedef struct cc_item_t {
-    const char *label;
+typedef struct cc_update_data_t {
+    int assignment_id;
     float value;
-} cc_item_t;
+} cc_update_data_t;
 
-typedef struct cc_assignment_t {
-    int id, device_id, actuator_id; 
-    const char *label;
-    float value, min, max, def;
-    uint32_t mode;
-    uint16_t steps;
-    const char *unit;
-    int list_count;
-    uint8_t list_bitmask;
-    cc_item_t **list_items;
-} cc_assignment_t;
+typedef struct cc_set_value_t {
+	int device_id;
+    int assignment_id;
+    int actuator_id;
+    float value;
+} cc_set_value_t;
 
-typedef struct cc_assignment_key_t {
-    int id, device_id;
-} cc_assignment_key_t;
+typedef struct cc_update_list_t {
+    int device_id, count;
+    cc_update_data_t *list;
+    uint8_t *raw_data;
+    int raw_size;
+} cc_update_list_t;
 
 
 /*
@@ -92,9 +76,8 @@ typedef struct cc_assignment_key_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_assignment_key_t *assignment);
-int cc_assignment_check(cc_assignment_key_t *assignment);
+cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_assignments);
+void cc_update_free(cc_update_list_t *updates);
 
 
 /*
