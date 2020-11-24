@@ -29,12 +29,12 @@ int main(void)
         list_items[i] = &items[i];
 
     int device_id = 1;
-    uint8_t lis_bitmask =0;
+    uint8_t list_bitmask = 0;
 
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
-    // list_count, list_items
+    // list_count, list_bitmask, list_items
     cc_assignment_t assignment = {-1, device_id, 0, "gain", 1.0, 0.0, 2.0, 0.5, 1, 32, "dB",
-        list_count, lis_bitmask, list_items};
+        list_count, list_bitmask, list_items};
 
     // assignment
     printf("creating assignment\n");

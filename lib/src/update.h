@@ -56,7 +56,7 @@ typedef struct cc_update_data_t {
 } cc_update_data_t;
 
 typedef struct cc_set_value_t {
-	int device_id;
+    int device_id;
     int assignment_id;
     int actuator_id;
     float value;
