@@ -214,7 +214,6 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
     }
     else if (command == CC_CMD_ASSIGNMENT)
     {
-        cc_device_t *device = data_struct;
         const cc_assignment_t *assignment = data_struct;
 
         // device id
@@ -268,13 +267,6 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
         // list count
         *pdata++ = assignment->list_count;
-
-        // List bitmask was added the message from protocol version 0.6
-        if (device->protocol.major > 0 || device->protocol.minor >= 6)
-        {
-            //list bitmask
-            *pdata++ = assignment->list_bitmask;
-        }
         
         // list items
         for (int i = 0; i < assignment->list_count; i++)

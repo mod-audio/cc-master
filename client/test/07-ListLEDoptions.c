@@ -48,11 +48,8 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device)
     {
-        sleep(1);
-    }
-
-    int act_id = 0;
-    
+    	sleep(1);
+    }  
 
     int list_count = 8;
     
@@ -63,13 +60,14 @@ int main(void)
     {
         list_items[i] = &items[i];
     }
-    
-    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
-    // list_count, list bitmask, list_items
-    int assign_id = 0;
-    int list_bitmask = 0;
+    // assignment of LED cycling 
+ 	int assign_id = 0;
 
-    cc_assignment_t ass_1 = {assign_id, dev_id, act_id, "List", 1.0, 1.0, 8.0, 10.0, 4, 8, "-",list_count, list_bitmask, list_items};
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
+    // list_count, list_items
+    
+
+    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "List", 1.0, 1.0, 8.0, 10.0, 260, 8, "-",list_count, list_items};
 
     printf("assigning %i\n", assign_id);
 
@@ -80,6 +78,22 @@ int main(void)
         printf("error in assignment %i\n", id_1);
     }
 
+    // assignment of Static LED list
+    assign_id = 1;
+
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
+    // list_count, list_items
+    
+    cc_assignment_t ass_2 = {assign_id, dev_id, 1, "List", 1.0, 1.0, 8.0, 10.0, 4, 8, "-",list_count, list_items};
+
+    printf("assigning %i\n", assign_id);
+
+    int id_2 = cc_assignment(handle, &ass_2);
+
+    if (id_2 < 0)
+    {
+        printf("error in assignment %i\n", id_2);
+    }
 
     //give some time to test the actuatots
     sleep(60);
@@ -90,7 +104,10 @@ int main(void)
     cc_unassignment(handle, &key_1);
     sleep(1);
 
-    
+    printf("removing assignment %i\n", id_2);
+    cc_assignment_key_t key_2 = {id_2, dev_id};
+    cc_unassignment(handle, &key_2);
+    sleep(1);
 
     cc_finish(handle);
 

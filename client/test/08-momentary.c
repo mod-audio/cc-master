@@ -49,14 +49,13 @@ int main(void)
     while (no_device) sleep(1);
 
 
-    uint8_t list_bitmask = 0;
     //assigning 4 different tap types
 
 
     //tap 1, bpm
-    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list bitmask, list_items
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     int assign_id = 1;
-    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "Momentary", 0, 0, 1, 10.0, 128, 0, "-",0,list_bitmask, NULL};
+    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "Momentary", 0, 0, 1, 10.0, 512, 0, "-",0, NULL};
 
     printf("assigning %i\n", assign_id);
 

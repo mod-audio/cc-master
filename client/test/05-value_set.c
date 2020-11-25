@@ -37,9 +37,7 @@ int main(void)
     while (no_device) sleep(1);
 
     int act_id = 0;
-    uint8_t list_bitmask =0;
     
-
     int list_count = 0;
     cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
     cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
@@ -50,7 +48,7 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
     // list_count, list_items
     cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB",
-        list_count,list_bitmask, list_items};
+        list_count, list_items};
 
     int id = cc_assignment(handle, &ass);
     printf("assignment id: %i\n", id);

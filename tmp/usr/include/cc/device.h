@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CC_ASSIGNMENT_H
-#define CC_ASSIGNMENT_H
+#ifndef CC_DEVICE_H
+#define CC_DEVICE_H
 
 
 /*
@@ -27,7 +27,9 @@
 ****************************************************************************************************
 */
 
-#include <stdint.h>
+#include "handshake.h"
+#include "assignment.h"
+#include "utils.h"
 
 
 /*
@@ -35,15 +37,6 @@
 *       MACROS
 ****************************************************************************************************
 */
-#define CC_MODE_TOGGLE      0x001
-#define CC_MODE_TRIGGER     0x002
-#define CC_MODE_OPTIONS     0x004
-#define CC_MODE_TAP_TEMPO   0x008
-#define CC_MODE_REAL        0x010
-#define CC_MODE_INTEGER     0x020
-#define CC_MODE_LOGARITHMIC 0x040
-#define CC_MODE_COLOURED    0x100
-#define CC_MODE_MOMENTARY   0x200
 
 
 /*
@@ -52,7 +45,7 @@
 ****************************************************************************************************
 */
 
-#define CC_MAX_ASSIGNMENTS  256
+#define CC_MAX_DEVICES  8
 
 
 /*
@@ -61,25 +54,36 @@
 ****************************************************************************************************
 */
 
-typedef struct cc_item_t {
-    const char *label;
-    float value;
-} cc_item_t;
+// enumeration to filter list of devices
+// REGISTERED means that the device already received the device descriptor
+// UNREGISTERED means that the device still waiting for the device descriptor
+enum {CC_DEVICE_LIST_ALL, CC_DEVICE_LIST_REGISTERED, CC_DEVICE_LIST_UNREGISTERED};
 
-typedef struct cc_assignment_t {
-    int id, device_id, actuator_id;
-    const char *label;
-    float value, min, max, def;
-    uint32_t mode;
-    uint16_t steps;
-    const char *unit;
-    int list_count;
-    cc_item_t **list_items;
-} cc_assignment_t;
+// device status
+enum {CC_DEVICE_DISCONNECTED, CC_DEVICE_CONNECTED};
 
-typedef struct cc_assignment_key_t {
-    int id, device_id;
-} cc_assignment_key_t;
+// device control
+enum {CC_DEVICE_DISABLE, CC_DEVICE_ENABLE};
+
+// device descriptor actions
+enum {CC_DEVICE_DESC_REQ, CC_DEVICE_DESC_ACK};
+
+typedef struct cc_actuator_t {
+    int id;
+    string_t *name;
+    uint32_t supported_modes;
+    int max_assignments, assignments_count;
+} cc_actuator_t;
+
+typedef struct cc_device_t {
+    int id, status, channel;
+    string_t *label, *uri;
+    cc_actuator_t **actuators;
+    int actuators_count;
+    cc_assignment_t **assignments;
+    unsigned int timeout;
+    version_t protocol, firmware;
+} cc_device_t;
 
 
 /*
@@ -88,9 +92,23 @@ typedef struct cc_assignment_key_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_assignment_key_t *assignment);
-int cc_assignment_check(cc_assignment_key_t *assignment);
+// create and return a device, or NULL if fail
+cc_device_t* cc_device_create(cc_handshake_dev_t *handshake);
+
+// destroy the device
+void cc_device_destroy(int device_id);
+
+// return the device descriptor in json format
+char* cc_device_descriptor(int device_id);
+
+// return a NULL terminated list containing the filtered devices id
+int* cc_device_list(int filter);
+
+// return the amount of connected devices according a given uri
+int cc_device_count(const char *uri);
+
+// return the device pointer or NULL if id is invalid
+cc_device_t* cc_device_get(int device_id);
 
 
 /*

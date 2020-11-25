@@ -17,9 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CC_ASSIGNMENT_H
-#define CC_ASSIGNMENT_H
-
+#ifndef CONTROL_CHAIN_H
+#define CONTROL_CHAIN_H
 
 /*
 ****************************************************************************************************
@@ -27,7 +26,13 @@
 ****************************************************************************************************
 */
 
-#include <stdint.h>
+#include "core.h"
+#include "utils.h"
+#include "msg.h"
+#include "handshake.h"
+#include "device.h"
+#include "assignment.h"
+#include "update.h"
 
 
 /*
@@ -35,15 +40,10 @@
 *       MACROS
 ****************************************************************************************************
 */
-#define CC_MODE_TOGGLE      0x001
-#define CC_MODE_TRIGGER     0x002
-#define CC_MODE_OPTIONS     0x004
-#define CC_MODE_TAP_TEMPO   0x008
-#define CC_MODE_REAL        0x010
-#define CC_MODE_INTEGER     0x020
-#define CC_MODE_LOGARITHMIC 0x040
-#define CC_MODE_COLOURED    0x100
-#define CC_MODE_MOMENTARY   0x200
+
+#define CC_PROTOCOL_MAJOR       0
+#define CC_PROTOCOL_MINOR       6
+#define CC_PROTOCOL_VERSION     STR(CC_PROTOCOL_MAJOR) "." STR(CC_PROTOCOL_MINOR)
 
 
 /*
@@ -52,34 +52,12 @@
 ****************************************************************************************************
 */
 
-#define CC_MAX_ASSIGNMENTS  256
-
 
 /*
 ****************************************************************************************************
 *       DATA TYPES
 ****************************************************************************************************
 */
-
-typedef struct cc_item_t {
-    const char *label;
-    float value;
-} cc_item_t;
-
-typedef struct cc_assignment_t {
-    int id, device_id, actuator_id;
-    const char *label;
-    float value, min, max, def;
-    uint32_t mode;
-    uint16_t steps;
-    const char *unit;
-    int list_count;
-    cc_item_t **list_items;
-} cc_assignment_t;
-
-typedef struct cc_assignment_key_t {
-    int id, device_id;
-} cc_assignment_key_t;
 
 
 /*
@@ -88,9 +66,12 @@ typedef struct cc_assignment_key_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_assignment_key_t *assignment);
-int cc_assignment_check(cc_assignment_key_t *assignment);
+int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment);
+void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment);
+int cc_value_set(cc_handle_t *handle,  cc_set_value_t *update);
+void cc_data_update_cb(cc_handle_t *handle, void (*callback)(void *arg));
+void cc_device_status_cb(cc_handle_t *handle, void (*callback)(void *arg));
+void cc_device_disable(cc_handle_t *handle, int device_id);
 
 
 /*

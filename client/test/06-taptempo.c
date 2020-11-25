@@ -49,16 +49,14 @@ int main(void)
     while (no_device) sleep(1);
 
 
-    uint8_t list_bitmask = 0;
     //assigning 4 different tap types
-
 
     //tap 1, bpm
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
     // list_count, list_items
     int assign_id = 1;
-    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "Tap", 120.0, 20.0, 280.0, 10.0, 64, 0, "bpm",
-        0,list_bitmask, NULL};
+    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "Tap", 120.0, 20.0, 280.0, 10.0, 8, 0, "bpm",
+        0, NULL};
 
     printf("assigning %i\n", assign_id);
 
@@ -71,8 +69,8 @@ int main(void)
 
     //tap 2 ms
     assign_id = 2;
-    cc_assignment_t ass_2 = {assign_id, dev_id, 1, "Tap", 400.0, 100.0, 5000.0, 10.0, 64, 0, "ms",
-        0,list_bitmask, NULL};
+    cc_assignment_t ass_2 = {assign_id, dev_id, 1, "Tap", 400.0, 100.0, 5000.0, 10.0, 8, 0, "ms",
+        0, NULL};
 
     printf("assigning %i\n", assign_id);
 
@@ -85,8 +83,8 @@ int main(void)
 
     //tap 3 s
     assign_id = 3;
-    cc_assignment_t ass_3 = {assign_id, dev_id, 2, "Tap", 0.5, 0.1, 5.0, 10.0, 64, 0, "s",
-        0,list_bitmask, NULL};
+    cc_assignment_t ass_3 = {assign_id, dev_id, 2, "Tap", 0.5, 0.1, 5.0, 10.0, 8, 0, "s",
+        0, NULL};
 
     printf("assigning %i\n", assign_id);
 
@@ -99,8 +97,8 @@ int main(void)
 
     //tap 4 hz
     assign_id = 4;
-    cc_assignment_t ass_4 = {assign_id, dev_id, 3, "Tap", 2, 0.1, 50.0, 10.0, 64, 0, "hz",
-        0,list_bitmask, NULL};
+    cc_assignment_t ass_4 = {assign_id, dev_id, 3, "Tap", 2, 0.1, 50.0, 10.0, 8, 0, "hz",
+        0, NULL};
 
     printf("assigning %i\n", assign_id);
 
