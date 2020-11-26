@@ -526,7 +526,6 @@ int main(int argc, char **argv)
         {
             cc_set_value_t update;
             double value;
-            json_t *options;
 
             json_unpack(data, CC_VALUE_SET_REQ_FORMAT,
                 "device_id", &update.device_id,

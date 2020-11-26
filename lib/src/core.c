@@ -145,7 +145,7 @@ static int serial_setup(cc_handle_t *handle)
         for (int i = 0; i < 10; i++)
         {
             // read link and add its content after "/dev/"
-            int len = readlink(handle->port_name, &port_path[5], sizeof(port_path));
+            int len = readlink(handle->port_name, &port_path[5], sizeof(port_path)-5);
             port_path[len+5] = 0;
 
             // check for "permission denied" error
@@ -767,7 +767,7 @@ int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
 
     // request assignment
     cc_msg_t *msg = cc_msg_builder(update->device_id, CC_CMD_SET_VALUE, update);
-    
+
     if (request(handle, msg))
     {
         // TODO: if timeout, try at least one more time
