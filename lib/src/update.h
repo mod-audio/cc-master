@@ -55,6 +55,13 @@ typedef struct cc_update_data_t {
     float value;
 } cc_update_data_t;
 
+typedef struct cc_set_value_t {
+    int device_id;
+    int assignment_id;
+    int actuator_id;
+    float value;
+} cc_set_value_t;
+
 typedef struct cc_update_list_t {
     int device_id, count;
     cc_update_data_t *list;

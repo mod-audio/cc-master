@@ -155,6 +155,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         if (device->actuators_count > 0)
         {
             device->actuators = malloc(sizeof(cc_actuator_t *) * device->actuators_count);
+            
             for (int j = 0; j < device->actuators_count; j++)
             {
                 device->actuators[j] = malloc(sizeof(cc_actuator_t));
@@ -176,6 +177,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 actuator->assignments_count = 0;
             }
         }
+
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
@@ -265,7 +267,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
         // list count
         *pdata++ = assignment->list_count;
-
+        
         // list items
         for (int i = 0; i < assignment->list_count; i++)
         {
@@ -290,6 +292,20 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
         // assignment id
         *pdata++ = assignment->id;
+    }
+    else if (msg->command == CC_CMD_SET_VALUE)
+    {
+        const cc_set_value_t *update = data_struct;
+
+        // device id
+        msg->device_id = update->device_id;
+
+        // assignment id, actuator id
+        *pdata++ = update->assignment_id;
+        *pdata++ = update->actuator_id;
+        
+        // value
+        pdata += float_to_bytes(update->value, pdata);
     }
 
     msg->data_size = (pdata - msg->data);

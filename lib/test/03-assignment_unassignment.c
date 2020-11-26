@@ -4,7 +4,10 @@
 #include "control_chain.h"
 #include "assignment.h"
 
-#define SERIAL_PORT         "/dev/ttyACM0"
+//Duo
+#define SERIAL_PORT            "/dev/ttyS3"
+//DuoX
+//#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
@@ -21,7 +24,7 @@ void dev_desc(void *arg)
 
 int main(void)
 {
-    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE, 0);
+    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
     if (!handle)
     {
         printf("can't initiate control chain using %s\n", SERIAL_PORT);
@@ -34,7 +37,7 @@ int main(void)
     while (no_device) sleep(1);
 
     int act_id = 0;
-    printf("creating assignment: dev %i, act: %i\n", dev_id, act_id);
+    
 
     int list_count = 0;
     cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
@@ -52,10 +55,30 @@ int main(void)
     printf("assignment id: %i\n", id);
 
     if (id >= 0)
-    {
-        printf("removing assignment %i\n", id);
-        cc_assignment_key_t unass = {id, dev_id};
-        cc_unassignment(handle, &unass);
+    {   
+        sleep(1);
+        float update_value = 0.0f;
+        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
+        id = cc_value_set(handle, &update_data);
+        printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
+        sleep(1);
+        update_value = 1.0f;
+        update_data.value = update_value;
+        id = cc_value_set(handle, &update_data);
+        printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
+        sleep(1);
+
+
+        if (id >= 0)
+        {
+            printf("removing assignment %i\n", id);
+            cc_assignment_key_t unass = {id, dev_id};
+            cc_unassignment(handle, &unass);
+        }
+        else 
+        {
+            printf("control set fail\n");
+        }
     }
     else
     {

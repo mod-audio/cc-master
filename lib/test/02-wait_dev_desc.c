@@ -3,7 +3,10 @@
 #include <unistd.h>
 #include "control_chain.h"
 
-#define SERIAL_PORT         "/dev/ttyACM0"
+//Duo
+#define SERIAL_PORT            "/dev/ttyS3"
+//DuoX
+//#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
@@ -21,7 +24,7 @@ void dev_desc(void *arg)
 
 int main(void)
 {
-    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE, 0);
+    cc_handle_t *handle = cc_init(SERIAL_PORT, SERIAL_BAUDRATE);
     if (!handle)
     {
         printf("can't initiate control chain using %s\n", SERIAL_PORT);

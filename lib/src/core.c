@@ -387,7 +387,8 @@ static void parser(cc_handle_t *handle)
         }
     }
     else if (msg->command == CC_CMD_ASSIGNMENT ||
-             msg->command == CC_CMD_UNASSIGNMENT)
+             msg->command == CC_CMD_UNASSIGNMENT ||
+             msg->command == CC_CMD_SET_VALUE)
     {
         // TODO: don't post if there is no request
         sem_post(&handle->waiting_response);
@@ -756,6 +757,36 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment)
     }
 
     cc_msg_delete(msg);
+}
+
+int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
+{
+    int id = update->assignment_id;
+
+    DEBUG_MSG("value_set received (id: %i)\n", id);
+
+    // request assignment
+    cc_msg_t *msg = cc_msg_builder(update->device_id, CC_CMD_SET_VALUE, update);
+    
+    if (request(handle, msg))
+    {
+        // TODO: if timeout, try at least one more time
+        DEBUG_MSG("  value_set timeout (id: %i)\n", id);
+
+        // remove assignment, not working anyhow
+        cc_assignment_key_t key = {update->device_id, id};
+        cc_assignment_remove(&key);
+
+        return -1;
+    }
+    else
+    {
+        DEBUG_MSG("  value_set done (id: %i)\n", id);
+    }
+
+    cc_msg_delete(msg);
+
+    return id;
 }
 
 void cc_device_disable(cc_handle_t *handle, int device_id)

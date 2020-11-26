@@ -5,7 +5,7 @@
 #include "assignment.h"
 
 //Duo
-#define SERIAL_PORT            "/dev/ttyS3"
+#define SERIAL_PORT            "/dev/ttyS1"
 //DuoX
 //#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
@@ -48,38 +48,36 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-    int list_count = 3;
-    cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
-    cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
 
-    for (int i = 0; i < list_count; ++i)
-        list_items[i] = &items[i];
+    //assigning 4 different tap types
 
-    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
-    // list_count, list_items
+
+    //tap 1, bpm
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     int assign_id = 1;
-    cc_assignment_t ass = {assign_id, dev_id, 0, "Tap", 50.0, 10.0, 5000.0, 10.0, 80, 0, "ms",
-        0, NULL};
+    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "Momentary", 0, 0, 1, 10.0, 512, 0, "-",0, NULL};
 
     printf("assigning %i\n", assign_id);
 
-    int id = cc_assignment(handle, &ass);
-    if (id >= 0)
+    int id_1 = cc_assignment(handle, &ass_1);
+
+    if (id_1 < 0)
     {
-        sleep(60);
-        printf("removing assignment %i\n", id);
-        cc_assignment_key_t key = {id, dev_id};
-        cc_unassignment(handle, &key);
-        sleep(1);
-    }
-    else
-    {
-        printf("assignment fail\n");
+        printf("error in assignment %i\n", id_1);
     }
 
-    free(list_items);
+    //give some time to test the actuatots
+    sleep(60);
+
+    //unassign
+    printf("removing assignment %i\n", id_1);
+    cc_assignment_key_t key_1 = {id_1, dev_id};
+    cc_unassignment(handle, &key_1);
+    sleep(1);
+
 
     cc_finish(handle);
 
     return 0;
 }
+

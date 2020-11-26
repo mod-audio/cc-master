@@ -87,7 +87,8 @@ int cc_assignment_add(cc_assignment_t *assignment)
     cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
     if (actuator->assignments_count >= actuator->max_assignments)
         return -1;
-
+    
+        
     // store assignment
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
