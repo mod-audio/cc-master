@@ -48,14 +48,11 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-
-    //assigning 4 different tap types
-
-
-    //tap 1, bpm
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     int assign_id = 1;
-    cc_assignment_t ass_1 = {assign_id, dev_id, 0, "Momentary", 0, 0, 1, 10.0, 512, 0, "-",0, NULL};
+    int act_id = 0;
+
+    cc_assignment_t ass_1 = {assign_id, dev_id, act_id, "Momentary", 0, 0, 1, 10.0, 512, 0, "-",0, NULL};
 
     printf("assigning %i\n", assign_id);
 
@@ -66,8 +63,48 @@ int main(void)
         printf("error in assignment %i\n", id_1);
     }
 
+    printf("Test momentary %i\n", assign_id);
     //give some time to test the actuatots
-    sleep(60);
+    sleep(10);
+
+    printf("keep button 1 pressed %i\n", assign_id);
+    sleep(5);
+
+    //assign actuator 1 with 0
+    if (id_1 >= 0)
+    {   
+        sleep(1);
+        float update_value = 0.0f;
+        cc_set_value_t update_data = {dev_id, id_1, act_id, update_value};
+        id_1 = cc_value_set(handle, &update_data);
+        printf("Value set: assignment: %i, value: %i\n", id_1, (int)update_value);
+        sleep(1);
+     }
+
+    printf("release button 1 %i\n", assign_id);
+    printf("Test momentary %i\n", assign_id);
+
+    //give some time to test the actuatots
+    sleep(10);
+
+    printf("keep button 1 pressed %i\n", assign_id);
+    sleep(5);
+
+    //assign actuator 1 with 1 
+    if (id_1 >= 0)
+    {   
+        sleep(1);
+        float update_value = 1.0f;
+        cc_set_value_t update_data = {dev_id, id_1, act_id, update_value};
+        id_1 = cc_value_set(handle, &update_data);
+        printf("Value set: assignment: %i, value: %i\n", id_1, (int)update_value);
+        sleep(1);
+     }
+
+     printf("release button 1 %i\n", assign_id);
+     printf("Test momentary %i\n", assign_id);
+     //give some time to test the actuatots
+     sleep(10);
 
     //unassign
     printf("removing assignment %i\n", id_1);
