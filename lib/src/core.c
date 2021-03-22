@@ -523,15 +523,24 @@ static void* chain_sync(void *arg)
                 device->timeout++;
                 if (device->timeout >= CC_DEVICE_TIMEOUT)
                 {
-                    DEBUG_MSG("device timeout (device id: %i)\n", device->id);
+                    //maybe another device is blocking sync messages,
+                    //do not disconnect anything if input buffer is not empty
+                    if (sp_input_waiting(handle->sp) != 0)
+                    {
+                        device->timeout = 0;
+                    }
+                    else
+                    {
+                        DEBUG_MSG("device timeout (device id: %i)\n", device->id);
 
-                    device->status = CC_DEVICE_DISCONNECTED;
+                        device->status = CC_DEVICE_DISCONNECTED;
 
-                   // proceed to callback if any
-                   if (handle->device_status_cb)
-                       handle->device_status_cb(device);
+                        // proceed to callback if any
+                        if (handle->device_status_cb)
+                            handle->device_status_cb(device);
 
-                    cc_device_destroy(device_list[i]);
+                        cc_device_destroy(device_list[i]);
+                    }
                 }
             }
         }
