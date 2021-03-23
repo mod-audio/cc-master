@@ -313,7 +313,7 @@ void cc_client_value_set(cc_client_t *client, cc_set_value_t *update)
     json_t *request_data = json_pack(CC_VALUE_SET_REQ_FORMAT,
         "device_id", update->device_id,
         "actuator_id", update->actuator_id,
-        "assignment_id", &update->assignment_id,
+        "assignment_id", update->assignment_id,
         "value", update->value);
 
     json_t *root = cc_client_request(client, "value_set", request_data);
