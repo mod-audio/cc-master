@@ -308,7 +308,7 @@ void cc_client_unassignment(cc_client_t *client, cc_assignment_key_t *assignment
     }
 }
 
-int cc_client_value_set(cc_client_t *client, cc_set_value_t *update)
+void cc_client_value_set(cc_client_t *client, cc_set_value_t *update)
 {
     json_t *request_data = json_pack(CC_VALUE_SET_REQ_FORMAT,
         "device_id", update->device_id,
@@ -319,22 +319,10 @@ int cc_client_value_set(cc_client_t *client, cc_set_value_t *update)
     json_t *root = cc_client_request(client, "value_set", request_data);
     if (root)
     {
-        json_t *data = json_object_get(root, "data");
+        // reply is null
 
-        // unpack reply
-        int assignment_id;
-        json_unpack(data, CC_VALUE_SET_REPLY_FORMAT, "assignment_id", &assignment_id);
-
-        // set assignment id
-        update->assignment_id = assignment_id;
-
-        // free memory
         json_decref(root);
-
-        return assignment_id;
     }
-
-    return -1;
 }
 
 

@@ -539,8 +539,7 @@ int main(int argc, char **argv)
             int assignment_id = cc_value_set(handle, &update);
 
             // pack data and send reply
-            json_t *data = json_pack(CC_VALUE_SET_REPLY_FORMAT,
-                "assignment_id", assignment_id);
+            json_t *data = json_pack(CC_VALUE_SET_REPLY_FORMAT);
             send_reply(client_fd, request, data);
 
         }
