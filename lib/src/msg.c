@@ -175,7 +175,46 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 // actuator assignments counter and maximum value
                 actuator->max_assignments = *pdata++;
                 actuator->assignments_count = 0;
+
+                // set actuatorgroup flag
+                actuator->grouped = 0;
             }
+        }
+
+        if (device->protocol.major > 0 || device->protocol.minor >= 7)
+        {
+            // number of actuatorgroups
+            device->actuatorgroups = 0;
+            device->actuatorgroups_count = *pdata++;
+
+            //list of actuatorgroups
+            if (device->actuatorgroups_count > 0)
+            {
+                device->actuatorgroups = malloc(sizeof(cc_actuatorgroup_t *) * device->actuatorgroups_count);
+
+                for (int j = 0; j < device->actuatorgroups_count; j++)
+                {
+                    int actuatorgroup_id = device->actuators_count++;
+
+                    device->actuatorgroups[j] = malloc(sizeof(cc_actuatorgroup_t));
+                    cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[j];
+
+                    // actuatorgroup id
+                    actuatorgroup->id = actuatorgroup_id;
+
+                    //actuatorgroup name
+                    actuatorgroup->name = string_deserialize(pdata, &i);
+                    pdata += i;
+
+                    //actuators in actuatorgroup
+                    actuatorgroup->actuators_in_actuatorgroup[0] = *pdata++;
+                    actuatorgroup->actuators_in_actuatorgroup[1] = *pdata++;
+
+                    actuatorgroup_id++;
+                }
+
+            }
+
         }
 
     }

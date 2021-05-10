@@ -368,6 +368,7 @@ static void parser(cc_handle_t *handle)
             DEBUG_MSG("  label: %s\n", device->label->text);
             DEBUG_MSG("  channel: %i\n", device->channel);
             DEBUG_MSG("  actuators count: %i\n", device->actuators_count);
+            DEBUG_MSG("  actuatorgroups count: %i\n", device->actuatorgroups_count);
 
             // device is ready to operate
             device->status = CC_DEVICE_CONNECTED;
