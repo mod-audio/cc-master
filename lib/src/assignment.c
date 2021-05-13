@@ -156,3 +156,41 @@ int cc_assignment_check(cc_assignment_key_t *assignment)
 
     return 0;
 }
+
+int cc_assignement_id_get(int device_id, int actuator_id)
+{
+    cc_device_t *device = cc_device_get(device_id);
+
+    if (!device || !device->assignments)
+        return -1;
+
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (device->assignments[i])
+        {
+            if (device->assignments[i]->actuator_id == actuator_id)
+                return i;
+        }
+    }
+
+    return -1;
+}
+
+int cc_assignement_actuator_get(int device_id, int assignment_id)
+{
+    cc_device_t *device = cc_device_get(device_id);
+
+    if (!device || !device->assignments)
+        return -1;
+
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (device->assignments[i])
+        {
+            if (device->assignments[i]->id == assignment_id)
+                return device->assignments[i]->actuator_id;
+        }
+    }
+
+    return -1;
+}

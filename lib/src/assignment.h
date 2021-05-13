@@ -91,7 +91,8 @@ typedef struct cc_assignment_key_t {
 int cc_assignment_add(cc_assignment_t *assignment);
 int cc_assignment_remove(cc_assignment_key_t *assignment);
 int cc_assignment_check(cc_assignment_key_t *assignment);
-
+int cc_assignement_id_get(int device_id, int actuator_id);
+int cc_assignement_actuator_get(int device_id, int assignment_id);
 
 /*
 ****************************************************************************************************

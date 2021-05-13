@@ -212,11 +212,8 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
 
                     actuatorgroup_id++;
                 }
-
             }
-
         }
-
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {

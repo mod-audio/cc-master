@@ -196,6 +196,8 @@ static void device_status_cb(void *arg)
 
 static void data_update_cb(void *arg)
 {
+    DEBUG_MSG("UPDATE CB\n");
+
     cc_update_list_t *updates = arg;
     char buffer[BUFFER_SIZE+32];
     char encoded[BUFFER_SIZE];
@@ -509,7 +511,7 @@ int main(int argc, char **argv)
                 //change bitmask to downwards list
                 assignment.actuator_id = device->actuatorgroups[group_id]->actuators_in_actuatorgroup[0];
                 ///assignment.mode |= CC_MODE_OPTIONS_DOWN;
-                DEBUG_MSG("group actuator id 1: %i\n", assignment.actuator_id);
+                DEBUG_MSG("group actuator id 1: %i\n", assignment.id);
                 int assignment_id_1 = cc_assignment(handle, &assignment);
                 DEBUG_MSG(" group actuator assignment id 1 = %i\n", assignment_id_1);
 
@@ -520,7 +522,7 @@ int main(int argc, char **argv)
                 assignment.actuator_id = device->actuatorgroups[group_id]->actuators_in_actuatorgroup[1];
                 DEBUG_MSG("group actuator id 2: %i\n", assignment.actuator_id);
                 int assignment_id_2 = cc_assignment(handle, &assignment);
-                DEBUG_MSG(" group actuator assignment id 2 = %i\n", assignment_id_2);
+                DEBUG_MSG(" group actuator assignment id 2 = %i\n", assignment.id);
                 cc_actuator_t *act_2 = device->actuators[assignment.actuator_id];
                 act_2->grouped = 1;
                 DEBUG_MSG(" assignment id group server reply = %i\n", assignment_id_1);

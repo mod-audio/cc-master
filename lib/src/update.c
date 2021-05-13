@@ -23,17 +23,34 @@
 ****************************************************************************************************
 */
 
+/*
 #include <stdlib.h>
 #include <string.h>
 #include "update.h"
+#include "device.h"
 #include "assignment.h"
-
+*/
 
 /*
 ****************************************************************************************************
 *       INTERNAL MACROS
 ****************************************************************************************************
 */
+//TODO DELETE
+
+
+
+#include "core.h"
+#include "utils.h"
+#include "msg.h"
+#include "handshake.h"
+#include "device.h"
+#include "assignment.h"
+#include "update.h"
+
+
+// debug macro
+#define DEBUG_MSG(...)      do { fprintf(stderr, "[cc-lib] " __VA_ARGS__); } while (0)
 
 
 /*
@@ -90,12 +107,41 @@ cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_as
         assignment.device_id = device_id;
         assignment.id = raw_data[j];
 
+        DEBUG_MSG("checking update thingy\n");
+
         if (check_assignments == 0 || cc_assignment_check(&assignment))
         {
             cc_update_data_t *data = &updates->list[i];
 
             // update id
-            data->assignment_id = assignment.id;
+            DEBUG_MSG("get device\n");
+            cc_device_t *device = cc_device_get(device_id);
+            //group assignemnt, check if we need to change ID
+
+            DEBUG_MSG("start checking actuator groups\n");
+            if (device->actuators[cc_assignement_actuator_get(device_id, assignment.id)]->grouped)
+            {
+                DEBUG_MSG("we are grouped, find match\n");
+                for (int q = 0; q < device->actuatorgroups_count; q++)
+                {
+                    if (device->actuatorgroups[q]->actuators_in_actuatorgroup[1] == device->assignments[assignment.id]->actuator_id)
+                    {
+                        DEBUG_MSG("found match, in second act in group\n");
+                        data->assignment_id = cc_assignement_id_get(device_id, device->actuatorgroups[q]->actuators_in_actuatorgroup[0]);
+                        raw_data[j] = data->assignment_id;
+                        DEBUG_MSG("changed id to:  %i\n", data->assignment_id);
+                        break;
+                    }
+                    else if (device->actuatorgroups[q]->actuators_in_actuatorgroup[0] == device->assignments[assignment.id]->actuator_id)
+                    {
+                        DEBUG_MSG("found match in first act, keep id\n");
+                        data->assignment_id = assignment.id;
+                        break;
+                    }
+                }
+            }
+            else
+                data->assignment_id = assignment.id;
 
             // update value
             float *value = (float *) &raw_data[j + 1];
