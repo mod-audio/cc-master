@@ -23,33 +23,20 @@
 ****************************************************************************************************
 */
 
-/*
 #include <stdlib.h>
 #include <string.h>
 #include "update.h"
 #include "device.h"
 #include "assignment.h"
-*/
 
 /*
 ****************************************************************************************************
 *       INTERNAL MACROS
 ****************************************************************************************************
 */
-//TODO DELETE
 
-
-
-#include "core.h"
-#include "utils.h"
-#include "msg.h"
-#include "handshake.h"
-#include "device.h"
-#include "assignment.h"
-#include "update.h"
-
-
-// debug macro
+// debug macro TODO remove
+#include <stdio.h>
 #define DEBUG_MSG(...)      do { fprintf(stderr, "[cc-lib] " __VA_ARGS__); } while (0)
 
 
