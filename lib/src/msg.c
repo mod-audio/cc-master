@@ -148,14 +148,14 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         device->channel = cc_device_count(device->uri->text);
 
         // number of actuators
-        device->actuators = 0;
+        device->actuators = NULL;
         device->actuators_count = *pdata++;
 
         // list of actuators
         if (device->actuators_count > 0)
         {
             device->actuators = malloc(sizeof(cc_actuator_t *) * device->actuators_count);
-            
+
             for (int j = 0; j < device->actuators_count; j++)
             {
                 device->actuators[j] = malloc(sizeof(cc_actuator_t));
@@ -184,29 +184,28 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         if (device->protocol.major > 0 || device->protocol.minor >= 7)
         {
             // number of actuatorgroups
-            device->actuatorgroups = 0;
+            device->actuatorgroups = NULL;
             device->actuatorgroups_count = *pdata++;
 
             //list of actuatorgroups
             if (device->actuatorgroups_count > 0)
             {
+                int actuatorgroup_id = device->actuators_count;
                 device->actuatorgroups = malloc(sizeof(cc_actuatorgroup_t *) * device->actuatorgroups_count);
 
                 for (int j = 0; j < device->actuatorgroups_count; j++)
                 {
-                    int actuatorgroup_id = device->actuators_count++;
-
                     device->actuatorgroups[j] = malloc(sizeof(cc_actuatorgroup_t));
                     cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[j];
 
-                    // actuatorgroup id
+                    // actuator group id
                     actuatorgroup->id = actuatorgroup_id;
 
-                    //actuatorgroup name
+                    // actuator group name
                     actuatorgroup->name = string_deserialize(pdata, &i);
                     pdata += i;
 
-                    //actuators in actuatorgroup
+                    // actuators in actuator group
                     actuatorgroup->actuators_in_actuatorgroup[0] = *pdata++;
                     actuatorgroup->actuators_in_actuatorgroup[1] = *pdata++;
 
