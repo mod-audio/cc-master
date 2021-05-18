@@ -179,7 +179,7 @@ char* cc_device_descriptor(int device_id)
     json_object_set_new(root, "actuators", json_actuators);
 
     // populate actuators list
-    for (int i = 0; i < device->actuators_count - device->actuatorgroups_count; i++)
+    for (int i = 0; i < device->actuators_count; i++)
     {
         cc_actuator_t *actuator = device->actuators[i];
         json_t *json_actuator = json_object();
@@ -204,32 +204,34 @@ char* cc_device_descriptor(int device_id)
         json_array_append_new(json_actuators, json_actuator);
     }
 
-    // populate actuatorgroups list
+    // actuator groups
+    json_t *json_actuatorgroups = json_array();
+    json_object_set_new(root, "actuatorgroups", json_actuatorgroups);
+
+    // populate actuator groups list
     for ( int i = 0; i < device->actuatorgroups_count; i++)
     {
         cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[i];
-        cc_actuator_t *actuator = device->actuators[device->actuatorgroups[i]->actuators_in_actuatorgroup[0]];
+        json_t *json_actuatorgroup = json_object();
 
-        json_t *json_actuator = json_object();
-
-        //actuator id
+        // actuator group id
         json_t *id = json_integer(actuatorgroup->id);
-        json_object_set_new(json_actuator, "id", id);
+        json_object_set_new(json_actuatorgroup, "id", id);
 
-        //actuator name
+        // actuator group name
         json_t *name = json_stringn(actuatorgroup->name->text, actuatorgroup->name->size);
-        json_object_set_new(json_actuator, "name", name);
+        json_object_set_new(json_actuatorgroup, "name", name);
 
-        // actuator supported modes
-        json_t *supported_modes = json_integer(actuator->supported_modes);
-        json_object_set_new(json_actuator, "supported_modes", supported_modes);
+        // actuator group actuators #1
+        json_t *actuator1 = json_integer(actuatorgroup->actuators_in_actuatorgroup[0]);
+        json_object_set_new(json_actuatorgroup, "actuator1", actuator1);
 
-        // actuator maximum assignments
-        json_t *max_assignments = json_integer(actuator->max_assignments);
-        json_object_set_new(json_actuator, "max_assignments", max_assignments);
+        // actuator group actuators #2
+        json_t *actuator2 = json_integer(actuatorgroup->actuators_in_actuatorgroup[1]);
+        json_object_set_new(json_actuatorgroup, "actuator2", actuator2);
 
         // add to list
-        json_array_append_new(json_actuators, json_actuator);
+        json_array_append_new(json_actuatorgroups, json_actuatorgroup);
     }
 
     char *str = json_dumps(root, 0);
