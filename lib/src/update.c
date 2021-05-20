@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "update.h"
-#include "device.h"
 #include "assignment.h"
 
 /*
@@ -94,6 +93,8 @@ cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_as
         if (check_assignments == 0 || cc_assignment_check(&assignment))
         {
             cc_update_data_t *data = &updates->list[i];
+
+            // update id
             data->assignment_id = assignment.id;
 
             // update value

@@ -535,9 +535,9 @@ int main(int argc, char **argv)
 
             // pack data and send reply
             json_t *data = json_pack(CC_ASSIGNMENT_REPLY_FORMAT,
-                                     "assignment_id", assignment_id,
-                                     "assignment_pair_id", assignment_pair_id,
-                                     "actuator_pair_id", assignment_id);
+                "assignment_id", assignment_id,
+                "assignment_pair_id", assignment_pair_id,
+                "actuator_pair_id", assignment_id);
             send_reply(client_fd, request, data);
 
             // free memory
