@@ -192,7 +192,7 @@ char* cc_device_descriptor(int device_id)
         json_t *name = json_stringn(actuator->name->text, actuator->name->size);
         json_object_set_new(json_actuator, "name", name);
 
-        // // actuator supported modes
+        // actuator supported modes
         json_t *supported_modes = json_integer(actuator->supported_modes);
         json_object_set_new(json_actuator, "supported_modes", supported_modes);
 
@@ -202,6 +202,36 @@ char* cc_device_descriptor(int device_id)
 
         // add to list
         json_array_append_new(json_actuators, json_actuator);
+    }
+
+    // actuator groups
+    json_t *json_actuatorgroups = json_array();
+    json_object_set_new(root, "actuatorgroups", json_actuatorgroups);
+
+    // populate actuator groups list
+    for ( int i = 0; i < device->actuatorgroups_count; i++)
+    {
+        cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[i];
+        json_t *json_actuatorgroup = json_object();
+
+        // actuator group id
+        json_t *id = json_integer(actuatorgroup->id);
+        json_object_set_new(json_actuatorgroup, "id", id);
+
+        // actuator group name
+        json_t *name = json_stringn(actuatorgroup->name->text, actuatorgroup->name->size);
+        json_object_set_new(json_actuatorgroup, "name", name);
+
+        // actuator group actuators #1
+        json_t *actuator1 = json_integer(actuatorgroup->actuators_in_actuatorgroup[0]);
+        json_object_set_new(json_actuatorgroup, "actuator1", actuator1);
+
+        // actuator group actuators #2
+        json_t *actuator2 = json_integer(actuatorgroup->actuators_in_actuatorgroup[1]);
+        json_object_set_new(json_actuatorgroup, "actuator2", actuator2);
+
+        // add to list
+        json_array_append_new(json_actuatorgroups, json_actuatorgroup);
     }
 
     char *str = json_dumps(root, 0);

@@ -368,6 +368,7 @@ static void parser(cc_handle_t *handle)
             DEBUG_MSG("  label: %s\n", device->label->text);
             DEBUG_MSG("  channel: %i\n", device->channel);
             DEBUG_MSG("  actuators count: %i\n", device->actuators_count);
+            DEBUG_MSG("  actuatorgroups count: %i\n", device->actuatorgroups_count);
 
             // device is ready to operate
             device->status = CC_DEVICE_CONNECTED;
@@ -735,7 +736,7 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment)
         DEBUG_MSG("  assignment timeout (id: %i)\n", id);
 
         // remove assignment
-        cc_assignment_key_t key = {assignment->device_id, id};
+        cc_assignment_key_t key = {assignment->device_id, id, -1};
         cc_assignment_remove(&key);
 
         id = -1;
@@ -774,6 +775,16 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment)
     }
 
     cc_msg_delete(msg);
+
+    // if there is a pair, call ourselves again with it
+    if (assignment->pair_id != -1)
+    {
+        cc_assignment_key_t assignment2;
+        assignment2.id = assignment->pair_id;
+        assignment2.pair_id = -1;
+        assignment2.device_id = assignment->device_id;
+        cc_unassignment(handle, &assignment2);
+    }
 }
 
 int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
@@ -791,7 +802,7 @@ int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
         DEBUG_MSG("  value_set timeout (id: %i)\n", id);
 
         // remove assignment, not working anyhow
-        cc_assignment_key_t key = {update->device_id, id};
+        cc_assignment_key_t key = {update->device_id, id, -1};
         cc_assignment_remove(&key);
 
         return -1;

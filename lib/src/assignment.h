@@ -44,6 +44,8 @@
 #define CC_MODE_LOGARITHMIC 0x040
 #define CC_MODE_COLOURED    0x100
 #define CC_MODE_MOMENTARY   0x200
+#define CC_MODE_REVERSE     0x400
+#define CC_MODE_GROUP       0x800
 
 
 /*
@@ -75,10 +77,12 @@ typedef struct cc_assignment_t {
     const char *unit;
     int list_count;
     cc_item_t **list_items;
+    int actuator_pair_id;
+    int assignment_pair_id;
 } cc_assignment_t;
 
 typedef struct cc_assignment_key_t {
-    int id, device_id;
+    int id, device_id, pair_id;
 } cc_assignment_key_t;
 
 
@@ -91,6 +95,7 @@ typedef struct cc_assignment_key_t {
 int cc_assignment_add(cc_assignment_t *assignment);
 int cc_assignment_remove(cc_assignment_key_t *assignment);
 int cc_assignment_check(cc_assignment_key_t *assignment);
+int cc_assignment_set_pair_id(cc_assignment_key_t *assignment);
 
 
 /*

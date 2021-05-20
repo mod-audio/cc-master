@@ -278,11 +278,16 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
         json_t *data = json_object_get(root, "data");
 
         // unpack reply
-        int assignment_id;
-        json_unpack(data, CC_ASSIGNMENT_REPLY_FORMAT, "assignment_id", &assignment_id);
+        int assignment_id, assignment_pair_id, actuator_pair_id;
+        json_unpack(data, CC_ASSIGNMENT_REPLY_FORMAT,
+                    "assignment_id", &assignment_id,
+                    "assignment_pair_id", &assignment_pair_id,
+                    "actuator_pair_id", &actuator_pair_id);
 
         // set assignment id
         assignment->id = assignment_id;
+        assignment->actuator_pair_id = actuator_pair_id;
+        assignment->assignment_pair_id = assignment_pair_id;
 
         // free memory
         json_decref(root);
@@ -297,6 +302,7 @@ void cc_client_unassignment(cc_client_t *client, cc_assignment_key_t *assignment
 {
     json_t *request_data = json_pack(CC_UNASSIGNMENT_REQ_FORMAT,
         "assignment_id", assignment->id,
+        "assignment_pair_id", assignment->pair_id,
         "device_id", assignment->device_id);
 
     json_t *root = cc_client_request(client, "unassignment", request_data);

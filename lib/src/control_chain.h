@@ -42,7 +42,7 @@
 */
 
 #define CC_PROTOCOL_MAJOR       0
-#define CC_PROTOCOL_MINOR       6
+#define CC_PROTOCOL_MINOR       7
 #define CC_PROTOCOL_VERSION     STR(CC_PROTOCOL_MAJOR) "." STR(CC_PROTOCOL_MINOR)
 
 

@@ -89,6 +89,7 @@ cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_as
         cc_assignment_key_t assignment;
         assignment.device_id = device_id;
         assignment.id = raw_data[j];
+        assignment.pair_id = -1;
 
         if (check_assignments == 0 || cc_assignment_check(&assignment))
         {

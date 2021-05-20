@@ -75,6 +75,12 @@ typedef struct cc_actuator_t {
     int max_assignments, assignments_count;
 } cc_actuator_t;
 
+typedef struct cc_actuatorgroup_t {
+    int id;
+    string_t *name;
+    int actuators_in_actuatorgroup[2];
+} cc_actuatorgroup_t;
+
 typedef struct cc_device_t {
     int id, status, channel;
     string_t *label, *uri;
@@ -83,6 +89,8 @@ typedef struct cc_device_t {
     cc_assignment_t **assignments;
     unsigned int timeout;
     version_t protocol, firmware;
+    cc_actuatorgroup_t **actuatorgroups;
+    int actuatorgroups_count;
 } cc_device_t;
 
 
