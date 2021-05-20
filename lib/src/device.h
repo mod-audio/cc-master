@@ -73,7 +73,6 @@ typedef struct cc_actuator_t {
     string_t *name;
     uint32_t supported_modes;
     int max_assignments, assignments_count;
-    uint8_t grouped;
 } cc_actuator_t;
 
 typedef struct cc_actuatorgroup_t {

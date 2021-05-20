@@ -175,9 +175,6 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 // actuator assignments counter and maximum value
                 actuator->max_assignments = *pdata++;
                 actuator->assignments_count = 0;
-
-                // set actuatorgroup flag
-                actuator->grouped = 0;
             }
         }
 
@@ -302,7 +299,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
         // list count
         *pdata++ = assignment->list_count;
-        
+
         // list items
         for (int i = 0; i < assignment->list_count; i++)
         {
@@ -316,6 +313,12 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
             // item value
             pdata += float_to_bytes(item->value, pdata);
+        }
+
+        if (assignment->mode & CC_MODE_GROUP)
+        {
+            // actuator pair id
+            *pdata++ = assignment->actuator_pair_id;
         }
     }
     else if (command == CC_CMD_UNASSIGNMENT)
@@ -338,7 +341,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // assignment id, actuator id
         *pdata++ = update->assignment_id;
         *pdata++ = update->actuator_id;
-        
+
         // value
         pdata += float_to_bytes(update->value, pdata);
     }

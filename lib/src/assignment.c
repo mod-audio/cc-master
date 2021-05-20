@@ -87,8 +87,7 @@ int cc_assignment_add(cc_assignment_t *assignment)
     cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
     if (actuator->assignments_count >= actuator->max_assignments)
         return -1;
-    
-        
+
     // store assignment
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
@@ -128,7 +127,7 @@ int cc_assignment_remove(cc_assignment_key_t *assignment)
 
         // free assignment memory and its list position
         free(assignment);
-        device->assignments[id] = 0;
+        device->assignments[id] = NULL;
 
         // decrement actuator assignments counter
         cc_actuator_t *actuator = device->actuators[actuator_id];
@@ -150,47 +149,35 @@ int cc_assignment_check(cc_assignment_key_t *assignment)
         if (device->assignments[i])
         {
             if (device->assignments[i]->id == assignment->id)
+            {
+                if (assignment->pair_id == -2)
+                    assignment->pair_id = device->assignments[i]->assignment_pair_id;
                 return 1;
+            }
         }
     }
 
     return 0;
 }
 
-int cc_assignement_id_get(int device_id, int actuator_id)
+int cc_assignment_set_pair_id(cc_assignment_key_t *assignment)
 {
-    cc_device_t *device = cc_device_get(device_id);
+    cc_device_t *device = cc_device_get(assignment->device_id);
 
     if (!device || !device->assignments)
-        return -1;
+        return 0;
 
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
         if (device->assignments[i])
         {
-            if (device->assignments[i]->actuator_id == actuator_id)
-                return i;
+            if (device->assignments[i]->id == assignment->id)
+            {
+                device->assignments[i]->assignment_pair_id = assignment->pair_id;
+                return 1;
+            }
         }
     }
 
-    return -1;
-}
-
-int cc_assignement_actuator_get(int device_id, int assignment_id)
-{
-    cc_device_t *device = cc_device_get(device_id);
-
-    if (!device || !device->assignments)
-        return -1;
-
-    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
-    {
-        if (device->assignments[i])
-        {
-            if (device->assignments[i]->id == assignment_id)
-                return device->assignments[i]->actuator_id;
-        }
-    }
-
-    return -1;
+    return 0;
 }
