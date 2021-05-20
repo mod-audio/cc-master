@@ -149,11 +149,7 @@ int cc_assignment_check(cc_assignment_key_t *assignment)
         if (device->assignments[i])
         {
             if (device->assignments[i]->id == assignment->id)
-            {
-                if (assignment->pair_id == -2)
-                    assignment->pair_id = device->assignments[i]->assignment_pair_id;
                 return 1;
-            }
         }
     }
 

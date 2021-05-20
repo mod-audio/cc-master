@@ -52,14 +52,13 @@
 
 #define SERIAL_BAUDRATE     115200
 
-#define DEBUG_MSG(...)      do { if (g_debug) fprintf(stderr, "[cc-lib] " __VA_ARGS__); } while (0)
 
 /*
 ****************************************************************************************************
 *       INTERNAL CONSTANTS
 ****************************************************************************************************
 */
-int g_debug = 1;
+
 
 /*
 ****************************************************************************************************
@@ -196,8 +195,6 @@ static void device_status_cb(void *arg)
 
 static void data_update_cb(void *arg)
 {
-    DEBUG_MSG("UPDATE CB\n");
-
     cc_update_list_t *updates = arg;
     char buffer[BUFFER_SIZE+32];
     char encoded[BUFFER_SIZE];
