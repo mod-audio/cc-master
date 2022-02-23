@@ -109,9 +109,6 @@ struct cc_handle_t {
 
 static int g_debug;
 
-// FIXME 1st device can block messages from 2nd device, put a workaround for now
-static volatile int g_last_device_data_update = -1;
-
 
 /*
 ****************************************************************************************************
@@ -319,14 +316,12 @@ static void parser(cc_handle_t *handle)
     cc_msg_print("RECV", msg);
 
     // reset device timeout
-    cc_device_t *device = cc_device_get(msg->device_id);
-    if (device)
-        device->timeout = 0;
-
-    if (msg->command == CC_CMD_DATA_UPDATE && device)
-        g_last_device_data_update = device->id;
-    else if (g_last_device_data_update != -1)
-        g_last_device_data_update = -1;
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        cc_device_t *devices = cc_device_get(i);
+        if (devices)
+            devices->timeout = 0;
+    }
 
     if (msg->command == CC_CMD_HANDSHAKE)
     {
@@ -494,7 +489,6 @@ static void* chain_sync(void *arg)
     cc_handle_t *handle = (cc_handle_t *) arg;
 
     unsigned int cycles_counter = 0;
-    int last_device_data_update;
 
     uint8_t chain_sync_msg_data;
     cc_msg_t chain_sync_msg = {
@@ -522,8 +516,6 @@ static void* chain_sync(void *arg)
         // period between sync messages
         usleep(CC_CHAIN_SYNC_INTERVAL);
 
-        last_device_data_update = g_last_device_data_update;
-
         // device timeout checking
         // list only devices in "waiting for request" state
         int *device_list = cc_device_list(CC_DEVICE_LIST_REGISTERED);
@@ -532,12 +524,6 @@ static void* chain_sync(void *arg)
             cc_device_t *device = cc_device_get(device_list[i]);
             if (device)
             {
-                if (last_device_data_update != -1 && device->id > last_device_data_update)
-                {
-                    device->timeout = 0;
-                    continue;
-                }
-
                 device->timeout++;
                 if (device->timeout >= CC_DEVICE_TIMEOUT)
                 {
