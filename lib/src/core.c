@@ -319,6 +319,24 @@ static void parse_data_update(cc_handle_t *handle)
         {
             assignment = cc_assignment_get(&assignment_key);
 
+            //change value
+            assignment->value = updates->list[i].value;
+
+            //also change value of paired assignment if needed
+            if (assignment->assignment_pair_id != -1)
+            {
+                cc_assignment_key_t key;
+                key.id = assignment->assignment_pair_id;
+                key.device_id = assignment->device_id;
+
+                cc_assignment_t *paired_assignment = NULL;
+
+                paired_assignment = cc_assignment_get(&key);
+
+                if (paired_assignment)
+                    paired_assignment->value = updates->list[i].value;
+            }
+
             //we need to update list assignments
             if (assignment->mode & CC_MODE_OPTIONS)
             {
@@ -777,8 +795,6 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, uint8_t new_
     if (id < 0)
         return id;
 
-    // request assignment
-
     //check if we need to save enumeration stuff
    if (assignment->mode & CC_MODE_OPTIONS)
    {
@@ -937,33 +953,10 @@ void cc_control_page(cc_handle_t *handle, int device_id, int page)
 
     uint8_t actuators_per_page = device->actuators_count + device->actuatorgroups_count;
 
-    for (int i = 0; i < actuators_per_page; i++) {
-        int actuator_to_check =  i + (device->current_page-1) * (actuators_per_page);
-        cc_assignment_t *assignment = cc_assignment_get_by_actuator(device_id, actuator_to_check);
-
-        if (assignment)
-        {
-            cc_assignment_key_t assignment_key = {
-                .id = assignment->id,
-                .device_id = device_id,
-                .pair_id = -1
-            };
-
-            cc_msg_t *msg = cc_msg_builder(device_id, CC_CMD_UNASSIGNMENT, &assignment_key);
-            if (request(handle, msg))
-                DEBUG_MSG("  unassignment timeout (id: %i)\n", assignment_key.id);
-            else
-                DEBUG_MSG("  unassignment done (id: %i)\n", assignment_key.id);
-
-            cc_msg_delete(msg);
-        }
-        delay_ms(1);
-    }
-
     device->current_page = page;
 
     for (int i = 0; i < actuators_per_page; i++) {
-        int actuator_to_check =  i + (page-1) * actuators_per_page;
+        int actuator_to_check =  i + ((page-1) * actuators_per_page);
         cc_assignment_t *assignment = cc_assignment_get_by_actuator(device_id, actuator_to_check);
 
         if (assignment)

@@ -58,7 +58,6 @@
 ****************************************************************************************************
 */
 
-
 /*
 ****************************************************************************************************
 *       INTERNAL DATA TYPES
@@ -506,20 +505,23 @@ int main(int argc, char **argv)
             // special handling if assigning to group
             if (device && ((assignment.actuator_id - (actuators_in_page * (assignment.actuator_page_id-1))) >= device->actuators_count))
             {
-                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - device->actuators_count];
+                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - (actuators_in_page * (assignment.actuator_page_id-1)) - device->actuators_count];
                 //actuator 0 in a group always becomes the "master" actuator
                 actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1];
 
+                int actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + (actuators_in_page * (assignment.actuator_page_id-1));
+                int actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + (actuators_in_page * (assignment.actuator_page_id-1));
+
                 // real assignment
-                assignment.actuator_id = actuatorgroup->actuators_in_actuatorgroup[0];
-                assignment.actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1];
+                assignment.actuator_id = actuator_id;
+                assignment.actuator_pair_id = actuator_pair_id;
                 assignment.assignment_pair_id = -1;
                 assignment.mode |= CC_MODE_GROUP|CC_MODE_REVERSE;
                 assignment_id = cc_assignment(handle, &assignment, 1);
 
                 // paired assignment
-                assignment.actuator_id = actuatorgroup->actuators_in_actuatorgroup[1];
-                assignment.actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[0];
+                assignment.actuator_id = actuator_pair_id;
+                assignment.actuator_pair_id = actuator_id;
                 assignment.assignment_pair_id = assignment_id;
                 assignment.mode &= ~CC_MODE_REVERSE;
                 assignment_pair_id = cc_assignment(handle, &assignment, 1);
@@ -542,7 +544,7 @@ int main(int argc, char **argv)
             json_t *data = json_pack(CC_ASSIGNMENT_REPLY_FORMAT,
                 "assignment_id", assignment_id,
                 "assignment_pair_id", assignment_pair_id,
-                "actuator_pair_id", assignment_id);
+                "actuator_pair_id", actuator_pair_id);
             send_reply(client_fd, request, data);
 
             // free memory

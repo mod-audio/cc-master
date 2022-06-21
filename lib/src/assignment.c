@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 /*
 ****************************************************************************************************
 *       INTERNAL MACROS
@@ -83,7 +82,6 @@ int cc_assignment_add(cc_assignment_t *assignment)
     // if is the first time, create list of assignments
     if (!device->assignments)
         device->assignments = calloc(CC_MAX_ASSIGNMENTS, sizeof(cc_assignment_t *));
-
     // check the amount of assignments supported by the actuator
     cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
     if (actuator->assignments_count >= actuator->max_assignments)

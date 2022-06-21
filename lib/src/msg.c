@@ -40,7 +40,6 @@
 ****************************************************************************************************
 */
 
-
 /*
 ****************************************************************************************************
 *       INTERNAL CONSTANTS
@@ -305,7 +304,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         uint8_t *pdata = msg->data;
         int *page_to_load = data_struct;
 
-        page_to_load = *pdata++;
+        *page_to_load = *pdata++;
     }
 }
 
