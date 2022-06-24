@@ -46,7 +46,7 @@ ${HOST_DIR}/usr/bin/python ./waf
 ${HOST_DIR}/usr/bin/python ./waf install --destdir=$(pwd)/destdir
 
 # needed since ssh rsa deprecation/breakage
-SSH_OPTIONS="-o PubkeyAcceptedAlgorithms=ssh-rsa"
+SSH_OPTIONS="-o PubkeyAcceptedAlgorithms=+ssh-rsa"
 
 ssh ${SSH_OPTIONS} ${TARGET} mount / -o remount,rw
 ssh ${SSH_OPTIONS} ${TARGET} systemctl stop controlchaind.service controlchaind.socket
