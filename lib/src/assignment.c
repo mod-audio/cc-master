@@ -114,7 +114,7 @@ int cc_assignment_remove(cc_assignment_key_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
-    if (device->assignments)
+    if (device && device->assignments)
     {
         const int id = assignment->id;
 
