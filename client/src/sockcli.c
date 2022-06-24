@@ -90,6 +90,7 @@ sockcli_t* sockcli_init(const char *path)
     if (client->sock_fd < 0)
     {
         perror("ERROR opening socket");
+        free(client);
         return NULL;
     }
 
@@ -103,6 +104,7 @@ sockcli_t* sockcli_init(const char *path)
     if (connect(client->sock_fd, (struct sockaddr*)&remote, len) < 0)
     {
         perror("ERROR connecting");
+        free(client);
         return NULL;
     }
 
