@@ -102,6 +102,7 @@ cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id);
 void cc_assignment_update_list(cc_assignment_t *assignment, float index);
 int cc_assignment_set_pair_id(cc_assignment_key_t *assignment);
 
+
 /*
 ****************************************************************************************************
 *       CONFIGURATION ERRORS

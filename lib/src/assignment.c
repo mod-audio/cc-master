@@ -30,11 +30,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 /*
 ****************************************************************************************************
 *       INTERNAL MACROS
 ****************************************************************************************************
 */
+
 
 /*
 ****************************************************************************************************
@@ -74,18 +76,17 @@ int cc_assignment_add(cc_assignment_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
-    int return_val = -1;
-
     if (!device)
-        return return_val;
+        return -1;
 
     // if is the first time, create list of assignments
     if (!device->assignments)
         device->assignments = calloc(CC_MAX_ASSIGNMENTS, sizeof(cc_assignment_t *));
+
     // check the amount of assignments supported by the actuator
     cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
     if (actuator->assignments_count >= actuator->max_assignments)
-        return return_val;
+        return -1;
 
     // store assignment
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
@@ -123,12 +124,11 @@ int cc_assignment_add(cc_assignment_t *assignment)
             cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
             actuator->assignments_count++;
 
-            return_val = i;
-            break;
+            return i;
         }
     }
 
-    return return_val;
+    return -1;
 }
 
 int cc_assignment_remove(cc_assignment_key_t *assignment)
@@ -182,31 +182,7 @@ int cc_assignment_check(cc_assignment_key_t *assignment)
 
 cc_assignment_t *cc_assignment_get(cc_assignment_key_t *assignment)
 {
-    cc_device_t *device = cc_device_get(assignment->device_id);
-
-    if (!device || !device->assignments)
-        return NULL;
-
-    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
-    {
-        if(!device->assignments[i])
-            continue;
-
-        if(device->assignments[i]->id == assignment->id)
-        {
-            for (int j = 0; j < device->assignments[i]->list_count; j++)
-            {
-                cc_item_t *item = device->assignments[i]->list_items[j];
-
-                if (!item)
-                    continue;
-            }
-
-           return device->assignments[i];
-        }
-    }
-
-    return NULL;
+    return cc_assignment_get_by_actuator(assignment->device_id, assignment->id);
 }
 
 cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id)
@@ -218,20 +194,10 @@ cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id)
 
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
-        if(!device->assignments[i])
-            continue;
-
-        if(device->assignments[i]->actuator_id == actuator_id)
+        if (device->assignments[i])
         {
-            for (int j = 0; j < device->assignments[i]->list_count; j++)
-            {
-                cc_item_t *item = device->assignments[i]->list_items[j];
-
-                if (!item)
-                    continue;
-            }
-
-           return device->assignments[i];
+            if (device->assignments[i]->actuator_id == actuator_id)
+                return device->assignments[i];
         }
     }
 
@@ -276,9 +242,6 @@ int cc_assignment_set_pair_id(cc_assignment_key_t *assignment)
 
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
-        if(!device->assignments[i])
-            continue;
-
         if (device->assignments[i])
         {
             if (device->assignments[i]->id == assignment->id)

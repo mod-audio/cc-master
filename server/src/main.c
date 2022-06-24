@@ -52,11 +52,13 @@
 
 #define SERIAL_BAUDRATE     115200
 
+
 /*
 ****************************************************************************************************
 *       INTERNAL CONSTANTS
 ****************************************************************************************************
 */
+
 
 /*
 ****************************************************************************************************
@@ -186,7 +188,6 @@ static void device_status_cb(void *arg)
 
             // send event
             int client_fd = g_client_events[i].client_fd;
-
             send_event(client_fd, "device_status", buffer);
         }
     }
@@ -409,7 +410,6 @@ int main(int argc, char **argv)
             json_unpack(data, CC_DEV_DESCRIPTOR_REQ_FORMAT, "device_id", &device_id);
 
             char *descriptor = cc_device_descriptor(device_id);
-
             sprintf(read_data.buffer, "{\"reply\":\"%s\",\"data\":%s}", request, descriptor);
 
             read_data.size = strlen(read_data.buffer) + 1;

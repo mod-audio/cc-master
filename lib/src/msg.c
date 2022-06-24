@@ -34,11 +34,13 @@
 #include "utils.h"
 #include "update.h"
 
+
 /*
 ****************************************************************************************************
 *       INTERNAL MACROS
 ****************************************************************************************************
 */
+
 
 /*
 ****************************************************************************************************
@@ -367,10 +369,10 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
             *pdata++ = 0;
         }
 
+        // value, min, max, def
         pdata += float_to_bytes(assignment->value, pdata);
         pdata += float_to_bytes(assignment->min, pdata);
         pdata += float_to_bytes(assignment->max, pdata);
-
         pdata += float_to_bytes(assignment->def, pdata);
 
         // mode

@@ -38,6 +38,7 @@
 // device status
 enum {DEV_WAITING_HANDSHAKE, DEV_WAITING_DESCRIPTOR, DEV_WAITING_ASSIGNMENT};
 
+
 /*
 ****************************************************************************************************
 *       INTERNAL CONSTANTS
