@@ -474,7 +474,7 @@ int main(int argc, char **argv)
 
                 for (int i = 0; i < assignment.list_count; i++)
                 {
-                    cc_item_t *item = malloc(sizeof(cc_item_t));
+                    cc_item_t *item = calloc(1, sizeof(cc_item_t));
                     assignment.list_items[i] = item;
 
                     const char *key;
@@ -535,8 +535,10 @@ int main(int argc, char **argv)
 
             // free memory
             for (int i = 0; i < assignment.list_count; i++)
+            {
+                free((void*)assignment.list_items[i]->label);
                 free(assignment.list_items[i]);
-
+            }
             free(assignment.list_items);
         }
         else if (strcmp(request, "unassignment") == 0)

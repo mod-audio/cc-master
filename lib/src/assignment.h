@@ -97,6 +97,8 @@ int cc_assignment_remove(cc_assignment_key_t *assignment);
 int cc_assignment_check(cc_assignment_key_t *assignment);
 int cc_assignment_set_pair_id(cc_assignment_key_t *assignment);
 
+cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment);
+void cc_assignment_free(cc_assignment_t *assignment);
 
 /*
 ****************************************************************************************************

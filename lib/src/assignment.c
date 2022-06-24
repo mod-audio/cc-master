@@ -97,9 +97,7 @@ int cc_assignment_add(cc_assignment_t *assignment)
             assignment->id = i;
 
             // duplicate assignment
-            cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
-            device->assignments[i] = copy;
-            memcpy(copy, assignment, sizeof(cc_assignment_t));
+            device->assignments[i] = cc_assignment_dup(assignment);
 
             // increment actuator assignments counter
             cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
@@ -126,7 +124,7 @@ int cc_assignment_remove(cc_assignment_key_t *assignment)
         int actuator_id = assignment->actuator_id;
 
         // free assignment memory and its list position
-        free(assignment);
+        cc_assignment_free(assignment);
         device->assignments[id] = NULL;
 
         // decrement actuator assignments counter
@@ -176,4 +174,44 @@ int cc_assignment_set_pair_id(cc_assignment_key_t *assignment)
     }
 
     return 0;
+}
+
+cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment)
+{
+    cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
+    memcpy(copy, assignment, sizeof(cc_assignment_t));
+
+    if (assignment->label)
+        copy->label = strdup(assignment->label);
+
+    if (assignment->unit)
+        copy->unit = strdup(assignment->unit);
+
+    if (assignment->list_count != 0)
+    {
+        copy->list_items = malloc(assignment->list_count * sizeof(cc_item_t *));
+
+        for (int i = 0; i < assignment->list_count; i++)
+        {
+            cc_item_t *item = malloc(sizeof(cc_item_t));
+            copy->list_items[i] = item;
+            item->label = strdup(assignment->list_items[i]->label);
+            item->value = assignment->list_items[i]->value;
+        }
+    }
+
+    return copy;
+}
+
+void cc_assignment_free(cc_assignment_t *assignment)
+{
+    for (int i = 0; i < assignment->list_count; i++)
+    {
+        free((void*)assignment->list_items[i]->label);
+        free(assignment->list_items[i]);
+    }
+    free(assignment->list_items);
+    free((void*)assignment->label);
+    free((void*)assignment->unit);
+    free(assignment);
 }
