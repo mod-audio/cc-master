@@ -336,7 +336,8 @@ static void parser(cc_handle_t *handle)
         {
             // create a new device
             cc_device_t *device = cc_device_create(&handshake);
-            response.device_id = device->id;
+            if (device)
+                response.device_id = device->id;
         }
 
         DEBUG_MSG("handshake received\n");

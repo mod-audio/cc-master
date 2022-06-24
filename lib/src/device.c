@@ -102,7 +102,7 @@ cc_device_t* cc_device_create(cc_handshake_dev_t *handshake)
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 void cc_device_destroy(int device_id)
