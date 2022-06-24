@@ -482,15 +482,8 @@ int main(int argc, char **argv)
 
                     json_object_foreach(json_array_get(options, i), key, value)
                     {
-                        item->label = key;
+                        item->label = strndup(key, 16);
                         item->value = json_real_value(value);
-
-                        // labels are limited to 16 characters on device-side
-                        if (strlen(key) > 16)
-                        {
-                            char* mkey = (char*)key;
-                            mkey[16] = 0;
-                        }
                     }
                 }
             }
