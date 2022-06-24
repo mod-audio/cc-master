@@ -112,12 +112,10 @@ void cc_device_destroy(int device_id)
     if (!device)
         return;
 
-    // destroy assigments list
-    if (device->assignments)
-    {
-        free(device->assignments);
-        device->assignments = 0;
-    }
+    // destroy URI and label
+    string_destroy(device->uri);
+    string_destroy(device->label);
+    device->uri = device->label = NULL;
 
     // destroy actuators
     if (device->actuators)
@@ -130,14 +128,36 @@ void cc_device_destroy(int device_id)
                 free(device->actuators[i]);
             }
         }
-
         free(device->actuators);
+        device->actuators = NULL;
     }
 
-    // destroy URI and label
-    string_destroy(device->uri);
-    string_destroy(device->label);
-    device->label = 0;
+    // destroy assigments list
+    if (device->assignments)
+    {
+        for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+        {
+            if (device->assignments[i])
+                cc_assignment_free(device->assignments[i]);
+        }
+        free(device->assignments);
+        device->assignments = NULL;
+    }
+
+    // destroy actuator groups
+    if (device->actuatorgroups)
+    {
+        for (int i = 0; i < device->actuatorgroups_count; i++)
+        {
+            if (device->actuatorgroups[i])
+            {
+                string_destroy(device->actuatorgroups[i]->name);
+                free(device->actuatorgroups[i]);
+            }
+        }
+        free(device->actuatorgroups);
+        device->actuatorgroups = NULL;
+    }
 
     // reset status and id
     device->status = CC_DEVICE_DISCONNECTED;
@@ -149,7 +169,7 @@ char* cc_device_descriptor(int device_id)
     cc_device_t* device = cc_device_get(device_id);
 
     if (!device)
-        return 0;
+        return NULL;
 
     json_t *root = json_object();
 
@@ -291,5 +311,5 @@ cc_device_t* cc_device_get(int device_id)
         }
     }
 
-    return 0;
+    return NULL;
 }
