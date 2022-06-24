@@ -178,13 +178,14 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             }
         }
 
+        // actuatorgroups were added to device descriptor starting from v0.7
         if (device->protocol.major > 0 || device->protocol.minor >= 7)
         {
             // number of actuatorgroups
             device->actuatorgroups = NULL;
             device->actuatorgroups_count = *pdata++;
 
-            //list of actuatorgroups
+            // list of actuatorgroups
             if (device->actuatorgroups_count > 0)
             {
                 int actuatorgroup_id = device->actuators_count;

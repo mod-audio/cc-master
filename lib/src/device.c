@@ -209,7 +209,7 @@ char* cc_device_descriptor(int device_id)
     json_object_set_new(root, "actuatorgroups", json_actuatorgroups);
 
     // populate actuator groups list
-    for ( int i = 0; i < device->actuatorgroups_count; i++)
+    for (int i = 0; i < device->actuatorgroups_count; i++)
     {
         cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[i];
         json_t *json_actuatorgroup = json_object();

@@ -767,8 +767,8 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment)
     {
         cc_assignment_key_t assignment2;
         assignment2.id = assignment->pair_id;
-        assignment2.pair_id = -1;
         assignment2.device_id = assignment->device_id;
+        assignment2.pair_id = -1;
         cc_unassignment(handle, &assignment2);
     }
 }
