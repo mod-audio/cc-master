@@ -194,6 +194,10 @@ char* cc_device_descriptor(int device_id)
     json_t *protocol = json_stringn(buffer, strlen(buffer));
     json_object_set_new(root, "protocol", protocol);
 
+    // chain id
+    if (device->chain_id != 0)
+        json_object_set_new(root, "chain_id", device->chain_id);
+
     // actuators
     json_t *json_actuators = json_array();
     json_object_set_new(root, "actuators", json_actuators);
