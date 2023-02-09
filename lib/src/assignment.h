@@ -77,9 +77,10 @@ typedef struct cc_assignment_t {
     const char *unit;
     int list_count;
     cc_item_t **list_items;
-    int list_index, enumeration_frame_min, enumeration_frame_max;
     int actuator_pair_id;
     int assignment_pair_id;
+    // below is only used for cc-master and not mod-host
+    int list_index, enumeration_frame_min, enumeration_frame_max;
     int actuator_page_id;
 } cc_assignment_t;
 
