@@ -91,6 +91,9 @@ typedef struct cc_device_t {
     version_t protocol, firmware;
     cc_actuatorgroup_t **actuatorgroups;
     int actuatorgroups_count;
+    int enumeration_frame_item_count;
+    int chain_id;
+    int amount_of_pages, current_page;
 } cc_device_t;
 
 

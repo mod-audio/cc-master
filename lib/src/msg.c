@@ -26,10 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "control_chain.h"
 #include "msg.h"
 #include "handshake.h"
 #include "device.h"
 #include "assignment.h"
+#include "utils.h"
 #include "update.h"
 
 
@@ -67,6 +69,34 @@
 ****************************************************************************************************
 */
 
+string_t *string_append_page_number(string_t *og_str, int page)
+{
+    string_t *str = malloc(sizeof(string_t));
+
+    if (str)
+    {
+        str->size = og_str->size + 8;
+        str->text = malloc(str->size);
+        if (str->text)
+        {
+            memcpy(str->text, og_str->text, og_str->size);
+
+            char page_char = '0' + page;
+            strcat(str->text, " Page #");
+            strcat(str->text, &page_char);
+            str->text[str->size] = 0;
+        }
+        else
+        {
+            free(str);
+            str = NULL;
+        }
+
+        string_destroy(og_str);
+    }
+
+    return str;
+}
 
 /*
 ****************************************************************************************************
@@ -154,7 +184,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
         // list of actuators
         if (device->actuators_count > 0)
         {
-            device->actuators = malloc(sizeof(cc_actuator_t *) * device->actuators_count);
+            device->actuators = malloc(sizeof(cc_actuator_t *) * (device->actuators_count * MAX_ACTUATOR_PAGES));
 
             for (int j = 0; j < device->actuators_count; j++)
             {
@@ -178,18 +208,18 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             }
         }
 
-        // actuatorgroups were added to device descriptor starting from v0.7
         if (device->protocol.major > 0 || device->protocol.minor >= 7)
         {
             // number of actuatorgroups
             device->actuatorgroups = NULL;
             device->actuatorgroups_count = *pdata++;
 
-            // list of actuatorgroups
+            //list of actuatorgroups
+            int actuatorgroup_id = device->actuators_count;
+
             if (device->actuatorgroups_count > 0)
             {
-                int actuatorgroup_id = device->actuators_count;
-                device->actuatorgroups = malloc(sizeof(cc_actuatorgroup_t *) * device->actuatorgroups_count);
+                device->actuatorgroups = malloc(sizeof(cc_actuatorgroup_t *) * (device->actuatorgroups_count * MAX_ACTUATOR_PAGES));
 
                 for (int j = 0; j < device->actuatorgroups_count; j++)
                 {
@@ -210,12 +240,73 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                     actuatorgroup_id++;
                 }
             }
+
+            device->enumeration_frame_item_count = *pdata++;
+
+            device->amount_of_pages = *pdata++;
+            device->current_page = 1;
+
+            //check if we have pages
+            if (device->amount_of_pages > 1)
+            {
+                int page_actuator_id = actuatorgroup_id;
+
+                //create the other actuator pages
+                for (int j = 2; j <= device->amount_of_pages; j++)
+                {
+                    for (int q = 0; q < device->actuators_count; q++)
+                    {
+                        device->actuators[page_actuator_id] = malloc(sizeof(cc_actuator_t));
+                        cc_actuator_t *actuator = device->actuators[page_actuator_id];
+
+                        memcpy(actuator, device->actuators[q], sizeof(cc_actuator_t));
+                        actuator->id = page_actuator_id;
+                        actuator->name = string_append_page_number(string_create(actuator->name->text), j);
+
+                        page_actuator_id++;
+                    }
+
+                    for (int q = 0; q < device->actuatorgroups_count; q++)
+                    {
+                        device->actuatorgroups[page_actuator_id] = malloc(sizeof(cc_actuatorgroup_t));
+                        cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[page_actuator_id];
+
+                        memcpy(actuatorgroup, device->actuatorgroups[q], sizeof(cc_actuatorgroup_t));
+                        actuatorgroup->id = page_actuator_id;
+                        actuatorgroup->name = string_append_page_number(string_create(device->actuatorgroups[q]->name->text), j);
+
+                        page_actuator_id++;
+                    }
+                }
+
+                //'fix' the names of the page 1 actuators
+                for (int j = 0; j < device->actuators_count; j++)
+                {
+                    cc_actuator_t *actuator = device->actuators[j];
+                    actuator->name = string_append_page_number(actuator->name, 1);
+                }
+                for (int j = 0; j < device->actuatorgroups_count; j++)
+                {
+                    cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[j];
+                    actuatorgroup->name = string_append_page_number(actuatorgroup->name, 1);
+                }
+            }
+
+            device->chain_id = *pdata++;
         }
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
         cc_update_list_t **updates = data_struct;
         *updates = cc_update_parse(msg->device_id, msg->data, 1);
+    }
+    else if (msg->command == CC_CMD_REQUEST_CONTROL_PAGE)
+    {
+        //recieved command
+        uint8_t *pdata = msg->data;
+        int *page_to_load = data_struct;
+
+        *page_to_load = *pdata++;
     }
 }
 
@@ -250,11 +341,20 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         const cc_assignment_t *assignment = data_struct;
 
         // device id
+        cc_device_t *device = cc_device_get(assignment->device_id);
         msg->device_id = assignment->device_id;
 
-        // assignment id, actuator id
+        // assignment id
         *pdata++ = assignment->id;
-        *pdata++ = assignment->actuator_id;
+
+        // actuator id
+        uint8_t actuators_per_page = device->actuators_count + device->actuatorgroups_count;
+        uint8_t actuator_id = assignment->actuator_id;
+
+        if (actuator_id >= actuators_per_page)
+            actuator_id = assignment->actuator_id - (actuators_per_page * (device->current_page-1));
+
+        *pdata++ = actuator_id;
 
         // assignment label
         if (assignment->label)
@@ -299,27 +399,32 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         }
 
         // list count
-        *pdata++ = assignment->list_count;
+        int list_count = device->enumeration_frame_item_count;
+
+        if (assignment->list_count == 0)
+            list_count = 0;
+
+        if (list_count > assignment->list_count)
+            list_count = assignment->list_count;
+
+        *pdata++ = list_count;
 
         // list items
-        for (int i = 0; i < assignment->list_count; i++)
+        if (list_count)
         {
-            cc_item_t *item = assignment->list_items[i];
+            for (int i = assignment->enumeration_frame_min; i < assignment->enumeration_frame_max + 1; i++)
+            {
+                cc_item_t *item = assignment->list_items[i];
 
-            // item label
-            int size = strlen(item->label);
-            *pdata++ = size;
-            memcpy(pdata, item->label, size);
-            pdata += size;
+                // item label
+                int size = strlen(item->label);
+                *pdata++ = size;
+                memcpy(pdata, item->label, size);
+                pdata += size;
 
-            // item value
-            pdata += float_to_bytes(item->value, pdata);
-        }
-
-        if (assignment->mode & CC_MODE_GROUP)
-        {
-            // actuator pair id
-            *pdata++ = assignment->actuator_pair_id;
+                // item value
+                pdata += float_to_bytes(item->value, pdata);
+            }
         }
     }
     else if (command == CC_CMD_UNASSIGNMENT)
@@ -338,13 +443,48 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
 
         // device id
         msg->device_id = update->device_id;
+        cc_device_t *device = cc_device_get(update->device_id);
 
         // assignment id, actuator id
         *pdata++ = update->assignment_id;
-        *pdata++ = update->actuator_id;
+
+        // actuator id
+        uint8_t actuators_per_page = device->actuators_count + device->actuatorgroups_count;
+        uint8_t actuator_id = update->actuator_id;
+
+        if (actuator_id >= actuators_per_page)
+            actuator_id = update->actuator_id - (actuators_per_page * (device->current_page-1));
+
+        *pdata++ = actuator_id;
 
         // value
         pdata += float_to_bytes(update->value, pdata);
+    }
+    else if (msg->command == CC_CMD_UPDATE_ENUMERATION)
+    {
+        const cc_assignment_t *assignment = data_struct;
+
+        // device id
+        msg->device_id = assignment->device_id;
+
+        // assignment id, actuator id
+        *pdata++ = assignment->id;
+        *pdata++ = assignment->actuator_id;
+
+        *pdata++ = assignment->list_index;
+
+        for (int i = assignment->enumeration_frame_min; i < assignment->enumeration_frame_max + 1; i++)
+        {
+            cc_item_t *item = assignment->list_items[i];
+            // item label
+            int size = strlen(item->label);
+            *pdata++ = size;
+            memcpy(pdata, item->label, size);
+            pdata += size;
+
+            // list offset
+            pdata += float_to_bytes(item->value, pdata);
+        }
     }
 
     msg->data_size = (pdata - msg->data);
@@ -367,7 +507,7 @@ void cc_msg_print(const char *header, const cc_msg_t *msg)
         return;
 
     static const char *commands[] = {"sync", "handshake", "device control", "device descriptor",
-        "assignment", "data update", "unassignment"};
+        "assignment", "data update", "unassignment", "set value", "update list items", "request control page"};
 
     if (msg->command == CC_CMD_CHAIN_SYNC)
         return;
