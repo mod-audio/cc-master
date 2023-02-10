@@ -163,7 +163,8 @@ static void send_event(int client_fd, const char *event, const char *data)
     char buffer[BUFFER_SIZE+64];
 
     // build json event
-    snprintf(buffer, sizeof(buffer), "{\"event\":\"%s\",\"data\":%s}", event, data);
+    snprintf(buffer, sizeof(buffer)-2, "{\"event\":\"%s\",\"data\":%s}", event, data);
+    buffer[sizeof(buffer)-1] = 0;
 
     output.client_fd = client_fd;
     output.buffer = buffer;
@@ -184,7 +185,8 @@ static void device_status_cb(void *arg)
         if (g_client_events[i].event_id == CC_DEVICE_STATUS_EV)
         {
             // build json event data
-            snprintf(buffer, sizeof(buffer), "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
+            snprintf(buffer, sizeof(buffer)-2, "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
+            buffer[sizeof(buffer)-1] = 0;
 
             // send event
             int client_fd = g_client_events[i].client_fd;
@@ -410,9 +412,11 @@ int main(int argc, char **argv)
             json_unpack(data, CC_DEV_DESCRIPTOR_REQ_FORMAT, "device_id", &device_id);
 
             char *descriptor = cc_device_descriptor(device_id);
-            sprintf(read_data.buffer, "{\"reply\":\"%s\",\"data\":%s}", request, descriptor);
+            snprintf(read_buffer, sizeof(read_buffer)-2, "{\"reply\":\"%s\",\"data\":%s}", request, descriptor);
+            read_buffer[sizeof(read_buffer)-1] = 0;
 
-            read_data.size = strlen(read_data.buffer) + 1;
+            read_data.buffer = read_buffer;
+            read_data.size = strlen(read_buffer) + 1;
             sockser_write(&read_data);
 
             free(descriptor);

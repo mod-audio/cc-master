@@ -168,14 +168,19 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             // URI
             device->uri = string_deserialize(pdata, &i);
             pdata += i;
+
+            // device channel
+            device->channel = cc_device_count(device->uri->text);
+        }
+        else
+        {
+            device->uri = NULL;
+            device->channel = 0;
         }
 
         // device label
         device->label = string_deserialize(pdata, &i);
         pdata += i;
-
-        // device channel
-        device->channel = cc_device_count(device->uri->text);
 
         // number of actuators
         device->actuators = NULL;
@@ -214,7 +219,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             device->actuatorgroups = NULL;
             device->actuatorgroups_count = *pdata++;
 
-            //list of actuatorgroups
+            // list of actuatorgroups
             int actuatorgroup_id = device->actuators_count;
 
             if (device->actuatorgroups_count > 0)
@@ -293,6 +298,15 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             }
 
             device->chain_id = *pdata++;
+        }
+        else
+        {
+            device->actuatorgroups = NULL;
+            device->actuatorgroups_count = 0;
+            device->enumeration_frame_item_count = 0;
+            device->amount_of_pages = 0;
+            device->current_page = 0;
+            device->chain_id = 0;
         }
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
