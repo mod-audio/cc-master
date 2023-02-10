@@ -185,7 +185,22 @@ int cc_assignment_check(cc_assignment_key_t *assignment)
 
 cc_assignment_t *cc_assignment_get(cc_assignment_key_t *assignment)
 {
-    return cc_assignment_get_by_actuator(assignment->device_id, assignment->id);
+    cc_device_t *device = cc_device_get(assignment->device_id);
+
+    if (!device || !device->assignments)
+        return NULL;
+
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (device->assignments[i])
+        {
+            if (device->assignments[i]->id == assignment->id)
+                return device->assignments[i];
+        }
+    }
+
+    return NULL;
+
 }
 
 cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id)
