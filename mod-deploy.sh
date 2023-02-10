@@ -27,7 +27,7 @@ if [ -z "${PLATFORM}" ]; then
   echo "failed to query platform"
   exit 1
 fi
-PLATFORM="mod${PLATFORM}-debug"
+PLATFORM="mod${PLATFORM}-new-debug"
 
 # build dev stuff if not done yet
 WORKDIR=${WORKDIR:=~/mod-workdir}
