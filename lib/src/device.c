@@ -196,7 +196,10 @@ char* cc_device_descriptor(int device_id)
 
     // chain id
     if (device->chain_id != 0)
-        json_object_set_new(root, "chain_id", device->chain_id);
+    {
+        json_t *chain_id = json_integer(device->chain_id);
+        json_object_set_new(root, "chain_id", chain_id);
+    }
 
     // actuators
     json_t *json_actuators = json_array();
