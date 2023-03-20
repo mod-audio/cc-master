@@ -495,19 +495,19 @@ int main(int argc, char **argv)
             int assignment_id, assignment_pair_id, actuator_pair_id;
             cc_device_t *device = cc_device_get(assignment.device_id);
 
-            //get the page of the actuator to assign
-            uint8_t actuators_in_page = device->actuators_count + device->actuatorgroups_count;
-            assignment.actuator_page_id = (assignment.actuator_id / actuators_in_page) + 1;
+            // get the page of the actuator to assign
+            const uint8_t actuators_in_page = device->actuators_count + device->actuatorgroups_count;
+            assignment.actuator_page_id = assignment.actuator_id / actuators_in_page;
 
             // special handling if assigning to group
-            if (device && ((assignment.actuator_id - (actuators_in_page * (assignment.actuator_page_id-1))) >= device->actuators_count))
+            if (device && ((assignment.actuator_id - (actuators_in_page * assignment.actuator_page_id)) >= device->actuators_count))
             {
-                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - (actuators_in_page * (assignment.actuator_page_id-1)) - device->actuators_count];
+                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - (actuators_in_page * assignment.actuator_page_id) - device->actuators_count];
                 //actuator 0 in a group always becomes the "master" actuator
                 actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1];
 
-                int actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + (actuators_in_page * (assignment.actuator_page_id-1));
-                int actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + (actuators_in_page * (assignment.actuator_page_id-1));
+                int actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + (actuators_in_page * assignment.actuator_page_id);
+                int actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + (actuators_in_page * assignment.actuator_page_id);
 
                 // real assignment
                 assignment.actuator_id = actuator_id;
@@ -531,10 +531,9 @@ int main(int argc, char **argv)
             }
             else
             {
-                assignment.assignment_pair_id = -1;
+                assignment.actuator_pair_id = actuator_pair_id = -1;
+                assignment.assignment_pair_id = assignment_pair_id = -1;
                 assignment_id = cc_assignment(handle, &assignment, 1);
-                assignment_pair_id = -1;
-                actuator_pair_id = -1;
             }
 
             // pack data and send reply
