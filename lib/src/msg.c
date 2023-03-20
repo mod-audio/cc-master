@@ -69,7 +69,7 @@
 ****************************************************************************************************
 */
 
-string_t *string_append_page_number(string_t *og_str, int page)
+static string_t *string_append_page_number(string_t *og_str, int page)
 {
     string_t *str = malloc(sizeof(string_t));
 
@@ -81,7 +81,7 @@ string_t *string_append_page_number(string_t *og_str, int page)
         {
             memcpy(str->text, og_str->text, og_str->size);
 
-            char page_char = '0' + page;
+            char page_char = '1' + page;
             strcat(str->text, " Page #");
             strcat(str->text, &page_char);
             str->text[str->size] = 0;
@@ -256,10 +256,10 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             {
                 int page_actuator_id = actuatorgroup_id;
 
-                //create the other actuator pages
-                for (int j = 2; j <= device->amount_of_pages; j++)
+                // create the other actuator pages
+                for (int j = 1; j <= device->amount_of_pages; j++)
                 {
-                    for (int q = 0; q < device->actuators_count; q++)
+                    for (int q = 0; q < device->actuators_count; q++, page_actuator_id++)
                     {
                         device->actuators[page_actuator_id] = malloc(sizeof(cc_actuator_t));
                         cc_actuator_t *actuator = device->actuators[page_actuator_id];
@@ -267,11 +267,9 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                         memcpy(actuator, device->actuators[q], sizeof(cc_actuator_t));
                         actuator->id = page_actuator_id;
                         actuator->name = string_append_page_number(string_create(actuator->name->text), j);
-
-                        page_actuator_id++;
                     }
 
-                    for (int q = 0; q < device->actuatorgroups_count; q++)
+                    for (int q = 0; q < device->actuatorgroups_count; q++, page_actuator_id++)
                     {
                         device->actuatorgroups[page_actuator_id] = malloc(sizeof(cc_actuatorgroup_t));
                         cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[page_actuator_id];
@@ -279,21 +277,19 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                         memcpy(actuatorgroup, device->actuatorgroups[q], sizeof(cc_actuatorgroup_t));
                         actuatorgroup->id = page_actuator_id;
                         actuatorgroup->name = string_append_page_number(string_create(device->actuatorgroups[q]->name->text), j);
-
-                        page_actuator_id++;
                     }
                 }
 
-                //'fix' the names of the page 1 actuators
+                // 'fix' the names of the page 1 actuators
                 for (int j = 0; j < device->actuators_count; j++)
                 {
                     cc_actuator_t *actuator = device->actuators[j];
-                    actuator->name = string_append_page_number(actuator->name, 1);
+                    actuator->name = string_append_page_number(actuator->name, 0);
                 }
                 for (int j = 0; j < device->actuatorgroups_count; j++)
                 {
                     cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[j];
-                    actuatorgroup->name = string_append_page_number(actuatorgroup->name, 1);
+                    actuatorgroup->name = string_append_page_number(actuatorgroup->name, 0);
                 }
             }
 
