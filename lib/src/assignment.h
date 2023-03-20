@@ -79,7 +79,8 @@ typedef struct cc_assignment_t {
     cc_item_t **list_items;
     int actuator_pair_id;
     int assignment_pair_id;
-    // below is only used for cc-master and not mod-host
+    /* variables below this point are only used for the server and should be ignored by clients
+     * they should be treated as private API */
     int list_index, enumeration_frame_min, enumeration_frame_max;
     int actuator_page_id;
 } cc_assignment_t;
