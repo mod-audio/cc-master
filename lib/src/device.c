@@ -267,7 +267,7 @@ char* cc_device_descriptor(int device_id)
         int page_actuator_id = device->actuators_count;
         int page_actuatorgroup_id = device->actuatorgroups_count;
 
-        for (int j = 1; j <= device->amount_of_pages; j++)
+        for (int j = 1; j < device->amount_of_pages; j++)
         {
             for (int i = 0; i < device->actuators_count; i++)
             {

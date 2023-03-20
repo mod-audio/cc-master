@@ -751,6 +751,7 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
 
     return handle;
 }
+
 void cc_finish(cc_handle_t *handle)
 {
     if (handle)

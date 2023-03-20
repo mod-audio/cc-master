@@ -76,15 +76,13 @@ static string_t *string_append_page_number(string_t *og_str, int page)
     if (str)
     {
         str->size = og_str->size + 8;
-        str->text = malloc(str->size);
+        str->text = malloc(str->size + 1);
         if (str->text)
         {
             memcpy(str->text, og_str->text, og_str->size);
-
-            char page_char = '1' + page;
-            strcat(str->text, " Page #");
-            strcat(str->text, &page_char);
-            str->text[str->size] = 0;
+            memcpy(str->text + og_str->size, " Page #", 7);
+            str->text[og_str->size + 7] = '1' + page;
+            str->text[og_str->size + 8] = 0;
         }
         else
         {
@@ -213,6 +211,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             }
         }
 
+        // actuatorgroups were added to device descriptor starting from v0.7
         if (device->protocol.major > 0 || device->protocol.minor >= 7)
         {
             // number of actuatorgroups
@@ -251,18 +250,22 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             device->amount_of_pages = *pdata++;
             device->current_page = 0;
 
-            //check if we have pages
+            // check if we have pages
             if (device->amount_of_pages > 1)
             {
-                int page_actuator_id = actuatorgroup_id;
+                // limit amount of pages to what is supported on server side
+                if (device->amount_of_pages > MAX_ACTUATOR_PAGES)
+                    device->amount_of_pages = MAX_ACTUATOR_PAGES;
 
                 // create the other actuator pages
-                for (int j = 1; j <= device->amount_of_pages; j++)
+                int page_actuator_id = device->actuators_count;
+
+                for (int j = 1; j < device->amount_of_pages; j++)
                 {
                     for (int q = 0; q < device->actuators_count; q++, page_actuator_id++)
                     {
-                        device->actuators[page_actuator_id] = malloc(sizeof(cc_actuator_t));
-                        cc_actuator_t *actuator = device->actuators[page_actuator_id];
+                        cc_actuator_t *actuator = malloc(sizeof(cc_actuator_t));
+                        device->actuators[j * device->actuators_count + q] = actuator;
 
                         memcpy(actuator, device->actuators[q], sizeof(cc_actuator_t));
                         actuator->id = page_actuator_id;
@@ -271,8 +274,8 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
 
                     for (int q = 0; q < device->actuatorgroups_count; q++, page_actuator_id++)
                     {
-                        device->actuatorgroups[page_actuator_id] = malloc(sizeof(cc_actuatorgroup_t));
-                        cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[page_actuator_id];
+                        cc_actuatorgroup_t *actuatorgroup = malloc(sizeof(cc_actuatorgroup_t));
+                        device->actuatorgroups[j * device->actuatorgroups_count + q] = actuatorgroup;
 
                         memcpy(actuatorgroup, device->actuatorgroups[q], sizeof(cc_actuatorgroup_t));
                         actuatorgroup->id = page_actuator_id;
@@ -409,10 +412,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         }
 
         // list count
-        int list_count = device->enumeration_frame_item_count;
-
-        if (assignment->list_count == 0)
-            list_count = 0;
+        int list_count = assignment->list_count;
 
         if (list_count > assignment->list_count)
             list_count = assignment->list_count;
