@@ -261,16 +261,17 @@ char* cc_device_descriptor(int device_id)
         json_array_append_new(json_actuatorgroups, json_actuatorgroup);
     }
 
-    //check if we have pages and init those too
+    // check if we have pages and init those too
     if (device->amount_of_pages > 1)
     {
-        int page_actuator_id = device->actuators_count + device->actuatorgroups_count;
+        int page_actuator_id = device->actuators_count;
+        int page_actuatorgroup_id = device->actuatorgroups_count;
 
-        for (int j = 2; j <= device->amount_of_pages; j++)
+        for (int j = 1; j <= device->amount_of_pages; j++)
         {
             for (int i = 0; i < device->actuators_count; i++)
             {
-                cc_actuator_t *actuator = device->actuators[page_actuator_id];
+                cc_actuator_t *actuator = device->actuators[page_actuator_id++];
                 json_t *json_actuator = json_object();
 
                 // actuator id
@@ -291,14 +292,12 @@ char* cc_device_descriptor(int device_id)
 
                 // add to list
                 json_array_append_new(json_actuators, json_actuator);
-
-                page_actuator_id++;
             }
 
             // populate actuator groups list
-            for ( int i = 0; i < device->actuatorgroups_count; i++)
+            for (int i = 0; i < device->actuatorgroups_count; i++)
             {
-                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[page_actuator_id];
+                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[page_actuatorgroup_id++];
                 json_t *json_actuatorgroup = json_object();
 
                 // actuator group id
@@ -319,8 +318,6 @@ char* cc_device_descriptor(int device_id)
 
                 // add to list
                 json_array_append_new(json_actuatorgroups, json_actuatorgroup);
-
-                page_actuator_id++;
             }
         }
     }

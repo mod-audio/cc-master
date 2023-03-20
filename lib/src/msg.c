@@ -249,7 +249,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             device->enumeration_frame_item_count = *pdata++;
 
             device->amount_of_pages = *pdata++;
-            device->current_page = 1;
+            device->current_page = 0;
 
             //check if we have pages
             if (device->amount_of_pages > 1)
@@ -366,7 +366,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         uint8_t actuator_id = assignment->actuator_id;
 
         if (actuator_id >= actuators_per_page)
-            actuator_id = assignment->actuator_id - (actuators_per_page * (device->current_page-1));
+            actuator_id = assignment->actuator_id - (actuators_per_page * device->current_page);
 
         *pdata++ = actuator_id;
 
@@ -467,7 +467,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         uint8_t actuator_id = update->actuator_id;
 
         if (actuator_id >= actuators_per_page)
-            actuator_id = update->actuator_id - (actuators_per_page * (device->current_page-1));
+            actuator_id = update->actuator_id - (actuators_per_page * device->current_page);
 
         *pdata++ = actuator_id;
 

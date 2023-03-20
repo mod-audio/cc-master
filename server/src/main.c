@@ -523,6 +523,7 @@ int main(int argc, char **argv)
                 assignment.mode &= ~CC_MODE_REVERSE;
                 assignment_pair_id = cc_assignment(handle, &assignment, 1);
 
+                // we only have assignment pair id value after assigning the pair, so take care to save this info now
                 cc_assignment_key_t key;
                 key.id = assignment_id;
                 key.pair_id = assignment_pair_id;
