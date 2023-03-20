@@ -40,7 +40,7 @@ source local.env ${PLATFORM}
 popd
 
 if [ ! -e build ]; then
-  ${HOST_DIR}/usr/bin/python ./waf configure --prefix=/usr --debug --nopycache
+  ${HOST_DIR}/usr/bin/python ./waf configure --prefix=/usr --debug --nocache
 fi
 ${HOST_DIR}/usr/bin/python ./waf
 ${HOST_DIR}/usr/bin/python ./waf install --destdir=$(pwd)/destdir
