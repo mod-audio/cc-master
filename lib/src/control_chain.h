@@ -45,7 +45,7 @@
 #define CC_PROTOCOL_MINOR       7
 #define CC_PROTOCOL_VERSION     STR(CC_PROTOCOL_MAJOR) "." STR(CC_PROTOCOL_MINOR)
 
-#define MAX_ACTUATOR_PAGES      256
+#define MAX_ACTUATOR_PAGES      16
 
 /*
 ****************************************************************************************************

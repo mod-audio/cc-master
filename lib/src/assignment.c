@@ -97,28 +97,7 @@ int cc_assignment_add(cc_assignment_t *assignment)
             assignment->id = i;
 
             // duplicate assignment
-            cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
-            memcpy(copy, assignment, sizeof(cc_assignment_t));
-
-            if (assignment->label)
-                copy->label = strdup(assignment->label);
-            if (assignment->unit)
-                copy->unit = strdup(assignment->unit);
-
-            if (assignment->list_count != 0)
-            {
-                copy->list_items = malloc(assignment->list_count * sizeof(cc_item_t *));
-
-                for (int j = 0; j < assignment->list_count; j++)
-                {
-                    cc_item_t *item = malloc(sizeof(cc_item_t));
-                    item->label = strdup(assignment->list_items[j]->label);
-                    item->value = assignment->list_items[j]->value;
-                    copy->list_items[j] = item;
-                }
-            }
-
-            device->assignments[i] = copy;
+            device->assignments[i] = cc_assignment_dup(assignment);
 
             // increment actuator assignments counter
             cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
@@ -180,6 +159,28 @@ int cc_assignment_check(cc_assignment_key_t *assignment)
     return 0;
 }
 
+int cc_assignment_set_pair_id(cc_assignment_key_t *assignment)
+{
+    cc_device_t *device = cc_device_get(assignment->device_id);
+
+    if (!device || !device->assignments)
+        return 0;
+
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    {
+        if (device->assignments[i])
+        {
+            if (device->assignments[i]->id == assignment->id)
+            {
+                device->assignments[i]->assignment_pair_id = assignment->pair_id;
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 cc_assignment_t *cc_assignment_get(cc_assignment_key_t *assignment)
 {
     return cc_assignment_get_by_actuator(assignment->device_id, assignment->id);
@@ -233,24 +234,33 @@ void cc_assignment_update_list(cc_assignment_t *assignment, float index)
     assignment->list_index -= assignment->enumeration_frame_min;
 }
 
-int cc_assignment_set_pair_id(cc_assignment_key_t *assignment)
+cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment)
 {
-    cc_device_t *device = cc_device_get(assignment->device_id);
+    cc_assignment_t *copy = malloc(sizeof(cc_assignment_t));
+    memcpy(copy, assignment, sizeof(cc_assignment_t));
 
-    if (!device || !device->assignments)
-        return 0;
+    if (assignment->label)
+        copy->label = strdup(assignment->label);
 
-    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
+    if (assignment->unit)
+        copy->unit = strdup(assignment->unit);
+
+    if (assignment->list_count != 0)
     {
-        if (device->assignments[i])
+        copy->list_items = malloc(assignment->list_count * sizeof(cc_item_t *));
+
+        for (int i = 0; i < assignment->list_count; i++)
         {
-            if (device->assignments[i]->id == assignment->id)
-            {
-                device->assignments[i]->assignment_pair_id = assignment->pair_id;
-                return 1;
-            }
+            cc_item_t *item = malloc(sizeof(cc_item_t));
+            copy->list_items[i] = item;
+            item->label = strdup(assignment->list_items[i]->label);
+            item->value = assignment->list_items[i]->value;
         }
     }
 
-    return 0;
+    return copy;
+}
+
+void cc_assignment_free(cc_assignment_t *assignment)
+{
 }

@@ -225,6 +225,7 @@ sockser_t* sockser_init(const char *path)
     if (server->sock_fd < 0)
     {
         perror("ERROR opening socket");
+        free(server);
         return NULL;
     }
 
@@ -239,6 +240,7 @@ sockser_t* sockser_init(const char *path)
     if (bind(server->sock_fd, (struct sockaddr *) &local, len) < 0)
     {
         perror("ERROR on binding");
+        free(server);
         return NULL;
     }
 

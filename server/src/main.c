@@ -163,7 +163,8 @@ static void send_event(int client_fd, const char *event, const char *data)
     char buffer[BUFFER_SIZE+64];
 
     // build json event
-    snprintf(buffer, sizeof(buffer), "{\"event\":\"%s\",\"data\":%s}", event, data);
+    snprintf(buffer, sizeof(buffer)-1, "{\"event\":\"%s\",\"data\":%s}", event, data);
+    buffer[sizeof(buffer)-1] = 0;
 
     output.client_fd = client_fd;
     output.buffer = buffer;
@@ -184,7 +185,8 @@ static void device_status_cb(void *arg)
         if (g_client_events[i].event_id == CC_DEVICE_STATUS_EV)
         {
             // build json event data
-            snprintf(buffer, sizeof(buffer), "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
+            snprintf(buffer, sizeof(buffer)-1, "{\"device_id\":%i,\"status\":%i}", device->id, device->status);
+            buffer[sizeof(buffer)-1] = 0;
 
             // send event
             int client_fd = g_client_events[i].client_fd;
@@ -210,8 +212,8 @@ static void data_update_cb(void *arg)
             base64_encode(updates->raw_data, updates->raw_size, encoded);
 
             // build json event data
-            snprintf(buffer, sizeof(buffer), "{\"device_id\":%i,\"raw_data\":\"%s\"}",
-                updates->device_id, encoded);
+            snprintf(buffer, sizeof(buffer)-1, "{\"device_id\":%i,\"raw_data\":\"%s\"}", updates->device_id, encoded);
+            buffer[sizeof(buffer)-1] = 0;
 
             // send event
             int client_fd = g_client_events[i].client_fd;
@@ -410,9 +412,11 @@ int main(int argc, char **argv)
             json_unpack(data, CC_DEV_DESCRIPTOR_REQ_FORMAT, "device_id", &device_id);
 
             char *descriptor = cc_device_descriptor(device_id);
-            sprintf(read_data.buffer, "{\"reply\":\"%s\",\"data\":%s}", request, descriptor);
+            snprintf(read_buffer, sizeof(read_buffer)-1, "{\"reply\":\"%s\",\"data\":%s}", request, descriptor);
+            read_buffer[sizeof(read_buffer)-1] = 0;
 
-            read_data.size = strlen(read_data.buffer) + 1;
+            read_data.buffer = read_buffer;
+            read_data.size = strlen(read_buffer) + 1;
             sockser_write(&read_data);
 
             free(descriptor);
@@ -474,7 +478,7 @@ int main(int argc, char **argv)
 
                 for (int i = 0; i < assignment.list_count; i++)
                 {
-                    cc_item_t *item = malloc(sizeof(cc_item_t));
+                    cc_item_t *item = calloc(1, sizeof(cc_item_t));
                     assignment.list_items[i] = item;
 
                     const char *key;
@@ -482,15 +486,8 @@ int main(int argc, char **argv)
 
                     json_object_foreach(json_array_get(options, i), key, value)
                     {
-                        item->label = key;
+                        item->label = strndup(key, 16);
                         item->value = json_real_value(value);
-
-                        // labels are limited to 16 characters on device-side
-                        if (strlen(key) > 16)
-                        {
-                            char* mkey = (char*)key;
-                            mkey[16] = 0;
-                        }
                     }
                 }
             }
@@ -498,19 +495,19 @@ int main(int argc, char **argv)
             int assignment_id, assignment_pair_id, actuator_pair_id;
             cc_device_t *device = cc_device_get(assignment.device_id);
 
-            //get the page of the actuator to assign
-            uint8_t actuators_in_page = device->actuators_count + device->actuatorgroups_count;
-            assignment.actuator_page_id = (assignment.actuator_id / actuators_in_page) + 1;
+            // get the page of the actuator to assign
+            const uint8_t actuators_in_page = device->actuators_count + device->actuatorgroups_count;
+            assignment.actuator_page_id = assignment.actuator_id / actuators_in_page;
 
             // special handling if assigning to group
-            if (device && ((assignment.actuator_id - (actuators_in_page * (assignment.actuator_page_id-1))) >= device->actuators_count))
+            if (device && ((assignment.actuator_id - (actuators_in_page * assignment.actuator_page_id)) >= device->actuators_count))
             {
-                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - (actuators_in_page * (assignment.actuator_page_id-1)) - device->actuators_count];
+                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - (actuators_in_page * assignment.actuator_page_id) - device->actuators_count];
                 //actuator 0 in a group always becomes the "master" actuator
                 actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1];
 
-                int actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + (actuators_in_page * (assignment.actuator_page_id-1));
-                int actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + (actuators_in_page * (assignment.actuator_page_id-1));
+                int actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + (actuators_in_page * assignment.actuator_page_id);
+                int actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + (actuators_in_page * assignment.actuator_page_id);
 
                 // real assignment
                 assignment.actuator_id = actuator_id;
@@ -526,6 +523,7 @@ int main(int argc, char **argv)
                 assignment.mode &= ~CC_MODE_REVERSE;
                 assignment_pair_id = cc_assignment(handle, &assignment, 1);
 
+                // we only have assignment pair id value after assigning the pair, so take care to save this info now
                 cc_assignment_key_t key;
                 key.id = assignment_id;
                 key.pair_id = assignment_pair_id;
@@ -534,10 +532,9 @@ int main(int argc, char **argv)
             }
             else
             {
-                assignment.assignment_pair_id = -1;
+                assignment.actuator_pair_id = actuator_pair_id = -1;
+                assignment.assignment_pair_id = assignment_pair_id = -1;
                 assignment_id = cc_assignment(handle, &assignment, 1);
-                assignment_pair_id = -1;
-                actuator_pair_id = -1;
             }
 
             // pack data and send reply
