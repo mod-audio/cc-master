@@ -182,15 +182,17 @@ char* cc_device_descriptor(int device_id)
     json_object_set_new(root, "uri", uri);
 
     // firmware version
-    char buffer[16] = {0};
-    snprintf(buffer, sizeof(buffer)-2, "%i.%i.%i",
+    char buffer[16];
+    snprintf(buffer, sizeof(buffer)-1, "%i.%i.%i",
         device->firmware.major, device->firmware.minor, device->firmware.micro);
+    buffer[sizeof(buffer)-1] = 0;
     json_t *version = json_stringn(buffer, strlen(buffer));
     json_object_set_new(root, "version", version);
 
     // protocol version
-    snprintf(buffer, sizeof(buffer)-2, "%i.%i",
+    snprintf(buffer, sizeof(buffer)-1, "%i.%i",
         device->protocol.major, device->protocol.minor);
+    buffer[sizeof(buffer)-1] = 0;
     json_t *protocol = json_stringn(buffer, strlen(buffer));
     json_object_set_new(root, "protocol", protocol);
 

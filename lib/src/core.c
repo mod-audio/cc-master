@@ -23,6 +23,8 @@
 ****************************************************************************************************
 */
 
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,7 +99,7 @@ struct cc_handle_t {
     sem_t waiting_response;
     pthread_mutex_t request_lock;
     pthread_cond_t request_cond;
-    int request_sync;
+    atomic_bool request_sync;
     cc_msg_t *msg_rx;
 };
 
@@ -259,21 +261,28 @@ static int send_and_wait(cc_handle_t *handle, const cc_msg_t *msg)
 
     // only one request must be done per time
     // because all devices share the same serial line
-    return sem_timedwait(&handle->waiting_response, &timeout);
+    for (;;)
+    {
+        if (sem_timedwait(&handle->waiting_response, &timeout) == 0)
+            return 0;
+
+        if (errno != EINTR)
+            return 1;
+    }
 }
 
 static int request(cc_handle_t *handle, const cc_msg_t *msg)
 {
     // lock and wait for request cycle
     pthread_mutex_lock(&handle->request_lock);
-    while (handle->request_sync == 0)
+    while (!atomic_load(&handle->request_sync))
         pthread_cond_wait(&handle->request_cond, &handle->request_lock);
 
     // send message
     int ret = send_and_wait(handle, msg);
 
     // unlock for next request
-    handle->request_sync = 0;
+    atomic_store(&handle->request_sync, false);
     pthread_mutex_unlock(&handle->request_lock);
 
     return ret;
@@ -472,6 +481,7 @@ static void parser(cc_handle_t *handle)
              msg->command == CC_CMD_SET_VALUE)
     {
         // TODO: don't post if there is no request
+        DEBUG_MSG("  posting response\n");
         sem_post(&handle->waiting_response);
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
@@ -656,7 +666,7 @@ static void* chain_sync(void *arg)
             else
             {
                 pthread_mutex_lock(&handle->request_lock);
-                handle->request_sync = 1;
+                atomic_store(&handle->request_sync, true);
                 pthread_cond_signal(&handle->request_cond);
                 pthread_mutex_unlock(&handle->request_lock);
             }
@@ -710,6 +720,8 @@ cc_handle_t* cc_init(const char *port_name, int baudrate)
     pthread_mutex_init(&handle->running, NULL);
     pthread_mutex_init(&handle->request_lock, NULL);
     pthread_cond_init(&handle->request_cond, NULL);
+
+    atomic_init(&handle->request_sync, false);
 
     pthread_mutex_lock(&handle->running);
 
@@ -912,15 +924,16 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment_key)
 
 int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
 {
-    int id = update->assignment_id;
-    cc_assignment_t *assignment = cc_assignment_get_by_actuator(update->device_id, update->actuator_id);
-    cc_device_t *device = cc_device_get(update->device_id);
+    DEBUG_MSG("value_set received (id: %i, value: %f)\n", update->assignment_id, update->value);
 
-    DEBUG_MSG("value_set received (id: %i)\n", id);
+    const int id = update->assignment_id;
+
+    cc_device_t *device = cc_device_get(update->device_id);
+    cc_assignment_t *assignment = cc_assignment_get_by_actuator(update->device_id, update->actuator_id);
 
     assignment->value = update->value;
 
-    if (device->current_page != assignment->actuator_page_id)
+    if (!device || !assignment || device->current_page != assignment->actuator_page_id)
         return id;
 
     // request assignment
@@ -950,7 +963,8 @@ int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
 void cc_control_page(cc_handle_t *handle, int device_id, int page)
 {
     cc_device_t *device = cc_device_get(device_id);
-    if (page < 0 || page > device->amount_of_pages)
+
+    if (!device || page < 0 || page > device->amount_of_pages)
         return;
 
     device->current_page = page;
