@@ -212,8 +212,8 @@ static void data_update_cb(void *arg)
             base64_encode(updates->raw_data, updates->raw_size, encoded);
 
             // build json event data
-            snprintf(buffer, sizeof(buffer), "{\"device_id\":%i,\"raw_data\":\"%s\"}",
-                updates->device_id, encoded);
+            snprintf(buffer, sizeof(buffer)-1, "{\"device_id\":%i,\"raw_data\":\"%s\"}", updates->device_id, encoded);
+            buffer[sizeof(buffer)-1] = 0;
 
             // send event
             int client_fd = g_client_events[i].client_fd;
