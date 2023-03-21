@@ -120,7 +120,7 @@ void cc_device_destroy(int device_id)
     // destroy actuators
     if (device->actuators)
     {
-        for (int i = 0; i < device->actuators_count; i++)
+        for (int i = 0; i < device->actuators_count * device->amount_of_pages; i++)
         {
             if (device->actuators[i])
             {
@@ -130,6 +130,21 @@ void cc_device_destroy(int device_id)
         }
         free(device->actuators);
         device->actuators = NULL;
+    }
+
+    // destroy actuator groups
+    if (device->actuatorgroups)
+    {
+        for (int i = 0; i < device->actuatorgroups_count * device->amount_of_pages; i++)
+        {
+            if (device->actuatorgroups[i])
+            {
+                string_destroy(device->actuatorgroups[i]->name);
+                free(device->actuatorgroups[i]);
+            }
+        }
+        free(device->actuatorgroups);
+        device->actuatorgroups = NULL;
     }
 
     // destroy assigments list
@@ -142,21 +157,6 @@ void cc_device_destroy(int device_id)
         }
         free(device->assignments);
         device->assignments = NULL;
-    }
-
-    // destroy actuator groups
-    if (device->actuatorgroups)
-    {
-        for (int i = 0; i < device->actuatorgroups_count; i++)
-        {
-            if (device->actuatorgroups[i])
-            {
-                string_destroy(device->actuatorgroups[i]->name);
-                free(device->actuatorgroups[i]);
-            }
-        }
-        free(device->actuatorgroups);
-        device->actuatorgroups = NULL;
     }
 
     // reset status and id

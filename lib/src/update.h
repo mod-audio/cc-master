@@ -27,6 +27,7 @@
 ****************************************************************************************************
 */
 
+#include <stdbool.h>
 #include <stdint.h>
 
 
@@ -76,7 +77,7 @@ typedef struct cc_update_list_t {
 ****************************************************************************************************
 */
 
-cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_assignments);
+cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, bool check_assignments);
 void cc_update_free(cc_update_list_t *updates);
 
 

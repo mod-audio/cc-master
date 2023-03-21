@@ -4,12 +4,12 @@
 #include "control_chain.h"
 
 //Duo
-#define SERIAL_PORT            "/dev/ttyS3"
+// #define SERIAL_PORT            "/dev/ttyS3"
 //DuoX
-//#define SERIAL_PORT         "/dev/ttymxc0"
+#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
 
-int no_device = 1;
+volatile int no_device = 1;
 
 void dev_desc(void *arg)
 {

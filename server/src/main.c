@@ -514,14 +514,14 @@ int main(int argc, char **argv)
                 assignment.actuator_pair_id = actuator_pair_id;
                 assignment.assignment_pair_id = -1;
                 assignment.mode |= CC_MODE_GROUP|CC_MODE_REVERSE;
-                assignment_id = cc_assignment(handle, &assignment, 1);
+                assignment_id = cc_assignment(handle, &assignment, true);
 
                 // paired assignment
                 assignment.actuator_id = actuator_pair_id;
                 assignment.actuator_pair_id = actuator_id;
                 assignment.assignment_pair_id = assignment_id;
                 assignment.mode &= ~CC_MODE_REVERSE;
-                assignment_pair_id = cc_assignment(handle, &assignment, 1);
+                assignment_pair_id = cc_assignment(handle, &assignment, true);
 
                 // we only have assignment pair id value after assigning the pair, so take care to save this info now
                 cc_assignment_key_t key;
@@ -534,7 +534,7 @@ int main(int argc, char **argv)
             {
                 assignment.actuator_pair_id = actuator_pair_id = -1;
                 assignment.assignment_pair_id = assignment_pair_id = -1;
-                assignment_id = cc_assignment(handle, &assignment, 1);
+                assignment_id = cc_assignment(handle, &assignment, true);
             }
 
             // pack data and send reply

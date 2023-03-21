@@ -45,24 +45,28 @@ int main(void)
 
     int device_id = 1;
 
-    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
-    // list_count, list_items
-    cc_assignment_t assignment = {-1, device_id, 0, "gain", 1.0, 0.0, 2.0, 0.5, 1, 32, "dB",
-        list_count, list_items};
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
+    // actuator_pair_id, assignment_pair_id
+    // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
+    cc_assignment_t assignment = {
+        -1, device_id, 0, "gain", 1.0, 0.0, 2.0, 0.5, 1, 32, "dB", list_count, list_items,
+        -1, -1,
+        0, 0, 0, 0
+    };
 
     // assignment
     printf("creating assignment\n");
-    int assignment_id = cc_client_assignment(client, &assignment);
-    printf("assignment id: %i\n", assignment_id);
+    assignment.id = cc_client_assignment(client, &assignment);
+    printf("assignment id: %i\n", assignment.id);
     free(list_items);
 
     sleep(1);
 
-    if (assignment_id >= 0)
+    if (assignment.id >= 0)
     {
         // unassignment
-        cc_assignment_key_t key = {assignment_id, device_id};
-        printf("removing assignment: %i\n", assignment_id);
+        cc_assignment_key_t key = {assignment.id, device_id, -1};
+        printf("removing assignment: %i\n", assignment.id);
         cc_client_unassignment(client, &key);
     }
     else

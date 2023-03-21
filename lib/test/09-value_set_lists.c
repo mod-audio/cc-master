@@ -5,9 +5,9 @@
 #include "assignment.h"
 
 //Duo
-#define SERIAL_PORT            "/dev/ttyS1"
+// #define SERIAL_PORT            "/dev/ttyS1"
 //DuoX
-//#define SERIAL_PORT         "/dev/ttymxc0"
+#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
@@ -18,7 +18,10 @@ void dev_desc(void *arg)
     cc_device_t *device = arg;
 
     dev_id = device->id;
-    printf("device %s connected\n", device->label->text);
+    if (device->label)
+        printf("*** device %s connected\n", device->label->text);
+    else
+        printf("*** device connected\n");
     no_device = 0;
 }
 
@@ -38,40 +41,38 @@ int main(void)
 
     int act_id = 0;
     
-    int list_count = 0;
+    int list_count = 3;
     cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
     cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
 
     for (int i = 0; i < list_count; ++i)
         list_items[i] = &items[i];
 
-    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit,
-    // list_count, list_items
-    cc_assignment_t ass = {-1, dev_id, act_id, "gain", 1.0, 0.0, 1.0, 0.0, 1, 32, "dB",
-        list_count, list_items};
+    // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
+    // actuator_pair_id, assignment_pair_id
+    // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
+    cc_assignment_t ass = {0, dev_id, act_id, "list", 1.0, 1.0, 3.0, 1.0, CC_MODE_OPTIONS|CC_MODE_INTEGER, 3, "-",
+        list_count, list_items, -1, -1, 0, 0, 0, 0};
 
-    int id = cc_assignment(handle, &ass);
+    int id = cc_assignment(handle, &ass, true);
     printf("assignment id: %i\n", id);
 
     if (id >= 0)
-    {   
+    {
+        ass.id = id;
+        //wait 1 sec
         sleep(1);
-        float update_value = 0.0f;
-        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
+        // assign value 3
+        float listvalue_update = 2.0;
+        cc_set_value_t update_data = {dev_id, id, act_id, listvalue_update};
         id = cc_value_set(handle, &update_data);
-        printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
-        sleep(1);
-        update_value = 1.0f;
-        update_data.value = update_value;
-        id = cc_value_set(handle, &update_data);
-        printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
-        sleep(1);
-
+        printf("Value set: assignment: %i, value: %i\n", id, (int)listvalue_update);
+        sleep(5);
 
         if (id >= 0)
         {
             printf("removing assignment %i\n", id);
-            cc_assignment_key_t unass = {id, dev_id};
+            cc_assignment_key_t unass = {id, dev_id, -1};
             cc_unassignment(handle, &unass);
         }
         else 

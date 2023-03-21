@@ -140,7 +140,7 @@ static void *reader(void *arg)
                     base64_decode(encode, strlen(encode), raw_data);
 
                     // update list callback
-                    cc_update_list_t *updates = cc_update_parse(device_id, raw_data, 0);
+                    cc_update_list_t *updates = cc_update_parse(device_id, raw_data, true);
                     if (client->data_update_cb)
                         client->data_update_cb(updates);
 

@@ -5,7 +5,7 @@
 #include "assignment.h"
 
 //Duo
-// #define SERIAL_PORT            "/dev/ttyS3"
+// #define SERIAL_PORT            "/dev/ttyS1"
 //DuoX
 #define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
@@ -32,7 +32,7 @@ void data_update(void *arg)
     for (int i = 0; i < updates->count; ++i)
     {
         cc_update_data_t *data = &updates->list[i];
-        printf("***   id = %i, value = %f\n", data->assignment_id, data->value);
+        printf("id = %i, value = %f\n", data->assignment_id, data->value);
     }
 }
 
@@ -51,43 +51,62 @@ int main(void)
     printf("waiting device descriptor\n");
     while (no_device) sleep(1);
 
-    int list_count = 3;
-    cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
-    cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
+    //assigning 4 different tap types
 
-    for (int i = 0; i < list_count; ++i)
-        list_items[i] = &items[i];
-
+    //tap 1, bpm
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    /*
-    cc_assignment_t ass = {-1, dev_id, 0, "Tap", 50.0, 28.0, 280.0, 120.0, CC_MODE_TAP_TEMPO|CC_MODE_REAL, 0, "BPM",
-        0, NULL, -1, -1, 0, 0, 0, 0};
-    */
-    /*
-    cc_assignment_t ass = {-1, dev_id, 0, "Opt", 0.0, 0.0, 2.0, 0.0, CC_MODE_INTEGER|CC_MODE_OPTIONS, 0, "",
-        list_count, list_items, -1, -1, 0, 0, 0, 0};
-    */
-    cc_assignment_t ass = {-1, dev_id, 0, "Toggle", 0.0, 0.0, 1.0, 0.0, CC_MODE_INTEGER|CC_MODE_TOGGLE, 0, "",
+    cc_assignment_t ass_1 = {-1, dev_id, 0, "Tap", 120.0, 20.0, 280.0, 10.0, 8, 0, "bpm",
         0, NULL, -1, -1, 0, 0, 0, 0};
 
-    int id = cc_assignment(handle, &ass, true);
-    if (id >= 0)
+    ass_1.id = cc_assignment(handle, &ass_1, true);
+
+    if (ass_1.id < 0)
     {
-        ass.id = id;
-        sleep(60);
-        printf("removing assignment %i\n", id);
-        cc_assignment_key_t key = {id, dev_id, -1};
-        cc_unassignment(handle, &key);
-        sleep(1);
-    }
-    else
-    {
-        printf("assignment fail\n");
+        printf("error in assignment %i\n", ass_1.id);
     }
 
-    free(list_items);
+    //tap 2 s
+    cc_assignment_t ass_2 = {-1, dev_id, 1, "Tap", 0.5, 0.1, 5.0, 10.0, 8, 0, "s",
+        0, NULL, -1, -1, 0, 0, 0, 0};
+
+    ass_2.id = cc_assignment(handle, &ass_2, true);
+
+    if (ass_2.id < 0)
+    {
+        printf("error in assignment %i\n", ass_2.id);
+    }
+
+    //tap 3 hz
+    cc_assignment_t ass_3 = {-1, dev_id, 2, "Tap", 2, 0.1, 50.0, 10.0, 8, 0, "hz",
+        0, NULL, -1, -1, 0, 0, 0, 0};
+
+    ass_3.id = cc_assignment(handle, &ass_3, true);
+
+    if (ass_3.id < 0)
+    {
+        printf("error in assignment %i\n", ass_3.id);
+    }
+
+    //give some time to test the actuatots
+    sleep(60);
+
+    //unassign
+    printf("removing assignment %i\n", ass_1.id);
+    cc_assignment_key_t key_1 = {ass_1.id, dev_id, -1};
+    cc_unassignment(handle, &key_1);
+    sleep(1);
+
+    printf("removing assignment %i\n", ass_2.id);
+    cc_assignment_key_t key_2 = {ass_2.id, dev_id, -1};
+    cc_unassignment(handle, &key_2);
+    sleep(1);
+
+    printf("removing assignment %i\n", ass_3.id);
+    cc_assignment_key_t key_3 = {ass_3.id, dev_id, -1};
+    cc_unassignment(handle, &key_3);
+    sleep(1);
 
     cc_finish(handle);
 

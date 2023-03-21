@@ -67,7 +67,7 @@
 ****************************************************************************************************
 */
 
-int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, uint8_t new_assignment);
+int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_assignment);
 void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment);
 int cc_value_set(cc_handle_t *handle,  cc_set_value_t *update);
 void cc_control_page(cc_handle_t *handle, int device_id, int page);

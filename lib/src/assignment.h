@@ -96,12 +96,12 @@ typedef struct cc_assignment_key_t {
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment);
-int cc_assignment_remove(cc_assignment_key_t *assignment);
-int cc_assignment_check(cc_assignment_key_t *assignment);
+int cc_assignment_add(const cc_assignment_t *assignment);
+int cc_assignment_remove(const cc_assignment_key_t *assignment);
+int cc_assignment_check(const cc_assignment_key_t *assignment);
 int cc_assignment_set_pair_id(cc_assignment_key_t *assignment);
 
-cc_assignment_t *cc_assignment_get(cc_assignment_key_t *assignment);
+cc_assignment_t *cc_assignment_get(const cc_assignment_key_t *assignment);
 cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id);
 void cc_assignment_update_list(cc_assignment_t *assignment, float index);
 

@@ -311,7 +311,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
         cc_update_list_t **updates = data_struct;
-        *updates = cc_update_parse(msg->device_id, msg->data, 1);
+        *updates = cc_update_parse(msg->device_id, msg->data, false);
     }
     else if (msg->command == CC_CMD_REQUEST_CONTROL_PAGE)
     {
@@ -455,7 +455,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         msg->device_id = update->device_id;
         cc_device_t *device = cc_device_get(update->device_id);
 
-        // assignment id, actuator id
+        // assignment id
         *pdata++ = update->assignment_id;
 
         // actuator id

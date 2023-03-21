@@ -5,9 +5,9 @@
 #include "assignment.h"
 
 //Duo
-#define SERIAL_PORT            "/dev/ttyS1"
+// #define SERIAL_PORT            "/dev/ttyS1"
 //DuoX
-//#define SERIAL_PORT         "/dev/ttymxc0"
+#define SERIAL_PORT         "/dev/ttymxc0"
 #define SERIAL_BAUDRATE     115200
 
 int no_device = 1;
@@ -17,7 +17,10 @@ void dev_desc(void *arg)
 {
     cc_device_t *device = arg;
     dev_id = device->id;
-    printf("device %s connected\n", device->label->text);
+    if (device->label)
+        printf("*** device %s connected\n", device->label->text);
+    else
+        printf("*** device connected\n");
     no_device = 0;
 }
 
@@ -49,18 +52,20 @@ int main(void)
     while (no_device) sleep(1);
 
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
+    // actuator_pair_id, assignment_pair_id
+    // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
     int assign_id = 1;
     int act_id = 0;
 
-    cc_assignment_t ass_1 = {assign_id, dev_id, act_id, "Momentary", 0, 0, 1, 10.0, 512, 0, "-",0, NULL};
+    cc_assignment_t ass_1 = {assign_id, dev_id, act_id, "Momentary", 0, 0, 1, 10.0, 512, 0, "-", 0, NULL, -1, -1, 0, 0, 0, 0};
 
     printf("assigning %i\n", assign_id);
 
-    int id_1 = cc_assignment(handle, &ass_1);
+    const int id = cc_assignment(handle, &ass_1, true);
 
-    if (id_1 < 0)
+    if (id < 0)
     {
-        printf("error in assignment %i\n", id_1);
+        printf("error in assignment %i\n", id);
     }
 
     printf("Test momentary %i\n", assign_id);
@@ -71,13 +76,14 @@ int main(void)
     sleep(5);
 
     //assign actuator 1 with 0
-    if (id_1 >= 0)
-    {   
+    if (id >= 0)
+    {
+        ass_1.id = id;
         sleep(1);
         float update_value = 0.0f;
-        cc_set_value_t update_data = {dev_id, id_1, act_id, update_value};
-        id_1 = cc_value_set(handle, &update_data);
-        printf("Value set: assignment: %i, value: %i\n", id_1, (int)update_value);
+        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
+        const int idv = cc_value_set(handle, &update_data);
+        printf("Value set: assignment: %i, value: %i\n", idv, (int)update_value);
         sleep(1);
      }
 
@@ -90,14 +96,14 @@ int main(void)
     printf("keep button 1 pressed %i\n", assign_id);
     sleep(5);
 
-    //assign actuator 1 with 1 
-    if (id_1 >= 0)
-    {   
+    //assign actuator 1 with 1
+    if (id >= 0)
+    {
         sleep(1);
         float update_value = 1.0f;
-        cc_set_value_t update_data = {dev_id, id_1, act_id, update_value};
-        id_1 = cc_value_set(handle, &update_data);
-        printf("Value set: assignment: %i, value: %i\n", id_1, (int)update_value);
+        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
+        const int idv = cc_value_set(handle, &update_data);
+        printf("Value set: assignment: %i, value: %i\n", idv, (int)update_value);
         sleep(1);
      }
 
@@ -107,8 +113,8 @@ int main(void)
      sleep(10);
 
     //unassign
-    printf("removing assignment %i\n", id_1);
-    cc_assignment_key_t key_1 = {id_1, dev_id};
+    printf("removing assignment %i\n", id);
+    cc_assignment_key_t key_1 = {id, dev_id, -1};
     cc_unassignment(handle, &key_1);
     sleep(1);
 

@@ -35,9 +35,9 @@ if [ ! -e ${WORKDIR}/${PLATFORM}/staging/usr/lib/libjansson.so ] || [ ! -e ${WOR
   ../mod-plugin-builder/bootstrap.sh ${PLATFORM} dev
 fi
 
-pushd ../mod-plugin-builder
-source local.env ${PLATFORM}
-popd
+source ../mod-plugin-builder/local.env ${PLATFORM}
+
+rm -rf build
 
 if [ ! -e build ]; then
   ${HOST_DIR}/usr/bin/python ./waf configure --prefix=/usr --debug --nocache

@@ -72,7 +72,7 @@
 ****************************************************************************************************
 */
 
-int cc_assignment_add(cc_assignment_t *assignment)
+int cc_assignment_add(const cc_assignment_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
@@ -93,11 +93,11 @@ int cc_assignment_add(cc_assignment_t *assignment)
     {
         if (!device->assignments[i])
         {
-            // set assignment id
-            assignment->id = i;
-
             // duplicate assignment
             device->assignments[i] = cc_assignment_dup(assignment);
+
+            // set assignment id
+            device->assignments[i]->id = i;
 
             // increment actuator assignments counter
             cc_actuator_t *actuator = device->actuators[assignment->actuator_id];
@@ -110,20 +110,18 @@ int cc_assignment_add(cc_assignment_t *assignment)
     return -1;
 }
 
-int cc_assignment_remove(cc_assignment_key_t *assignment)
+int cc_assignment_remove(const cc_assignment_key_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
     if (!device || !device->assignments)
         return -1;
 
-    const int id = assignment->id;
-
     for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
         if (!device->assignments[i])
             continue;
-        if (device->assignments[i]->id != id)
+        if (device->assignments[i]->id != assignment->id)
             continue;
 
         const int actuator_id = device->assignments[i]->actuator_id;
@@ -136,13 +134,13 @@ int cc_assignment_remove(cc_assignment_key_t *assignment)
         cc_actuator_t *actuator = device->actuators[actuator_id];
         actuator->assignments_count--;
 
-        return id;
+        return assignment->id;
     }
 
     return -1;
 }
 
-int cc_assignment_check(cc_assignment_key_t *assignment)
+int cc_assignment_check(const cc_assignment_key_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
@@ -183,7 +181,7 @@ int cc_assignment_set_pair_id(cc_assignment_key_t *assignment)
     return 0;
 }
 
-cc_assignment_t *cc_assignment_get(cc_assignment_key_t *assignment)
+cc_assignment_t *cc_assignment_get(const cc_assignment_key_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
@@ -279,12 +277,15 @@ cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment)
 
 void cc_assignment_free(cc_assignment_t *assignment)
 {
-    for (int i = 0; i < assignment->list_count; i++)
+    if (assignment->list_count != 0)
     {
-        free((void*)assignment->list_items[i]->label);
-        free(assignment->list_items[i]);
+        for (int i = 0; i < assignment->list_count; i++)
+        {
+            free((void*)assignment->list_items[i]->label);
+            free(assignment->list_items[i]);
+        }
+        free(assignment->list_items);
     }
-    free(assignment->list_items);
     free((void*)assignment->label);
     free((void*)assignment->unit);
     free(assignment);

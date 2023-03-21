@@ -70,28 +70,28 @@
 ****************************************************************************************************
 */
 
-cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_assignments)
+#define UPDATE_DATA_SIZE (sizeof(float) + 1)
+
+cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, bool check_assignments)
 {
-    const int update_data_size = (sizeof(float) + 1);
-    int count = raw_data[0];
+    const uint8_t count = *raw_data++;
 
     // create and initialize update list
     cc_update_list_t *updates = malloc(sizeof(cc_update_list_t));
-    updates->count = 0;
     updates->device_id = device_id;
+    updates->count = 0;
     updates->list = malloc(sizeof(cc_update_data_t) * count);
-    updates->raw_data = malloc(update_data_size * count + 1);
+    updates->raw_data = malloc(UPDATE_DATA_SIZE * count + 1);
 
     // parse data to struct
-    int j = 1, k = 1;
-    for (int i = 0; i < count; i++)
+    for (uint8_t i = 0, k = 1; i < count; i++)
     {
         cc_assignment_key_t assignment;
-        assignment.id = raw_data[j];
+        assignment.id = raw_data[0];
         assignment.device_id = device_id;
         assignment.pair_id = -1;
 
-        if (check_assignments == 0 || cc_assignment_check(&assignment))
+        if (check_assignments || cc_assignment_check(&assignment))
         {
             cc_update_data_t *data = &updates->list[i];
 
@@ -99,23 +99,23 @@ cc_update_list_t *cc_update_parse(int device_id, uint8_t *raw_data, int check_as
             data->assignment_id = assignment.id;
 
             // update value
-            float *value = (float *) &raw_data[j + 1];
+            float *value = (float *) (raw_data + 1);
             data->value = *value;
 
             // copy raw data
-            memcpy(&updates->raw_data[k], &raw_data[j], update_data_size);
-            k += update_data_size;
+            memcpy(updates->raw_data + k, raw_data, UPDATE_DATA_SIZE);
+            k += UPDATE_DATA_SIZE;
 
             updates->count++;
         }
 
         // increment by update data size
-        j += update_data_size;
+        raw_data += UPDATE_DATA_SIZE;
     }
 
     // update count and size of raw_data
     updates->raw_data[0] = updates->count;
-    updates->raw_size = k;
+    updates->raw_size = updates->count * UPDATE_DATA_SIZE + 1;
 
     return updates;
 }

@@ -9,6 +9,7 @@ CFLAGS += -O0 -g -DDEBUG
 else
 CFLAGS += -O3
 endif
+CFLAGS += -Wall -Wextra -Werror
 
 # flags
 LIB_PATH=../../build/lib
