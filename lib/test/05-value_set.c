@@ -36,7 +36,7 @@ int main(void)
 
     cc_device_status_cb(handle, dev_desc);
 
-    printf("waiting device descriptor\n");
+    printf("*** waiting device descriptor\n");
     while (no_device) sleep(1);
 
     int act_id = 0;
@@ -58,7 +58,7 @@ int main(void)
     };
 
     int id = cc_assignment(handle, &ass, true);
-    printf("assignment id: %i\n", id);
+    printf("*** assignment id: %i\n", id);
 
     if (id >= 0)
     {
@@ -67,29 +67,28 @@ int main(void)
         float update_value = 0.0f;
         cc_set_value_t update_data = {dev_id, id, act_id, update_value};
         id = cc_value_set(handle, &update_data);
-        printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
+        printf("*** Value set: assignment: %i, value: %i\n", id, (int)update_value);
         sleep(1);
         update_value = 1.0f;
         update_data.value = update_value;
         id = cc_value_set(handle, &update_data);
-        printf("Value set: assignment: %i, value: %i\n", id, (int)update_value);
+        printf("*** Value set: assignment: %i, value: %i\n", id, (int)update_value);
         sleep(1);
-
 
         if (id >= 0)
         {
-            printf("removing assignment %i\n", id);
+            printf("*** removing assignment %i\n", id);
             cc_assignment_key_t unass = {id, dev_id, -1};
             cc_unassignment(handle, &unass);
         }
         else 
         {
-            printf("control set fail\n");
+            printf("*** control set fail\n");
         }
     }
     else
     {
-        printf("assignment fail\n");
+        printf("*** assignment fail\n");
     }
 
     free(list_items);

@@ -54,68 +54,53 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    int assign_id = 1;
-    int act_id = 0;
+    cc_assignment_t ass_1 = {-1, dev_id, 0, "Mom On", 0, 0, 1, 0, CC_MODE_MOMENTARY, 0, "-", 0, NULL, -1, -1, 0, 0, 0, 0};
+    cc_assignment_t ass_2 = {-1, dev_id, 1, "Mom Off", 1, 0, 1, 1, CC_MODE_MOMENTARY|CC_MODE_REVERSE, 0, "-", 0, NULL, -1, -1, 0, 0, 0, 0};
 
-    cc_assignment_t ass_1 = {assign_id, dev_id, act_id, "Momentary", 0, 0, 1, 10.0, 512, 0, "-", 0, NULL, -1, -1, 0, 0, 0, 0};
+    ass_1.id = cc_assignment(handle, &ass_1, true);
+    ass_2.id = cc_assignment(handle, &ass_2, true);
 
-    printf("assigning %i\n", assign_id);
-
-    const int id = cc_assignment(handle, &ass_1, true);
-
-    if (id < 0)
+    if (ass_1.id < 0)
     {
-        printf("error in assignment %i\n", id);
+        printf("error in assignment %i\n", ass_1.id);
+    }
+    if (ass_2.id < 0)
+    {
+        printf("error in assignment %i\n", ass_2.id);
     }
 
-    printf("Test momentary %i\n", assign_id);
+    printf("Test momentary\n");
     //give some time to test the actuatots
     sleep(10);
-
-    printf("keep button 1 pressed %i\n", assign_id);
-    sleep(5);
 
     //assign actuator 1 with 0
-    if (id >= 0)
+    if (ass_1.id >= 0)
     {
-        ass_1.id = id;
         sleep(1);
         float update_value = 0.0f;
-        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
+        cc_set_value_t update_data = {dev_id, ass_1.id, 0, update_value};
         const int idv = cc_value_set(handle, &update_data);
         printf("Value set: assignment: %i, value: %i\n", idv, (int)update_value);
         sleep(1);
      }
 
-    printf("release button 1 %i\n", assign_id);
-    printf("Test momentary %i\n", assign_id);
-
-    //give some time to test the actuatots
-    sleep(10);
-
-    printf("keep button 1 pressed %i\n", assign_id);
-    sleep(5);
-
-    //assign actuator 1 with 1
-    if (id >= 0)
+    //assign actuator 1 with 0
+    if (ass_2.id >= 0)
     {
         sleep(1);
-        float update_value = 1.0f;
-        cc_set_value_t update_data = {dev_id, id, act_id, update_value};
+        float update_value = 0.0f;
+        cc_set_value_t update_data = {dev_id, ass_2.id, 1, update_value};
         const int idv = cc_value_set(handle, &update_data);
         printf("Value set: assignment: %i, value: %i\n", idv, (int)update_value);
         sleep(1);
      }
 
-     printf("release button 1 %i\n", assign_id);
-     printf("Test momentary %i\n", assign_id);
-     //give some time to test the actuatots
-     sleep(10);
-
     //unassign
-    printf("removing assignment %i\n", id);
-    cc_assignment_key_t key_1 = {id, dev_id, -1};
+    printf("removing assignments %i %i\n", ass_1.id, ass_2.id);
+    cc_assignment_key_t key_1 = {ass_1.id, dev_id, -1};
     cc_unassignment(handle, &key_1);
+    cc_assignment_key_t key_2 = {ass_2.id, dev_id, -1};
+    cc_unassignment(handle, &key_2);
     sleep(1);
 
 

@@ -40,9 +40,8 @@ int main(void)
     while (no_device) sleep(1);
 
     int act_id = 0;
-    
     int list_count = 3;
-    cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}};
+    cc_item_t items[] = {{"option 1", 0.f}, {"option 2", 1.f}, {"option 3", 2.f}};
     cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
 
     for (int i = 0; i < list_count; ++i)
@@ -51,7 +50,7 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    cc_assignment_t ass = {0, dev_id, act_id, "list", 1.0, 1.0, 3.0, 1.0, CC_MODE_OPTIONS|CC_MODE_INTEGER, 3, "-",
+    cc_assignment_t ass = {0, dev_id, act_id, "list", 1.f, 0.f, 2.f, 1.f, CC_MODE_OPTIONS|CC_MODE_INTEGER, 3, "-",
         list_count, list_items, -1, -1, 0, 0, 0, 0};
 
     int id = cc_assignment(handle, &ass, true);
@@ -67,7 +66,7 @@ int main(void)
         cc_set_value_t update_data = {dev_id, id, act_id, listvalue_update};
         id = cc_value_set(handle, &update_data);
         printf("Value set: assignment: %i, value: %i\n", id, (int)listvalue_update);
-        sleep(5);
+        sleep(2);
 
         if (id >= 0)
         {

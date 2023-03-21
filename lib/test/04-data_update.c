@@ -61,15 +61,11 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    /*
-    cc_assignment_t ass = {-1, dev_id, 0, "Tap", 50.0, 28.0, 280.0, 120.0, CC_MODE_TAP_TEMPO|CC_MODE_REAL, 0, "BPM",
-        0, NULL, -1, -1, 0, 0, 0, 0};
-    */
-    /*
-    cc_assignment_t ass = {-1, dev_id, 0, "Opt", 0.0, 0.0, 2.0, 0.0, CC_MODE_INTEGER|CC_MODE_OPTIONS, 0, "",
-        list_count, list_items, -1, -1, 0, 0, 0, 0};
-    */
-    cc_assignment_t ass = {-1, dev_id, 0, "Toggle", 0.0, 0.0, 1.0, 0.0, CC_MODE_INTEGER|CC_MODE_TOGGLE, 0, "",
+//     cc_assignment_t ass = {-1, dev_id, 0, "Tap", 50.0, 28.0, 280.0, 120.0, CC_MODE_TAP_TEMPO|CC_MODE_REAL, 0, "BPM",
+//         0, NULL, -1, -1, 0, 0, 0, 0};
+//     cc_assignment_t ass = {-1, dev_id, 0, "Opt", 0.0, 0.0, 2.0, 0.0, CC_MODE_INTEGER|CC_MODE_OPTIONS, 0, "",
+//         list_count, list_items, -1, -1, 0, 0, 0, 0};
+    cc_assignment_t ass = {-1, dev_id, 2, "Toggle", 0.0, 0.0, 1.0, 0.0, CC_MODE_INTEGER|CC_MODE_TOGGLE, 0, "",
         0, NULL, -1, -1, 0, 0, 0, 0};
 
     int id = cc_assignment(handle, &ass, true);
