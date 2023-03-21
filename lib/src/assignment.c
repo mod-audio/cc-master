@@ -114,30 +114,29 @@ int cc_assignment_remove(cc_assignment_key_t *assignment)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
 
-    if (device && device->assignments)
+    if (!device || !device->assignments)
+        return -1;
+
+    const int id = assignment->id;
+
+    for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
     {
-        const int id = assignment->id;
+        if (!device->assignments[i])
+            continue;
+        if (device->assignments[i]->id != id)
+            continue;
 
-        for (int i = 0; i < CC_MAX_ASSIGNMENTS; i++)
-        {
-            if (device->assignments[i])
-            {
-                if (device->assignments[i]->id == id)
-                {
-                    const int actuator_id = device->assignments[i]->actuator_id;
+        const int actuator_id = device->assignments[i]->actuator_id;
 
-                    // free assignment memory and its list position
-                    cc_assignment_free(device->assignments[i]);
-                    device->assignments[i] = NULL;
+        // free assignment memory and its list position
+        cc_assignment_free(device->assignments[i]);
+        device->assignments[i] = NULL;
 
-                    // decrement actuator assignments counter
-                    cc_actuator_t *actuator = device->actuators[actuator_id];
-                    actuator->assignments_count--;
+        // decrement actuator assignments counter
+        cc_actuator_t *actuator = device->actuators[actuator_id];
+        actuator->assignments_count--;
 
-                    return id;
-                }
-            }
-        }
+        return id;
     }
 
     return -1;
