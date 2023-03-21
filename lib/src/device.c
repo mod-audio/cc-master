@@ -355,5 +355,5 @@ cc_device_t* cc_device_get(int device_id)
         }
     }
 
-    return 0;
+    return NULL;
 }

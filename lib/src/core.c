@@ -957,8 +957,9 @@ void cc_control_page(cc_handle_t *handle, int device_id, int page)
 
     const uint8_t actuators_per_page = device->actuators_count + device->actuatorgroups_count;
 
-    for (int i = 0; i < actuators_per_page; i++) {
-        int actuator_to_check =  i + (page * actuators_per_page);
+    for (int i = 0; i < actuators_per_page; i++)
+    {
+        const int actuator_to_check = i + (page * actuators_per_page);
         cc_assignment_t *assignment = cc_assignment_get_by_actuator(device_id, actuator_to_check);
 
         if (assignment)
