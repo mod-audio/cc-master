@@ -69,22 +69,20 @@
 ****************************************************************************************************
 */
 
-string_t *string_append_page_number(string_t *og_str, int page)
+static string_t *string_append_page_number(string_t *og_str, int page)
 {
     string_t *str = malloc(sizeof(string_t));
 
     if (str)
     {
         str->size = og_str->size + 8;
-        str->text = malloc(str->size);
+        str->text = malloc(str->size + 1);
         if (str->text)
         {
             memcpy(str->text, og_str->text, og_str->size);
-
-            char page_char = '0' + page;
-            strcat(str->text, " Page #");
-            strcat(str->text, &page_char);
-            str->text[str->size] = 0;
+            memcpy(str->text + og_str->size, " Page #", 7);
+            str->text[og_str->size + 7] = '1' + page;
+            str->text[og_str->size + 8] = 0;
         }
         else
         {
@@ -168,14 +166,19 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             // URI
             device->uri = string_deserialize(pdata, &i);
             pdata += i;
+
+            // device channel
+            device->channel = cc_device_count(device->uri->text);
+        }
+        else
+        {
+            device->uri = NULL;
+            device->channel = 0;
         }
 
         // device label
         device->label = string_deserialize(pdata, &i);
         pdata += i;
-
-        // device channel
-        device->channel = cc_device_count(device->uri->text);
 
         // number of actuators
         device->actuators = NULL;
@@ -208,13 +211,14 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             }
         }
 
+        // actuatorgroups were added to device descriptor starting from v0.7
         if (device->protocol.major > 0 || device->protocol.minor >= 7)
         {
             // number of actuatorgroups
             device->actuatorgroups = NULL;
             device->actuatorgroups_count = *pdata++;
 
-            //list of actuatorgroups
+            // list of actuatorgroups
             int actuatorgroup_id = device->actuators_count;
 
             if (device->actuatorgroups_count > 0)
@@ -244,55 +248,64 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             device->enumeration_frame_item_count = *pdata++;
 
             device->amount_of_pages = *pdata++;
-            device->current_page = 1;
+            device->current_page = 0;
 
-            //check if we have pages
+            // check if we have pages
             if (device->amount_of_pages > 1)
             {
+                // limit amount of pages to what is supported on server side
+                if (device->amount_of_pages > MAX_ACTUATOR_PAGES)
+                    device->amount_of_pages = MAX_ACTUATOR_PAGES;
+
+                // create the other actuator pages
                 int page_actuator_id = actuatorgroup_id;
 
-                //create the other actuator pages
-                for (int j = 2; j <= device->amount_of_pages; j++)
+                for (int j = 1; j < device->amount_of_pages; j++)
                 {
-                    for (int q = 0; q < device->actuators_count; q++)
+                    for (int q = 0; q < device->actuators_count; q++, page_actuator_id++)
                     {
-                        device->actuators[page_actuator_id] = malloc(sizeof(cc_actuator_t));
-                        cc_actuator_t *actuator = device->actuators[page_actuator_id];
+                        cc_actuator_t *actuator = malloc(sizeof(cc_actuator_t));
+                        device->actuators[j * device->actuators_count + q] = actuator;
 
                         memcpy(actuator, device->actuators[q], sizeof(cc_actuator_t));
                         actuator->id = page_actuator_id;
                         actuator->name = string_append_page_number(string_create(actuator->name->text), j);
-
-                        page_actuator_id++;
                     }
 
-                    for (int q = 0; q < device->actuatorgroups_count; q++)
+                    for (int q = 0; q < device->actuatorgroups_count; q++, page_actuator_id++)
                     {
-                        device->actuatorgroups[page_actuator_id] = malloc(sizeof(cc_actuatorgroup_t));
-                        cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[page_actuator_id];
+                        cc_actuatorgroup_t *actuatorgroup = malloc(sizeof(cc_actuatorgroup_t));
+                        device->actuatorgroups[j * device->actuatorgroups_count + q] = actuatorgroup;
 
                         memcpy(actuatorgroup, device->actuatorgroups[q], sizeof(cc_actuatorgroup_t));
                         actuatorgroup->id = page_actuator_id;
                         actuatorgroup->name = string_append_page_number(string_create(device->actuatorgroups[q]->name->text), j);
-
-                        page_actuator_id++;
                     }
                 }
 
-                //'fix' the names of the page 1 actuators
+                // 'fix' the names of the page 1 actuators
                 for (int j = 0; j < device->actuators_count; j++)
                 {
                     cc_actuator_t *actuator = device->actuators[j];
-                    actuator->name = string_append_page_number(actuator->name, 1);
+                    actuator->name = string_append_page_number(actuator->name, 0);
                 }
                 for (int j = 0; j < device->actuatorgroups_count; j++)
                 {
                     cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[j];
-                    actuatorgroup->name = string_append_page_number(actuatorgroup->name, 1);
+                    actuatorgroup->name = string_append_page_number(actuatorgroup->name, 0);
                 }
             }
 
             device->chain_id = *pdata++;
+        }
+        else
+        {
+            device->actuatorgroups = NULL;
+            device->actuatorgroups_count = 0;
+            device->enumeration_frame_item_count = 0;
+            device->amount_of_pages = 0;
+            device->current_page = 0;
+            device->chain_id = 0;
         }
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
@@ -352,7 +365,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         uint8_t actuator_id = assignment->actuator_id;
 
         if (actuator_id >= actuators_per_page)
-            actuator_id = assignment->actuator_id - (actuators_per_page * (device->current_page-1));
+            actuator_id = assignment->actuator_id - (actuators_per_page * device->current_page);
 
         *pdata++ = actuator_id;
 
@@ -399,10 +412,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         }
 
         // list count
-        int list_count = device->enumeration_frame_item_count;
-
-        if (assignment->list_count == 0)
-            list_count = 0;
+        int list_count = assignment->list_count;
 
         if (list_count > assignment->list_count)
             list_count = assignment->list_count;
@@ -453,7 +463,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         uint8_t actuator_id = update->actuator_id;
 
         if (actuator_id >= actuators_per_page)
-            actuator_id = update->actuator_id - (actuators_per_page * (device->current_page-1));
+            actuator_id = update->actuator_id - (actuators_per_page * device->current_page);
 
         *pdata++ = actuator_id;
 
