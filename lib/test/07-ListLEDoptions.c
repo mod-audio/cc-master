@@ -52,11 +52,24 @@ int main(void)
     while (no_device)
     {
     	sleep(1);
-    }  
+    }
 
-    int list_count = 8;
-    
-    cc_item_t items[] = {{"option 1", 1.0}, {"option 2", 2.0}, {"option 3", 3.0}, {"option 4", 4.0}, {"option 5", 5.0}, {"option 6", 6.0}, {"option 7", 7.0},{"option 8", 8.0}};
+    cc_item_t items[] = {
+        {"option 1", 0.f},
+        {"option 2", 1.f},
+        {"option 3", 2.f},
+        {"option 4", 3.f},
+        {"option 5", 4.f},
+        {"option 6", 5.f},
+        {"option 7", 6.f},
+        {"option 8", 7.f},
+        {"option 9", 8.f},
+        {"option 10", 9.f},
+        {"option 11", 10.f},
+        {"option 12", 11.f}
+    };
+    int list_count = sizeof(items)/sizeof(items[0]);
+
     cc_item_t **list_items = malloc(sizeof(cc_item_t *) * list_count);
 
     for (int i = 0; i < list_count; ++i)
@@ -69,7 +82,7 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    cc_assignment_t ass_1 = {-1, dev_id, 0, "List1", 0.0, 0.0, 7.0, 0.0, 7, CC_MODE_OPTIONS, "-",
+    cc_assignment_t ass_1 = {-1, dev_id, 1, "List1", 0.f, 0.f, list_count-1, 0.f, CC_MODE_INTEGER|CC_MODE_OPTIONS|CC_MODE_COLOURED, list_count, "-",
         list_count, list_items, -1, -1, 0, 0, 0, 0};
 
     ass_1.id = cc_assignment(handle, &ass_1, true);
@@ -84,7 +97,7 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    cc_assignment_t ass_2 = {-1, dev_id, 1, "List2", 0.0, 0.0, 7.0, 0.0, 7, CC_MODE_OPTIONS, "-",
+    cc_assignment_t ass_2 = {-1, dev_id, 2, "List2", 0.f, 0.f, list_count-1, 0.0, list_count, CC_MODE_INTEGER|CC_MODE_OPTIONS, "-",
         list_count, list_items, -1, -1, 0, 0, 0, 0};
 
     ass_2.id = cc_assignment(handle, &ass_2, true);
@@ -109,6 +122,8 @@ int main(void)
     sleep(1);
 
     cc_finish(handle);
+
+    free(list_items);
 
     return 0;
 }
