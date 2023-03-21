@@ -258,7 +258,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                     device->amount_of_pages = MAX_ACTUATOR_PAGES;
 
                 // create the other actuator pages
-                int page_actuator_id = device->actuators_count;
+                int page_actuator_id = actuatorgroup_id;
 
                 for (int j = 1; j < device->amount_of_pages; j++)
                 {
