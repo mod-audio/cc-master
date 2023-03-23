@@ -2,7 +2,7 @@
 
 # Mandatory waf variables
 APPNAME = 'controlchain'    # Package name for waf dist
-VERSION = '0.6.0'           # Package version for waf dist
+VERSION = '0.7.0'           # Package version for waf dist
 
 top     = '.'           # Source directory
 out     = 'build'       # Build directory
