@@ -219,6 +219,7 @@ cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id)
     return NULL;
 }
 
+#if 0
 void cc_assignment_update_list(cc_assignment_t *assignment, float index)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
@@ -247,6 +248,7 @@ void cc_assignment_update_list(cc_assignment_t *assignment, float index)
 
     assignment->list_index -= assignment->enumeration_frame_min;
 }
+#endif
 
 cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment)
 {

@@ -211,7 +211,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             }
         }
 
-        // actuatorgroups were added to device descriptor starting from v0.7
+        // actuatorgroups, pagination and chain-id were added to device descriptor starting from v0.7
         if (device->protocol.major > 0 || device->protocol.minor >= 7)
         {
             // number of actuatorgroups
@@ -245,6 +245,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                 }
             }
 
+            // pagination
             device->enumeration_frame_item_count = *pdata++;
 
             device->amount_of_pages = *pdata++;
@@ -258,7 +259,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                     device->amount_of_pages = MAX_ACTUATOR_PAGES;
 
                 // create the other actuator pages
-                int page_actuator_id = actuatorgroup_id;
+                int page_actuator_id = device->actuators_count + device->actuatorgroups_count;
 
                 for (int j = 1; j < device->amount_of_pages; j++)
                 {
@@ -295,6 +296,11 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
                     actuatorgroup->name = string_append_page_number(actuatorgroup->name, 0);
                 }
             }
+            else
+            {
+                // use 1 page by default
+                device->amount_of_pages = 1;
+            }
 
             device->chain_id = *pdata++;
         }
@@ -303,7 +309,7 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             device->actuatorgroups = NULL;
             device->actuatorgroups_count = 0;
             device->enumeration_frame_item_count = 0;
-            device->amount_of_pages = 0;
+            device->amount_of_pages = 1;
             device->current_page = 0;
             device->chain_id = 0;
         }
@@ -414,15 +420,16 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // list count
         int list_count = assignment->list_count;
 
-        if (list_count > assignment->list_count)
-            list_count = assignment->list_count;
-
         *pdata++ = list_count;
 
         // list items
         if (list_count)
         {
+#if 1
+            for (int i = 0; i < list_count; i++)
+#else
             for (int i = assignment->enumeration_frame_min; i < assignment->enumeration_frame_max + 1; i++)
+#endif
             {
                 cc_item_t *item = assignment->list_items[i];
 
@@ -470,6 +477,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // value
         pdata += float_to_bytes(update->value, pdata);
     }
+#if 0
     else if (msg->command == CC_CMD_UPDATE_ENUMERATION)
     {
         const cc_assignment_t *assignment = data_struct;
@@ -496,6 +504,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
             pdata += float_to_bytes(item->value, pdata);
         }
     }
+#endif
 
     msg->data_size = (pdata - msg->data);
 

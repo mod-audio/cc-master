@@ -263,10 +263,22 @@ static int send_and_wait(cc_handle_t *handle, const cc_msg_t *msg)
     // because all devices share the same serial line
     for (;;)
     {
-        if (sem_timedwait(&handle->waiting_response, &timeout) == 0)
-            return 0;
+        // TESTING DEBUG
+        static const char *commands[] = {
+            "sync", "handshake", "device control", "device descriptor",
+            "assignment", "data update", "unassignment", "set value", "update list items", "request control page"
+        };
 
-        if (errno != EINTR)
+        if (sem_timedwait(&handle->waiting_response, &timeout) == 0)
+        {
+            DEBUG_MSG("timedwait ok! %s\n", commands[msg->command]);
+            return 0;
+        }
+
+        int e = errno;
+        DEBUG_MSG("timedwait error %d for %s\n", e, commands[msg->command]);
+
+        if (e != EINTR)
             return 1;
     }
 }
@@ -278,8 +290,18 @@ static int request(cc_handle_t *handle, const cc_msg_t *msg)
     while (!atomic_load(&handle->request_sync))
         pthread_cond_wait(&handle->request_cond, &handle->request_lock);
 
-    // send message
-    int ret = send_and_wait(handle, msg);
+    // send message, only wait if a reply is expected
+    int ret;
+    switch (msg->command)
+    {
+    case CC_CMD_DEV_DESCRIPTOR:
+        ret = send_and_wait(handle, msg);
+        break;
+    default:
+        send(handle, msg);
+        ret = 0;
+        break;
+    }
 
     // unlock for next request
     atomic_store(&handle->request_sync, false);
@@ -483,14 +505,6 @@ static void parser(cc_handle_t *handle)
         {
             sem_post(&handle->waiting_response);
         }
-    }
-    else if (msg->command == CC_CMD_ASSIGNMENT ||
-             msg->command == CC_CMD_UNASSIGNMENT ||
-             msg->command == CC_CMD_SET_VALUE)
-    {
-        // TODO: don't post if there is no request
-        DEBUG_MSG("  posting response\n");
-        sem_post(&handle->waiting_response);
     }
     else if (msg->command == CC_CMD_DATA_UPDATE)
     {
@@ -819,6 +833,7 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
     if (assignment->id < 0)
         return -1;
 
+#if 0
     //check if we need to save enumeration stuff
    if (assignment->mode & CC_MODE_OPTIONS)
    {
@@ -845,8 +860,9 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
                 assignment->enumeration_frame_min = 0;
         }
     }
+#endif
 
-    //we only send the actuators of the current page
+    // we only send the actuators of the current page
     if (device->current_page == assignment->actuator_page_id)
     {
         cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_ASSIGNMENT, assignment);
