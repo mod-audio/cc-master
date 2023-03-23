@@ -327,7 +327,7 @@ static int running(cc_handle_t *handle)
 
 #define UPDATE_DATA_SIZE (sizeof(float) + 1)
 
-static void parse_data_update(const cc_handle_t *handle)
+static void parse_data_update(cc_handle_t *handle)
 {
     const cc_msg_t *msg = handle->msg_rx;
 
@@ -337,7 +337,6 @@ static void parse_data_update(const cc_handle_t *handle)
 
     DEBUG_MSG("updates received (device_id: %i, count: %i)\n", updates->device_id, updates->count);
 
-    int j = 1;
     for (int i = 0; i < updates->count; i++)
     {
         cc_assignment_key_t assignment_key = {
@@ -346,71 +345,54 @@ static void parse_data_update(const cc_handle_t *handle)
             .pair_id = -1,
         };
 
-        // Check if there is an assignment
-        if (!cc_assignment_check(&assignment_key))
+        cc_assignment_t *assignment = cc_assignment_get(&assignment_key);
+
+        if (!assignment)
         {
-            j += UPDATE_DATA_SIZE;
+            DEBUG_MSG("updates for device_id %i, assignment_id %i is invalid\n", updates->device_id, updates->list[i].assignment_id);
             continue;
         }
-
-        cc_assignment_t *assignment = cc_assignment_get(&assignment_key);
 
         // change value
         assignment->value = updates->list[i].value;
 
-        //also change value of paired assignment if needed
-        if (assignment->assignment_pair_id != -1)
+        // also change value of paired assignment
+        cc_assignment_t *pair_assignment = NULL;
+
+        cc_assignment_key_t assignment_pair_key = {
+            .id = assignment->assignment_pair_id,
+            .device_id = assignment->device_id,
+            .pair_id = -1,
+        };
+
+        if (assignment_pair_key.id != -1)
         {
-            cc_assignment_key_t key;
-            key.id = assignment->assignment_pair_id;
-            key.device_id = assignment->device_id;
+            pair_assignment = cc_assignment_get(&assignment_pair_key);
 
-            cc_assignment_t *paired_assignment = NULL;
-
-            paired_assignment = cc_assignment_get(&key);
-
-            if (paired_assignment)
-                paired_assignment->value = updates->list[i].value;
+            if (pair_assignment)
+                pair_assignment->value = assignment->value;
         }
 
-#if 0 // TODO
-        //we need to update list assignments
-        if (assignment->mode & CC_MODE_OPTIONS)
+        // we need to update list assignments
+        if ((assignment->mode & CC_MODE_OPTIONS) && assignment->enumeration_frame_max)
         {
-            DEBUG_MSG("sending list update for assignment: %i\n", assignment->id);
+            DEBUG_MSG("sending list update for assignment: %i %i\n", assignment->id, assignment->assignment_pair_id);
 
-            cc_assignment_update_list(assignment, updates->list[i].value);
+            cc_assignment_update_list(assignment, assignment->value);
 
-            cc_msg_t *msg2 = cc_msg_builder(updates->device_id, CC_CMD_UPDATE_ENUMERATION, assignment);
-            request(handle, msg2);
-            cc_msg_delete(msg2);
+            cc_msg_t *msg_enum = cc_msg_builder(updates->device_id, CC_CMD_UPDATE_ENUMERATION, assignment);
+            request(handle, msg_enum);
+            cc_msg_delete(msg_enum);
 
-            //if we have a group assignment
-            if (assignment->mode & CC_MODE_GROUP)
+            if (pair_assignment)
             {
-                //make sure 2 lists are updated
-                assignment->id = assignment->assignment_pair_id;
-                cc_msg_t *msg3 = cc_msg_builder(updates->device_id, CC_CMD_UPDATE_ENUMERATION, assignment);
-                assignment->id = updates->list[i].assignment_id;
-                request(handle, msg3);
-                cc_msg_delete(msg3);
+                cc_assignment_update_list(pair_assignment, pair_assignment->value);
 
-                //make sure to send the correct assignment ID to the host
-                if (assignment->mode & CC_MODE_REVERSE)
-                {
-                    DEBUG_MSG("master assignment of group changed with ID: %i\n", updates->list[i].assignment_id);
-                }
-                else
-                {
-                    DEBUG_MSG("changing group assignment id from : %i to %i to update value\n", updates->list[i].assignment_id, assignment->assignment_pair_id);
-                    updates->list[i].assignment_id = assignment->assignment_pair_id;
-                    updates->raw_data[j] = assignment->assignment_pair_id;
-                }
+                cc_msg_t *msg_enum_r = cc_msg_builder(updates->device_id, CC_CMD_UPDATE_ENUMERATION, pair_assignment);
+                request(handle, msg_enum_r);
+                cc_msg_delete(msg_enum_r);
             }
         }
-#endif
-
-        j += UPDATE_DATA_SIZE;
     }
 
     if (updates->count > 0 && handle->data_update_cb)
@@ -828,39 +810,16 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
         return -1;
 
     if (new_assignment)
+    {
+        // check if we need to save enumeration stuff
+        if ((assignment->mode & CC_MODE_OPTIONS) && device->enumeration_frame_item_count)
+            cc_assignment_update_list(assignment, assignment->value);
+
         assignment->id = cc_assignment_add(assignment);
+    }
 
     if (assignment->id < 0)
         return -1;
-
-#if 0
-    //check if we need to save enumeration stuff
-   if (assignment->mode & CC_MODE_OPTIONS)
-   {
-        int enumeration_frame_half = (int)device->enumeration_frame_item_count/2;
-
-        //get value and index
-        assignment->list_index = assignment->value;
-        assignment->enumeration_frame_min = assignment->list_index - enumeration_frame_half;
-        assignment->enumeration_frame_max = assignment->list_index + enumeration_frame_half;
-
-        if (assignment->enumeration_frame_min < 0) {
-            assignment->enumeration_frame_min = 0;
-            if (assignment->list_count < device->enumeration_frame_item_count - 1)
-                assignment->enumeration_frame_max = assignment->list_count;
-            else
-                assignment->enumeration_frame_max = device->enumeration_frame_item_count - 1;
-        }
-
-        if (assignment->enumeration_frame_max >= assignment->list_count) {
-            assignment->enumeration_frame_max = assignment->list_count-1;
-            assignment->enumeration_frame_min = assignment->enumeration_frame_max - (device->enumeration_frame_item_count - 1);
-
-            if (assignment->enumeration_frame_min < 0)
-                assignment->enumeration_frame_min = 0;
-        }
-    }
-#endif
 
     // we only send the actuators of the current page
     if (device->current_page == assignment->actuator_page_id)
@@ -932,8 +891,8 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment_key)
     if (assignment_pair_key.id != -1)
     {
         // request unassignment
-        cc_msg_t *msg = cc_msg_builder(assignment_pair_key.device_id, CC_CMD_UNASSIGNMENT, &assignment_pair_key);
-        if (request(handle, msg))
+        cc_msg_t *msg_unassignment = cc_msg_builder(assignment_pair_key.device_id, CC_CMD_UNASSIGNMENT, &assignment_pair_key);
+        if (request(handle, msg_unassignment))
         {
             // TODO: unassignment failed. try again?
             DEBUG_MSG("  unassignment-2 timeout (id: %i)\n", assignment_pair_key.id);
@@ -943,7 +902,7 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment_key)
             DEBUG_MSG("  unassignment-2 done (id: %i)\n", assignment_pair_key.id);
         }
 
-        cc_msg_delete(msg);
+        cc_msg_delete(msg_unassignment);
     }
 }
 

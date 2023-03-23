@@ -79,6 +79,9 @@ int cc_assignment_add(const cc_assignment_t *assignment)
     if (!device)
         return -1;
 
+    if (assignment->actuator_id >= device->actuators_count)
+        return -1;
+
     // if is the first time, create list of assignments
     if (!device->assignments)
         device->assignments = calloc(CC_MAX_ASSIGNMENTS, sizeof(cc_assignment_t *));
@@ -219,36 +222,33 @@ cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id)
     return NULL;
 }
 
-#if 0
-void cc_assignment_update_list(cc_assignment_t *assignment, float index)
+void cc_assignment_update_list(cc_assignment_t *assignment, int index)
 {
     cc_device_t *device = cc_device_get(assignment->device_id);
-    int enumeration_frame_half = (int) device->enumeration_frame_item_count/2;
+
+    const int enumeration_frame_half = device->enumeration_frame_item_count / 2;
 
     assignment->list_index = index;
+    assignment->enumeration_frame_min = index - enumeration_frame_half;
+    assignment->enumeration_frame_max = index + enumeration_frame_half + 1;
 
-    assignment->enumeration_frame_min = assignment->list_index - enumeration_frame_half;
-    assignment->enumeration_frame_max = assignment->list_index + enumeration_frame_half;
-
-    if (assignment->enumeration_frame_min < 0) {
+    if (assignment->enumeration_frame_min < 0)
+    {
         assignment->enumeration_frame_min = 0;
-        if (assignment->list_count < device->enumeration_frame_item_count - 1)
-            assignment->enumeration_frame_max = assignment->list_count;
-        else
-            assignment->enumeration_frame_max = device->enumeration_frame_item_count - 1;
-    }
+        assignment->enumeration_frame_max = device->enumeration_frame_item_count;
 
-    if (assignment->enumeration_frame_max >= assignment->list_count) {
-        assignment->enumeration_frame_max = assignment->list_count-1;
-        assignment->enumeration_frame_min = assignment->enumeration_frame_max - (device->enumeration_frame_item_count - 1);
+        if (assignment->enumeration_frame_max > assignment->list_count)
+            assignment->enumeration_frame_max = assignment->list_count;
+    }
+    else if (assignment->enumeration_frame_max > assignment->list_count)
+    {
+        assignment->enumeration_frame_max = assignment->list_count;
+        assignment->enumeration_frame_min = assignment->enumeration_frame_max - device->enumeration_frame_item_count;
 
         if (assignment->enumeration_frame_min < 0)
             assignment->enumeration_frame_min = 0;
     }
-
-    assignment->list_index -= assignment->enumeration_frame_min;
 }
-#endif
 
 cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment)
 {

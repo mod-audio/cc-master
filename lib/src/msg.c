@@ -248,6 +248,10 @@ void cc_msg_parser(const cc_msg_t *msg, void *data_struct)
             // pagination
             device->enumeration_frame_item_count = *pdata++;
 
+            // must be >= 2
+            if (device->enumeration_frame_item_count <= 1)
+                device->enumeration_frame_item_count = 0;
+
             device->amount_of_pages = *pdata++;
             device->current_page = 0;
 
@@ -358,9 +362,9 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
     else if (command == CC_CMD_ASSIGNMENT)
     {
         const cc_assignment_t *assignment = data_struct;
+        const cc_device_t *device = cc_device_get(assignment->device_id);
 
         // device id
-        cc_device_t *device = cc_device_get(assignment->device_id);
         msg->device_id = assignment->device_id;
 
         // assignment id
@@ -379,6 +383,8 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         if (assignment->label)
         {
             int size = strlen(assignment->label);
+            if (size > 16)
+                size = 16;
             *pdata++ = size;
             memcpy(pdata, assignment->label, size);
             pdata += size;
@@ -409,6 +415,8 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         {
             int size = strlen(assignment->unit);
             *pdata++ = size;
+            if (size > 8)
+                size = 8;
             memcpy(pdata, assignment->unit, size);
             pdata += size;
         }
@@ -418,24 +426,33 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         }
 
         // list count
-        int list_count = assignment->list_count;
+        int list_count = assignment->enumeration_frame_max - assignment->enumeration_frame_min;
+
+        if (list_count == 0)
+            list_count = assignment->list_count;
+
+        // cannot be bigger than 1 byte
+        if (list_count > 0xff)
+            list_count = 0xff;
 
         *pdata++ = list_count;
 
         // list items
         if (list_count)
         {
-#if 1
-            for (int i = 0; i < list_count; i++)
-#else
-            for (int i = assignment->enumeration_frame_min; i < assignment->enumeration_frame_max + 1; i++)
-#endif
+            const int list_max = assignment->enumeration_frame_max ? assignment->enumeration_frame_max : list_count;
+
+            for (int i = assignment->enumeration_frame_min; i < list_max; i++)
             {
-                cc_item_t *item = assignment->list_items[i];
+                const cc_item_t *item = assignment->list_items[i];
+
+                // item label size
+                int size = strlen(item->label);
+                if (size > 16)
+                    size = 16;
+                *pdata++ = size;
 
                 // item label
-                int size = strlen(item->label);
-                *pdata++ = size;
                 memcpy(pdata, item->label, size);
                 pdata += size;
 
@@ -454,13 +471,13 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // assignment id
         *pdata++ = assignment->id;
     }
-    else if (msg->command == CC_CMD_SET_VALUE)
+    else if (command == CC_CMD_SET_VALUE)
     {
         const cc_set_value_t *update = data_struct;
+        cc_device_t *device = cc_device_get(update->device_id);
 
         // device id
         msg->device_id = update->device_id;
-        cc_device_t *device = cc_device_get(update->device_id);
 
         // assignment id
         *pdata++ = update->assignment_id;
@@ -477,8 +494,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // value
         pdata += float_to_bytes(update->value, pdata);
     }
-#if 0
-    else if (msg->command == CC_CMD_UPDATE_ENUMERATION)
+    else if (command == CC_CMD_UPDATE_ENUMERATION)
     {
         const cc_assignment_t *assignment = data_struct;
 
@@ -489,14 +505,20 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         *pdata++ = assignment->id;
         *pdata++ = assignment->actuator_id;
 
-        *pdata++ = assignment->list_index;
+        // list offset
+        *pdata++ = assignment->list_index - assignment->enumeration_frame_min;
 
-        for (int i = assignment->enumeration_frame_min; i < assignment->enumeration_frame_max + 1; i++)
+        for (int i = assignment->enumeration_frame_min; i < assignment->enumeration_frame_max; i++)
         {
-            cc_item_t *item = assignment->list_items[i];
-            // item label
+            const cc_item_t *item = assignment->list_items[i];
+
+            // item label size
             int size = strlen(item->label);
+            if (size > 16)
+                size = 16;
             *pdata++ = size;
+
+            // item label
             memcpy(pdata, item->label, size);
             pdata += size;
 
@@ -504,7 +526,6 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
             pdata += float_to_bytes(item->value, pdata);
         }
     }
-#endif
 
     msg->data_size = (pdata - msg->data);
 

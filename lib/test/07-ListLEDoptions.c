@@ -97,7 +97,7 @@ int main(void)
     // assignment id, device_id, actuator_id, label, value, min, max, def, mode, steps, unit, list_count, list_items
     // actuator_pair_id, assignment_pair_id
     // list_index, enumeration_frame_min, enumeration_frame_max, actuator_page_id
-    cc_assignment_t ass_2 = {-1, dev_id, 2, "List2", 0.f, 0.f, list_count-1, 0.0, list_count, CC_MODE_INTEGER|CC_MODE_OPTIONS, "-",
+    cc_assignment_t ass_2 = {-1, dev_id, 2, "List2", 0.f, 0.f, list_count-1, 0.f, CC_MODE_INTEGER|CC_MODE_OPTIONS, list_count, "-",
         list_count, list_items, -1, -1, 0, 0, 0, 0};
 
     ass_2.id = cc_assignment(handle, &ass_2, true);

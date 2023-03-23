@@ -103,7 +103,7 @@ int cc_assignment_set_pair_id(cc_assignment_key_t *assignment);
 
 cc_assignment_t *cc_assignment_get(const cc_assignment_key_t *assignment);
 cc_assignment_t *cc_assignment_get_by_actuator(int device_id, int actuator_id);
-void cc_assignment_update_list(cc_assignment_t *assignment, float index);
+void cc_assignment_update_list(cc_assignment_t *assignment, int index);
 
 cc_assignment_t *cc_assignment_dup(const cc_assignment_t *assignment);
 void cc_assignment_free(cc_assignment_t *assignment);
