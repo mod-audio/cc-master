@@ -510,11 +510,12 @@ int main(int argc, char **argv)
             const int actuators_in_page = device->actuators_count + device->actuatorgroups_count;
             const int actuator_page_id = assignment.actuator_id / actuators_in_page; // intentionally round down
             const int actuator_page_offset = actuator_page_id * actuators_in_page;
+            const int actuator_group_id = assignment.actuator_id - device->actuators_count - actuator_page_offset;
 
             // special handling if assigning to group
-            if (assignment.actuator_id - device->actuators_count - actuator_page_offset >= device->actuatorgroups_count)
+            if (actuator_group_id >= 0 && actuator_group_id < device->actuatorgroups_count)
             {
-                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - device->actuators_count - actuator_page_offset];
+                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[actuator_group_id];
 
                 int main_actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + actuator_page_offset;
                 actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + actuator_page_offset;
