@@ -408,7 +408,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "device_descriptor") == 0)
         {
-            int device_id;
+            int device_id = 0;
             json_unpack(data, CC_DEV_DESCRIPTOR_REQ_FORMAT, "device_id", &device_id);
 
             char *descriptor = cc_device_descriptor(device_id);
@@ -423,7 +423,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "device_control") == 0)
         {
-            int device_id, enable;
+            int device_id = 0, enable = 0;
             json_unpack(data, CC_DEV_CONTROL_REQ_FORMAT, "device_id", &device_id,
                 "enable", &enable);
 
@@ -435,7 +435,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "device_status") == 0)
         {
-            int enable;
+            int enable = 0;
             json_unpack(data, CC_DEV_STATUS_REQ_FORMAT, "enable", &enable);
 
             event_set(read_data.client_fd, CC_DEVICE_STATUS_EV, enable);
@@ -446,9 +446,9 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "assignment") == 0)
         {
-            cc_assignment_t assignment;
-            double value, min, max, def;
-            json_t *options;
+            cc_assignment_t assignment = {0};
+            double value = 0, min = 0, max = 0, def = 0;
+            json_t *options = NULL;
 
             json_unpack(data, CC_ASSIGNMENT_REQ_FORMAT,
                 "device_id", &assignment.device_id,
@@ -562,7 +562,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "unassignment") == 0)
         {
-            cc_assignment_key_t assignment;
+            cc_assignment_key_t assignment = {0};
 
             json_unpack(data, CC_UNASSIGNMENT_REQ_FORMAT,
                 "assignment_id", &assignment.id,
@@ -577,8 +577,8 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "value_set") == 0)
         {
-            cc_set_value_t update;
-            double value;
+            cc_set_value_t update = {0};
+            double value = 0;
 
             json_unpack(data, CC_VALUE_SET_REQ_FORMAT,
                 "device_id", &update.device_id,
@@ -598,7 +598,7 @@ int main(int argc, char **argv)
         }
         else if (strcmp(request, "data_update") == 0)
         {
-            int enable;
+            int enable = 0;
             json_unpack(data, CC_DATA_UPDATE_REQ_FORMAT, "enable", &enable);
 
             event_set(read_data.client_fd, CC_DATA_UPDATE_EV, enable);

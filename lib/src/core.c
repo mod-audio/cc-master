@@ -821,15 +821,13 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
         // add assignment
         assignment->id = cc_assignment_add(assignment);
     }
-    else
-    {
-        // correct initial value for momentary-mode assignments
-        if (assignment->mode & CC_MODE_MOMENTARY)
-            assignment->value = assignment->mode & CC_MODE_REVERSE ? assignment->max : assignment->min;
-    }
 
     if (assignment->id < 0)
         return -1;
+
+    // enforce initial value for momentary-mode assignments
+    if (assignment->mode & CC_MODE_MOMENTARY)
+        assignment->value = assignment->mode & CC_MODE_REVERSE ? assignment->max : assignment->min;
 
     // we only send the actuators of the current page
     if (device->current_page == assignment->actuator_page_id)

@@ -23,6 +23,7 @@
 ****************************************************************************************************
 */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -179,7 +180,16 @@ static json_t* cc_client_request(cc_client_t *client, const char *name, json_t *
     if (ret > 0 && sem_wait(&client->waiting_reply) == 0)
     {
         json_error_t error;
-        reply = json_loads(client->buffer, 0, &error);
+        reply = json_loads(client->buffer, JSON_ALLOW_NUL, &error);
+
+        if (!reply)
+            fprintf(stderr, "cc_client_request load error: line %i, column %i, %s\n",
+                    error.line, error.column, error.text);
+    }
+    else
+    {
+        const int err = errno;
+        fprintf(stderr, "cc_client_request write error: ret %i errno %i\n", ret, err);
     }
 
     // unlock
