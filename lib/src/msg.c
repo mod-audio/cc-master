@@ -75,14 +75,24 @@ static string_t *string_append_page_number(string_t *og_str, int page)
 
     if (str)
     {
-        str->size = og_str->size + 8;
+        str->size = og_str->size + 9;
         str->text = malloc(str->size + 1);
         if (str->text)
         {
             memcpy(str->text, og_str->text, og_str->size);
             memcpy(str->text + og_str->size, " Page #", 7);
-            str->text[og_str->size + 7] = '1' + page;
-            str->text[og_str->size + 8] = 0;
+            if (page >= 10)
+            {
+                str->text[og_str->size + 7] = '0' + (int)(page / 10);
+                str->text[og_str->size + 8] = '0' + (page % 10);
+                str->text[og_str->size + 9] = 0;
+            }
+            else
+            {
+                str->text[og_str->size + 7] = '1' + page;
+                str->text[og_str->size + 8] = 0;
+                str->text[og_str->size + 9] = 0;
+            }
         }
         else
         {
