@@ -79,7 +79,7 @@ int cc_assignment_add(const cc_assignment_t *assignment)
     if (!device)
         return -1;
 
-    if (assignment->actuator_id >= device->actuators_count)
+    if (assignment->actuator_id >= device->actuators_count * device->amount_of_pages)
         return -1;
 
     // if is the first time, create list of assignments

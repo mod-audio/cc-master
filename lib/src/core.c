@@ -815,7 +815,17 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
         if ((assignment->mode & CC_MODE_OPTIONS) && device->enumeration_frame_item_count)
             cc_assignment_update_list(assignment, assignment->value);
 
+        // set page id
+        assignment->actuator_page_id = assignment->actuator_id / (device->actuators_count + device->actuatorgroups_count);
+
+        // add assignment
         assignment->id = cc_assignment_add(assignment);
+    }
+    else
+    {
+        // correct initial value for momentary-mode assignments
+        if (assignment->mode & CC_MODE_MOMENTARY)
+            assignment->value = assignment->mode & CC_MODE_REVERSE ? assignment->max : assignment->min;
     }
 
     if (assignment->id < 0)
@@ -958,7 +968,7 @@ void cc_control_page(cc_handle_t *handle, int device_id, int page)
 
     const uint8_t actuators_per_page = device->actuators_count + device->actuatorgroups_count;
 
-    for (int i = 0; i < actuators_per_page; i++)
+    for (int i = 0; i < device->actuators_count; i++)
     {
         const int actuator_to_check = i + (page * actuators_per_page);
         cc_assignment_t *assignment = cc_assignment_get_by_actuator(device_id, actuator_to_check);

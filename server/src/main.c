@@ -463,6 +463,18 @@ int main(int argc, char **argv)
                 "unit", &assignment.unit,
                 "options", &options);
 
+            cc_device_t *device = cc_device_get(assignment.device_id);
+            if (!device)
+            {
+                // bail out early if error
+                json_t *data = json_pack(CC_ASSIGNMENT_REPLY_FORMAT,
+                    "assignment_id", -1,
+                    "assignment_pair_id", -1,
+                    "actuator_pair_id", -1);
+                send_reply(client_fd, request, data);
+                continue;
+            }
+
             // double to float
             assignment.value = value;
             assignment.min = min;
@@ -493,24 +505,22 @@ int main(int argc, char **argv)
             }
 
             int assignment_id, assignment_pair_id, actuator_pair_id;
-            cc_device_t *device = cc_device_get(assignment.device_id);
 
             // get the page of the actuator to assign
-            const uint8_t actuators_in_page = device->actuators_count + device->actuatorgroups_count;
-            assignment.actuator_page_id = assignment.actuator_id / actuators_in_page;
+            const int actuators_in_page = device->actuators_count + device->actuatorgroups_count;
+            const int actuator_page_id = assignment.actuator_id / actuators_in_page; // intentionally round down
+            const int actuator_page_offset = actuator_page_id * actuators_in_page;
 
             // special handling if assigning to group
-            if (device && ((assignment.actuator_id - (actuators_in_page * assignment.actuator_page_id)) >= device->actuators_count))
+            if (assignment.actuator_id - device->actuators_count - actuator_page_offset >= device->actuatorgroups_count)
             {
-                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - (actuators_in_page * assignment.actuator_page_id) - device->actuators_count];
-                //actuator 0 in a group always becomes the "master" actuator
-                actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1];
+                cc_actuatorgroup_t *actuatorgroup = device->actuatorgroups[assignment.actuator_id - device->actuators_count - actuator_page_offset];
 
-                int actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + (actuators_in_page * assignment.actuator_page_id);
-                int actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + (actuators_in_page * assignment.actuator_page_id);
+                int main_actuator_id = actuatorgroup->actuators_in_actuatorgroup[0] + actuator_page_offset;
+                actuator_pair_id = actuatorgroup->actuators_in_actuatorgroup[1] + actuator_page_offset;
 
                 // real assignment
-                assignment.actuator_id = actuator_id;
+                assignment.actuator_id = main_actuator_id;
                 assignment.actuator_pair_id = actuator_pair_id;
                 assignment.assignment_pair_id = -1;
                 assignment.mode |= CC_MODE_GROUP|CC_MODE_REVERSE;
@@ -518,7 +528,7 @@ int main(int argc, char **argv)
 
                 // paired assignment
                 assignment.actuator_id = actuator_pair_id;
-                assignment.actuator_pair_id = actuator_id;
+                assignment.actuator_pair_id = main_actuator_id;
                 assignment.assignment_pair_id = assignment_id;
                 assignment.mode &= ~CC_MODE_REVERSE;
                 assignment_pair_id = cc_assignment(handle, &assignment, true);

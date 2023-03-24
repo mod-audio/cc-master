@@ -385,7 +385,7 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         uint8_t actuator_id = assignment->actuator_id;
 
         if (actuator_id >= actuators_per_page)
-            actuator_id = assignment->actuator_id - (actuators_per_page * device->current_page);
+            actuator_id -= actuators_per_page * device->current_page;
 
         *pdata++ = actuator_id;
 
