@@ -116,7 +116,7 @@ static void *reader(void *arg)
 
                 if (strcmp(event_name, "device_status") == 0)
                 {
-                    cc_device_t device;
+                    cc_device_t device = {0};
 
                     // unpack json
                     json_unpack(data, CC_DEV_STATUS_EVENT_FORMAT,
@@ -129,8 +129,8 @@ static void *reader(void *arg)
                 }
                 else if (strcmp(event_name, "data_update") == 0)
                 {
-                    int device_id;
-                    const char *encode;
+                    int device_id = 0;
+                    const char *encode = NULL;
 
                     // unpack json
                     json_unpack(data, CC_DATA_UPDATE_EVENT_FORMAT,
@@ -288,7 +288,7 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
         json_t *data = json_object_get(root, "data");
 
         // unpack reply
-        int assignment_id, assignment_pair_id, actuator_pair_id;
+        int assignment_id = -1, assignment_pair_id = -1, actuator_pair_id = -1;
         json_unpack(data, CC_ASSIGNMENT_REPLY_FORMAT,
                     "assignment_id", &assignment_id,
                     "assignment_pair_id", &assignment_pair_id,
@@ -305,6 +305,8 @@ int cc_client_assignment(cc_client_t *client, cc_assignment_t *assignment)
         return assignment_id;
     }
 
+    // invalidate assignment id
+    assignment->id = -1;
     return -1;
 }
 
