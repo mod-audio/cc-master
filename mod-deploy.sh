@@ -51,7 +51,7 @@ SSH_OPTIONS="-o PubkeyAcceptedAlgorithms=+ssh-rsa"
 ssh ${SSH_OPTIONS} ${TARGET} mount / -o remount,rw
 ssh ${SSH_OPTIONS} ${TARGET} systemctl stop controlchaind.service controlchaind.socket
 
-scp ${SSH_OPTIONS} destdir/usr/bin/controlchaind ${TARGET}:/usr/bin/
-scp ${SSH_OPTIONS} destdir/usr/lib/lib*.so       ${TARGET}:/usr/lib/
+scp ${SSH_OPTIONS} -O destdir/usr/bin/controlchaind ${TARGET}:/usr/bin/
+scp ${SSH_OPTIONS} -O destdir/usr/lib/lib*.so       ${TARGET}:/usr/lib/
 
 echo "all ok"
