@@ -412,20 +412,20 @@ cc_msg_t* cc_msg_builder(int device_id, int command, const void *data_struct)
         // mode
         uint32_t *mode = (uint32_t *) pdata;
         *mode = assignment->mode;
-        pdata += 4;
+        pdata += sizeof(uint32_t);
 
         // steps
         uint16_t *steps = (uint16_t *) pdata;
         *steps = assignment->steps;
-        pdata += 2;
+        pdata += sizeof(uint16_t);
 
         // unit
         if (assignment->unit)
         {
             int size = strlen(assignment->unit);
-            *pdata++ = size;
             if (size > 8)
                 size = 8;
+            *pdata++ = size;
             memcpy(pdata, assignment->unit, size);
             pdata += size;
         }
