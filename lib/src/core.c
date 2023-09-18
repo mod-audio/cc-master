@@ -345,8 +345,14 @@ static void parse_data_update(cc_handle_t *handle)
             .pair_id = -1,
         };
 
-        cc_assignment_t *assignment = cc_assignment_get(&assignment_key);
+        cc_device_t *device = cc_device_get(updates->device_id);
+        if (!device)
+        {
+            DEBUG_MSG("updates for device_id %i, device id is invalid\n", updates->device_id);
+            continue;
+        }
 
+        cc_assignment_t *assignment = cc_assignment_get(&assignment_key);
         if (!assignment)
         {
             DEBUG_MSG("updates for device_id %i, assignment_id %i is invalid\n", updates->device_id, updates->list[i].assignment_id);
@@ -380,16 +386,24 @@ static void parse_data_update(cc_handle_t *handle)
 
             cc_assignment_update_list(assignment, assignment->value);
 
+            device->timeout = 0;
+
             cc_msg_t *msg_enum = cc_msg_builder(updates->device_id, CC_CMD_UPDATE_ENUMERATION, assignment);
             request(handle, msg_enum);
+
+            device->timeout = 0;
             cc_msg_delete(msg_enum);
 
             if (pair_assignment)
             {
                 cc_assignment_update_list(pair_assignment, pair_assignment->value);
 
+                device->timeout = 0;
+
                 cc_msg_t *msg_enum_r = cc_msg_builder(updates->device_id, CC_CMD_UPDATE_ENUMERATION, pair_assignment);
                 request(handle, msg_enum_r);
+
+                device->timeout = 0;
                 cc_msg_delete(msg_enum_r);
             }
         }
@@ -410,9 +424,9 @@ static void parser(cc_handle_t *handle)
     // reset device timeout
     for (int i = 0; i < CC_MAX_DEVICES; i++)
     {
-        cc_device_t *devices = cc_device_get(i);
-        if (devices)
-            devices->timeout = 0;
+        cc_device_t *device = cc_device_get(i);
+        if (device)
+            device->timeout = 0;
     }
 
     if (msg->command == CC_CMD_HANDSHAKE)
@@ -429,7 +443,10 @@ static void parser(cc_handle_t *handle)
             // create a new device
             cc_device_t *device = cc_device_create(&handshake);
             if (device)
+            {
+                device->timeout = 0;
                 response.device_id = device->id;
+            }
         }
 
         DEBUG_MSG("handshake received\n");
@@ -482,6 +499,8 @@ static void parser(cc_handle_t *handle)
             // proceed to callback if any
             if (handle->device_status_cb)
                 handle->device_status_cb(device);
+
+            device->timeout = 0;
         }
         else
         {
@@ -496,6 +515,14 @@ static void parser(cc_handle_t *handle)
     {
         DEBUG_MSG("  switching device %d control page to %d\n", msg->device_id, msg->data[0]);
         cc_control_page(handle, msg->device_id, msg->data[0] - 1);
+    }
+
+    // reset device timeout again
+    for (int i = 0; i < CC_MAX_DEVICES; i++)
+    {
+        cc_device_t *device = cc_device_get(i);
+        if (device)
+            device->timeout = 0;
     }
 }
 
@@ -832,6 +859,8 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
     // we only send the actuators of the current page
     if (device->current_page == assignment->actuator_page_id)
     {
+        device->timeout = 0;
+
         cc_msg_t *msg = cc_msg_builder(assignment->device_id, CC_CMD_ASSIGNMENT, assignment);
         if (request(handle, msg))
         {
@@ -843,6 +872,7 @@ int cc_assignment(cc_handle_t *handle, cc_assignment_t *assignment, bool new_ass
             DEBUG_MSG("  assignment done (id: %i)\n", assignment->id);
         }
 
+        device->timeout = 0;
         cc_msg_delete(msg);
     }
 
@@ -882,6 +912,8 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment_key)
 
     DEBUG_MSG("  requesting unassignment to device (id: %i)\n", assignment_key->id);
 
+    device->timeout = 0;
+
     // request unassignment
     cc_msg_t *msg = cc_msg_builder(assignment_key->device_id, CC_CMD_UNASSIGNMENT, assignment_key);
     if (request(handle, msg))
@@ -894,10 +926,13 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment_key)
         DEBUG_MSG("  unassignment done (id: %i)\n", assignment_key->id);
     }
 
+    device->timeout = 0;
     cc_msg_delete(msg);
 
     if (assignment_pair_key.id != -1)
     {
+        device->timeout = 0;
+
         // request unassignment
         cc_msg_t *msg_unassignment = cc_msg_builder(assignment_pair_key.device_id, CC_CMD_UNASSIGNMENT, &assignment_pair_key);
         if (request(handle, msg_unassignment))
@@ -910,6 +945,7 @@ void cc_unassignment(cc_handle_t *handle, cc_assignment_key_t *assignment_key)
             DEBUG_MSG("  unassignment-2 done (id: %i)\n", assignment_pair_key.id);
         }
 
+        device->timeout = 0;
         cc_msg_delete(msg_unassignment);
     }
 }
@@ -931,9 +967,10 @@ int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
     if (device->current_page != assignment->actuator_page_id)
         return id;
 
+    device->timeout = 0;
+
     // request assignment
     cc_msg_t *msg = cc_msg_builder(update->device_id, CC_CMD_SET_VALUE, update);
-
     if (request(handle, msg))
     {
         // TODO: if timeout, try at least one more time
@@ -950,6 +987,7 @@ int cc_value_set(cc_handle_t *handle, cc_set_value_t *update)
         DEBUG_MSG("  value_set done (id: %i)\n", id);
     }
 
+    device->timeout = 0;
     cc_msg_delete(msg);
 
     return id;
@@ -963,6 +1001,7 @@ void cc_control_page(cc_handle_t *handle, int device_id, int page)
         return;
 
     device->current_page = page;
+    device->timeout = 0;
 
     const int actuators_page_offset = page * (device->actuators_count + device->actuatorgroups_count);
 
@@ -973,6 +1012,8 @@ void cc_control_page(cc_handle_t *handle, int device_id, int page)
         if (assignment)
             cc_assignment(handle, assignment, false);
     }
+
+    device->timeout = 0;
 }
 
 void cc_device_disable(cc_handle_t *handle, int device_id)
